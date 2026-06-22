@@ -1,4 +1,4 @@
-# Prestige Settlement Automation — Fetching Pipeline
+# Daily Credit Report Settlement Automation — Fetching Pipeline
 
 This project automates the upstream report collection process for supplier settlement reports. The goal of the fetching pipeline is to replace the manual browser-download/copy step while preserving the existing parser, validation, reconciliation, and Excel/export flow.
 
