@@ -1,0 +1,89 @@
+import csv
+from dataclasses import asdict
+from datetime import date, datetime
+from decimal import Decimal
+from pathlib import Path
+
+from settlement_automation.models import ParsedReport
+from settlement_automation.services.reconciliation import summarize_mobile_adjustments
+from settlement_automation.services.validation import ValidationResult
+
+
+def clean_value(value):
+    if isinstance(value, Decimal):
+        return f"{value:.2f}"
+
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+
+    return value
+
+
+def write_csv(path: Path, rows: list[dict]):
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    if not rows:
+        path.write_text("", encoding="utf-8")
+        return
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def objects_to_rows(objects) -> list[dict]:
+    rows = []
+
+    for obj in objects:
+        row = asdict(obj)
+        row = {k: clean_value(v) for k, v in row.items()}
+        rows.append(row)
+
+    return rows
+
+
+def validation_to_rows(result: ValidationResult) -> list[dict]:
+    if not result.issues:
+        return [{"level": "PASSED", "message": "No validation issues found."}]
+
+    return [asdict(issue) for issue in result.issues]
+
+
+def export_audit_files(
+    report: ParsedReport,
+    validation_result: ValidationResult,
+    output_dir: str = "output/reports",
+) -> list[Path]:
+    output_path = Path(output_dir)
+
+    prefix = f"{report.supplier}_{report.report_date.isoformat()}"
+
+    files = {
+        "daily_totals": output_path / f"{prefix}_daily_totals.csv",
+        "mobile_detail": output_path / f"{prefix}_mobile_adjustments_detail.csv",
+        "mobile_summary": output_path / f"{prefix}_mobile_adjustments_summary.csv",
+        "validation": output_path / f"{prefix}_validation.csv",
+    }
+
+    write_csv(
+        files["daily_totals"],
+        objects_to_rows(report.daily_totals),
+    )
+
+    write_csv(
+        files["mobile_detail"],
+        objects_to_rows(report.mobile_adjustments),
+    )
+
+    write_csv(
+        files["mobile_summary"],
+        objects_to_rows(summarize_mobile_adjustments(report.mobile_adjustments)),
+    )
+
+    write_csv(
+        files["validation"],
+        validation_to_rows(validation_result),
+    )
+
+    return list(files.values())

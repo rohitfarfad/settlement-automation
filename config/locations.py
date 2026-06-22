@@ -1,0 +1,50 @@
+CITGO_LOCATIONS = {
+    "15861002": "HAVERSTRAW",
+    "15861003": "ELLENVILLE",
+    "15861004": "FREEDOM PLAINS",
+    "15861005": "WESTERLO",
+    "15861006": "ERIE BLVD",
+    "15861007": "UPPER GLEN",
+}
+
+
+VALERO_LOCATIONS = {
+    "10688": "Five Corners Valero",
+    "11347": "Route 44 Valero",
+    "19505": "Brewster Valero",
+    "19513": "Wappinger's Falls Valero",
+    "22312": "Route 7 Valero",
+    "23473": "Saugerties Valero",
+    "23810": "Elmira Valero",
+    "24026": "New Windsor Valero",
+    "24640": "Carmel Valero",
+    "25407": "Ulster Avenue Valero",
+    "26740": "Montgomery Valero",
+    "30371": "Walker Valero",
+    "30408": "Cornell St Valero",
+    "30525": "Valero Central Ave",
+    "30530": "CHAMPLAIN VALERO",
+    "32966": "Fort Ann Valero",
+    "45371": "Slate Hill Valero",
+    "53579": "DELMAR VALERO",
+    "72041": "South Plank VALERO",
+    "76596": "FISHKILL",
+    "76604": "SOUTHFIELDS",
+    "83343": "Willsboro Valero",
+    "93815": "Prestige Valero",
+}
+
+SUNOCO_LOCATIONS = {
+    "0326461100": "CENTRAL AVE SUNOCO",
+    "0434020400": "NEW SCOTLAND SUNOCO",
+    "0755798600": "STEWART SUNOCO",
+    "0260536800": "84 QUICK STOP SUNOCO",
+    "0585555600": "GLENMONT SUNOCO",
+    "0853941300": "VAILS GATE SUNOCO",
+    "0160544300": "128 WASHINGTON MART",
+    "0894029800": "ROCK HILL SUNOCO",
+    "8002101401": "ROUTE 302 SUNOCO",
+    "8002266301": "DOLSONTOWN ROAD SUNOCO",
+    "8000463802": "BALLSTON SPA SUNOCO",
+    "8003089201": "PRESTIGE-474",
+}

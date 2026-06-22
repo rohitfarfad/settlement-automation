@@ -1,0 +1,126 @@
+# =========================
+# Environment / credentials
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# =========================
+# Virtual environments
+# =========================
+.venv/
+venv/
+env/
+
+# =========================
+# IDE / OS
+# =========================
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# =========================
+# Playwright / browser artifacts
+# =========================
+playwright-report/
+test-results/
+*.webm
+*.trace.zip
+
+# =========================
+# Sensitive/raw downloaded data
+# Keep folder structure with .gitkeep only
+# =========================
+data/incoming/**
+!data/incoming/
+!data/incoming/**/
+!data/incoming/**/.gitkeep
+
+data/raw/**
+!data/raw/
+!data/raw/**/
+!data/raw/**/.gitkeep
+
+data/processed/**
+!data/processed/
+!data/processed/**/
+!data/processed/**/.gitkeep
+
+data/failed/**
+!data/failed/
+!data/failed/**/
+!data/failed/**/.gitkeep
+
+data/backups/**
+!data/backups/
+!data/backups/**/
+!data/backups/**/.gitkeep
+
+data/tmp/**
+!data/tmp/
+!data/tmp/**/
+!data/tmp/**/.gitkeep
+
+# =========================
+# Generated outputs / diagnostics
+# =========================
+output/reports/**
+!output/reports/
+!output/reports/.gitkeep
+
+output/logs/**
+!output/logs/
+!output/logs/.gitkeep
+
+output/traces/**
+!output/traces/
+!output/traces/.gitkeep
+
+output/audit/**
+!output/audit/
+!output/audit/.gitkeep
+
+output/diagnostics/**
+!output/diagnostics/
+!output/diagnostics/**/
+!output/diagnostics/**/.gitkeep
+
+# =========================
+# Runtime state
+# =========================
+state/*.sqlite
+state/*.sqlite3
+state/*.db
+!state/.gitkeep
+
+# =========================
+# Local spreadsheets / reports
+# =========================
+*.xls
+*.xlsx
+*.xlsm
+*.csv
+
+# Allow sanitized test fixtures if intentionally added
+!tests/sample_reports/*.txt
+!tests/sample_reports/*.json
+!tests/sample_reports/*.csv
