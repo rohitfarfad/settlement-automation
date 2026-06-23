@@ -6,7 +6,15 @@ from datetime import date, timedelta
 from config.settings import get_settings
 from config.supplier_accounts import get_supplier_account
 from settlement_automation.connectors.download_manager import DownloadManager
+from settlement_automation.ingestion.dtn_group_fetch import (
+    fetch_dtn_reports_for_supplier_group,
+)
 from settlement_automation.ingestion.fetch_reports import fetch_reports_for_account
+from settlement_automation.ingestion.supplier_selection import (
+    SUPPORTED_SUPPLIERS,
+    group_suppliers_by_portal,
+    parse_supplier_selection,
+)
 from settlement_automation.services.console_output import (
     print_daily_totals,
     print_final_status,
@@ -33,15 +41,33 @@ def parse_business_date(value: str) -> date:
     return date.fromisoformat(value)
 
 
+def parse_suppliers_arg(value: str) -> list[str]:
+    try:
+        return parse_supplier_selection(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Fetch a supplier report and test parser compatibility."
+        description="Fetch supplier report(s) and test parser compatibility."
     )
 
     parser.add_argument(
         "--supplier",
-        required=True,
-        choices=["citgo", "valero", "sunoco"],
+        choices=SUPPORTED_SUPPLIERS,
+        default=None,
+        help="Single supplier to run. Kept for backwards compatibility.",
+    )
+
+    parser.add_argument(
+        "--suppliers",
+        type=parse_suppliers_arg,
+        default=None,
+        help=(
+            "Comma-separated supplier list. Examples: citgo,valero | sunoco | "
+            "citgo,valero,sunoco | dtn | all"
+        ),
     )
 
     parser.add_argument(
@@ -51,6 +77,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     return parser
+
+
+def resolve_suppliers(args) -> list[str]:
+    if args.supplier and args.suppliers:
+        raise SystemExit("Use either --supplier or --suppliers, not both.")
+
+    if args.suppliers:
+        return args.suppliers
+
+    if args.supplier:
+        return [args.supplier]
+
+    raise SystemExit("Provide --supplier or --suppliers.")
 
 
 def diagnostics_dir(settings, supplier_name: str, business_date: date) -> str:
@@ -64,52 +103,61 @@ def issue_to_dict(issue) -> dict:
     }
 
 
-def main() -> int:
-    args = build_parser().parse_args()
+def fetch_result_succeeded(fetch_result) -> bool:
+    if hasattr(fetch_result, "succeeded"):
+        return bool(fetch_result.succeeded)
 
-    settings = get_settings()
-    load_local_env(settings.project_root)
+    return getattr(fetch_result, "status", None) == "success"
 
-    account = get_supplier_account(args.supplier)
-    manager = DownloadManager(settings=settings)
+
+def process_fetch_result_for_supplier(
+    *,
+    supplier_name: str,
+    business_date: date,
+    settings,
+    fetch_result,
+) -> bool:
+    account = get_supplier_account(supplier_name)
 
     print_run_header(
-        title="FETCH AND PARSE PROBE",
+        title=f"FETCH AND PARSE PROBE — {account.supplier_name.upper()}",
         supplier=account.supplier_name,
         portal=account.portal_name,
-        business_date=args.business_date,
+        business_date=business_date,
     )
 
-    section("FETCH")
-    print("Starting supplier fetch...")
+    section("FETCH RESULT")
 
-    fetch_result = fetch_reports_for_account(
-        account=account,
-        business_date=args.business_date,
-        download_manager=manager,
-        remove_downloaded_files=True,
-        raise_on_error=False,
-    )
-
-    if not fetch_result.succeeded:
-        diagnostics_path = diagnostics_dir(
+    if fetch_result is None:
+        diagnostic_path = diagnostics_dir(
             settings=settings,
             supplier_name=account.supplier_name,
-            business_date=args.business_date,
+            business_date=business_date,
         )
 
-        print()
         print("FETCH FAILED")
-        status_line("Error", fetch_result.error_message)
-        status_line("Diagnostics", diagnostics_path)
+        status_line("Error", "No FetchResult was returned.")
+        status_line("Diagnostics", diagnostic_path)
+        print_final_status(success=False, diagnostics_path=diagnostic_path)
+        return False
 
-        print_final_status(success=False, diagnostics_path=diagnostics_path)
-        return 1
+    if not fetch_result_succeeded(fetch_result):
+        diagnostic_path = diagnostics_dir(
+            settings=settings,
+            supplier_name=account.supplier_name,
+            business_date=business_date,
+        )
+
+        print("FETCH FAILED")
+        status_line("Error", getattr(fetch_result, "error_message", "Unknown fetch error"))
+        status_line("Diagnostics", diagnostic_path)
+        print_final_status(success=False, diagnostics_path=diagnostic_path)
+        return False
 
     print("Fetch completed successfully.")
     status_line("Stored Reports", len(fetch_result.stored_reports))
 
-    overall_success = True
+    supplier_success = True
     last_diagnostic_path = None
 
     for index, stored_report in enumerate(fetch_result.stored_reports, start=1):
@@ -131,7 +179,7 @@ def main() -> int:
         except Exception as exc:
             diagnostic_path = write_exception_diagnostic(
                 account=account,
-                business_date=args.business_date,
+                business_date=business_date,
                 step_name="parse_report_failed",
                 exc=exc,
                 settings=settings,
@@ -145,7 +193,7 @@ def main() -> int:
             )
 
             last_diagnostic_path = diagnostic_path
-            overall_success = False
+            supplier_success = False
 
             print()
             print("PARSE FAILED")
@@ -165,7 +213,7 @@ def main() -> int:
         except Exception as exc:
             diagnostic_path = write_exception_diagnostic(
                 account=account,
-                business_date=args.business_date,
+                business_date=business_date,
                 step_name="validate_report_failed",
                 exc=exc,
                 settings=settings,
@@ -181,7 +229,7 @@ def main() -> int:
             )
 
             last_diagnostic_path = diagnostic_path
-            overall_success = False
+            supplier_success = False
 
             print()
             print("VALIDATION ERROR")
@@ -200,13 +248,13 @@ def main() -> int:
         print_validation_result(validation_result)
 
         if not validation_result.is_valid:
-            overall_success = False
+            supplier_success = False
 
             diagnostic_path = write_diagnostic_record(
                 DiagnosticRecord(
                     supplier_name=account.supplier_name,
                     portal_name=account.portal_name,
-                    business_date=str(args.business_date),
+                    business_date=str(business_date),
                     step_name="validation_failed",
                     status="failed",
                     message="validate_report returned is_valid=False",
@@ -216,7 +264,9 @@ def main() -> int:
                         "size_bytes": stored_report.size_bytes,
                         "report_supplier": getattr(report, "supplier", None),
                         "report_date": str(getattr(report, "report_date", "")),
-                        "daily_totals_count": len(getattr(report, "daily_totals", []) or []),
+                        "daily_totals_count": len(
+                            getattr(report, "daily_totals", []) or []
+                        ),
                         "mobile_adjustments_count": len(
                             getattr(report, "mobile_adjustments", []) or []
                         ),
@@ -233,11 +283,150 @@ def main() -> int:
             status_line("Validation Diagnostic", diagnostic_path)
 
     print_final_status(
-        success=overall_success,
+        success=supplier_success,
         diagnostics_path=last_diagnostic_path,
     )
 
-    return 0 if overall_success else 1
+    return supplier_success
+
+
+def fetch_parse_validate_one_supplier(
+    *,
+    supplier_name: str,
+    business_date: date,
+    settings,
+    download_manager: DownloadManager,
+) -> bool:
+    account = get_supplier_account(supplier_name)
+
+    print_run_header(
+        title=f"FETCH AND PARSE PROBE — {account.supplier_name.upper()}",
+        supplier=account.supplier_name,
+        portal=account.portal_name,
+        business_date=business_date,
+    )
+
+    section("FETCH")
+    print("Starting supplier fetch...")
+
+    fetch_result = fetch_reports_for_account(
+        account=account,
+        business_date=business_date,
+        download_manager=download_manager,
+        remove_downloaded_files=True,
+        raise_on_error=False,
+    )
+
+    return process_fetch_result_for_supplier(
+        supplier_name=supplier_name,
+        business_date=business_date,
+        settings=settings,
+        fetch_result=fetch_result,
+    )
+
+
+def fetch_parse_validate_dtn_group(
+    *,
+    supplier_names: list[str],
+    business_date: date,
+    settings,
+    download_manager: DownloadManager,
+) -> dict[str, bool]:
+    section("DTN SHARED-LOGIN FETCH")
+    status_line("Suppliers", ", ".join(supplier_names))
+    print("Starting one DTN browser session for all requested DTN suppliers...")
+
+    fetch_results = fetch_dtn_reports_for_supplier_group(
+        supplier_names=supplier_names,
+        business_date=business_date,
+        download_manager=download_manager,
+        settings=settings,
+        remove_downloaded_files=True,
+    )
+
+    print("DTN group fetch completed. Processing each supplier result...")
+
+    results: dict[str, bool] = {}
+
+    for supplier_name in supplier_names:
+        results[supplier_name] = process_fetch_result_for_supplier(
+            supplier_name=supplier_name,
+            business_date=business_date,
+            settings=settings,
+            fetch_result=fetch_results.get(supplier_name),
+        )
+
+    return results
+
+
+def print_combined_summary(results: dict[str, bool]) -> None:
+    section("COMBINED RUN SUMMARY")
+
+    print(f"{'Supplier':<14} {'Status':<12}")
+    print("-" * 30)
+
+    for supplier_name, succeeded in results.items():
+        status = "PASSED" if succeeded else "FAILED"
+        print(f"{supplier_name:<14} {status:<12}")
+
+    print("-" * 30)
+
+    if all(results.values()):
+        print("OVERALL STATUS: PASSED")
+    else:
+        print("OVERALL STATUS: FAILED")
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    suppliers = resolve_suppliers(args)
+    supplier_groups = group_suppliers_by_portal(suppliers)
+
+    settings = get_settings()
+    load_local_env(settings.project_root)
+
+    download_manager = DownloadManager(settings=settings)
+
+    section("MULTI-SUPPLIER FETCH AND PARSE")
+    status_line("Business Date", args.business_date)
+    status_line("Suppliers", ", ".join(suppliers))
+    status_line(
+        "Portal Groups",
+        " | ".join(
+            f"{group.portal_name}: {', '.join(group.supplier_names)}"
+            for group in supplier_groups
+        ),
+    )
+
+    results: dict[str, bool] = {}
+
+    for group in supplier_groups:
+        section(f"PORTAL GROUP — {group.portal_name.upper()}")
+        status_line("Suppliers", ", ".join(group.supplier_names))
+
+        if group.portal_name == "dtn" and len(group.supplier_names) > 1:
+            group_results = fetch_parse_validate_dtn_group(
+                supplier_names=group.supplier_names,
+                business_date=args.business_date,
+                settings=settings,
+                download_manager=download_manager,
+            )
+            results.update(group_results)
+            continue
+
+        for supplier_name in group.supplier_names:
+            succeeded = fetch_parse_validate_one_supplier(
+                supplier_name=supplier_name,
+                business_date=args.business_date,
+                settings=settings,
+                download_manager=download_manager,
+            )
+
+            results[supplier_name] = succeeded
+
+    print_combined_summary(results)
+
+    return 0 if all(results.values()) else 1
 
 
 if __name__ == "__main__":

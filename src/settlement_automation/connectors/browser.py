@@ -1,17 +1,17 @@
 from __future__ import annotations
-
-from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime
-from pathlib import Path
-from typing import Iterator
 from uuid import uuid4
 
 from config.settings import AppSettings, get_settings
 from config.supplier_accounts import SupplierAccount
+from contextlib import contextmanager
+from datetime import datetime
+from pathlib import Path
+
+from playwright.sync_api import sync_playwright
+
 from settlement_automation.exceptions import BrowserAutomationError
 from settlement_automation.utils.files import ensure_directory, sanitize_filename_part
-
 
 @dataclass
 class BrowserSession:
@@ -87,88 +87,85 @@ def capture_failure_artifacts(
 
     return artifacts
 
-
 @contextmanager
-def open_browser_session(
-    account: SupplierAccount,
-    settings: AppSettings | None = None,
-    record_trace: bool = True,
-) -> Iterator[BrowserSession]:
+def open_browser_session(account, settings, record_trace: bool = False):
     """
-    Open an isolated Playwright browser session for one supplier account.
+    Open an isolated Playwright browser session for one supplier run.
 
-    Each supplier account gets a fresh context, so CITGO and Valero DTN sessions
-    cannot leak cookies/session state into each other.
+    Important:
+    - Context/browser are closed before leaving sync_playwright().
+    - BrowserSession includes all required fields:
+      playwright, browser, context, page, download_dir.
     """
-    settings = settings or get_settings()
-    sync_playwright = _load_playwright()
-
-    download_dir = _build_session_download_dir(settings, account)
-    ensure_directory(download_dir)
-    ensure_directory(settings.trace_dir)
-
-    playwright_context_manager = sync_playwright()
-    playwright = playwright_context_manager.start()
-
     browser = None
     context = None
+    trace_started = False
+
+    supplier = sanitize_filename_part(account.supplier_name)
+    portal = sanitize_filename_part(account.portal_name)
+
+    download_dir = settings.tmp_download_dir / "browser" / portal / supplier
+    ensure_directory(download_dir)
 
     try:
-        browser = playwright.chromium.launch(
-            headless=settings.headless_browser,
-        )
-
-        context = browser.new_context(
-            accept_downloads=True,
-        )
-
-        if record_trace:
-            context.tracing.start(
-                screenshots=True,
-                snapshots=True,
-                sources=True,
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(
+                headless=settings.headless_browser,
+                downloads_path=str(download_dir),
             )
 
-        page = context.new_page()
+            context = browser.new_context(
+                accept_downloads=True,
+            )
 
-        yield BrowserSession(
-            page=page,
-            context=context,
-            browser=browser,
-            playwright=playwright,
-            download_dir=download_dir,
-        )
+            if record_trace:
+                context.tracing.start(
+                    screenshots=True,
+                    snapshots=True,
+                    sources=True,
+                )
+                trace_started = True
 
-        if record_trace:
-            context.tracing.stop()
+            page = context.new_page()
+
+            try:
+                yield BrowserSession(
+                    playwright=playwright,
+                    browser=browser,
+                    context=context,
+                    page=page,
+                    download_dir=download_dir,
+                )
+
+            finally:
+                if context is not None:
+                    if trace_started:
+                        try:
+                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            trace_dir = settings.trace_dir / supplier
+                            ensure_directory(trace_dir)
+
+                            trace_path = trace_dir / f"{supplier}_{timestamp}_trace.zip"
+                            context.tracing.stop(path=str(trace_path))
+                        except Exception:
+                            pass
+
+                    try:
+                        context.close()
+                    except Exception:
+                        pass
+
+                if browser is not None:
+                    try:
+                        browser.close()
+                    except Exception:
+                        pass
 
     except Exception as exc:
-        if context is not None and record_trace:
-            trace_path = settings.trace_dir / f"{_build_artifact_prefix(account)}_trace.zip"
-            try:
-                context.tracing.stop(path=str(trace_path))
-            except Exception:
-                pass
+        if isinstance(exc, BrowserAutomationError):
+            raise
 
         raise BrowserAutomationError(
             f"Browser automation failed for supplier={account.supplier_name}, "
             f"portal={account.portal_name}: {exc}"
         ) from exc
-
-    finally:
-        if context is not None:
-            try:
-                context.close()
-            except Exception:
-                pass
-
-        if browser is not None:
-            try:
-                browser.close()
-            except Exception:
-                pass
-
-        try:
-            playwright_context_manager.stop()
-        except Exception:
-            pass
