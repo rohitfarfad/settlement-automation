@@ -13,15 +13,6 @@ from settlement_automation.utils.files import ensure_directory, sanitize_filenam
 
 
 @dataclass(frozen=True)
-class DTNReportLink:
-    supplier_name: str
-    business_date: date
-    row_index: int
-    row_text: str
-    url: str
-
-
-@dataclass(frozen=True)
 class CapturedDTNReport:
     supplier_name: str
     business_date: date
@@ -30,89 +21,6 @@ class CapturedDTNReport:
     tmp_path: Path
     size_bytes: int
 
-
-def normalize_dtn_url(base_url: str, href: str) -> str:
-    return urljoin(base_url, href)
-
-
-def is_likely_dtn_message_response(url: str) -> bool:
-    parsed = urlparse(url)
-
-    return (
-        "fuelbuyer.dtn.com" in parsed.netloc
-        and "/energy/common/link.do" in parsed.path
-        and "contentId=" in parsed.query
-    )
-
-
-def build_dtn_tmp_report_path(
-    settings: AppSettings,
-    account: SupplierAccount,
-    target: DTNReportTarget,
-    business_date: date,
-    row_index: int,
-) -> Path:
-    supplier = sanitize_filename_part(account.supplier_name)
-    document = sanitize_filename_part(target.document_name)
-    date_text = business_date.isoformat()
-
-    tmp_dir = settings.tmp_download_dir / "dtn" / supplier / date_text
-    ensure_directory(tmp_dir)
-
-    return tmp_dir / f"{supplier}_{document}_{date_text}_row_{row_index}.txt"
-
-
-def write_response_body_to_tmp_file(response, tmp_path: Path) -> Path:
-    body = response.body()
-
-    if not body:
-        raise PortalDownloadError(f"Captured DTN response was empty: {response.url}")
-
-    ensure_directory(tmp_path.parent)
-    tmp_path.write_bytes(body)
-
-    return tmp_path
-
-
-def fetch_dtn_report_url_to_tmp_file(
-    page,
-    report_link: DTNReportLink,
-    account: SupplierAccount,
-    target: DTNReportTarget,
-    settings: AppSettings,
-) -> CapturedDTNReport:
-    """
-    Fetch a DTN report URL using the authenticated browser session.
-
-    This avoids relying on clicking rows and is closer to the manual Network-tab
-    method: once authenticated, request the report link and save the raw response.
-    """
-    tmp_path = build_dtn_tmp_report_path(
-        settings=settings,
-        account=account,
-        target=target,
-        business_date=report_link.business_date,
-        row_index=report_link.row_index,
-    )
-
-    response = page.context.request.get(report_link.url, timeout=60000)
-
-    if not response.ok:
-        raise PortalDownloadError(
-            f"DTN report request failed. "
-            f"status={response.status}, url={report_link.url}"
-        )
-
-    write_response_body_to_tmp_file(response=response, tmp_path=tmp_path)
-
-    return CapturedDTNReport(
-        supplier_name=account.supplier_name,
-        business_date=report_link.business_date,
-        row_index=report_link.row_index,
-        source_url=report_link.url,
-        tmp_path=tmp_path,
-        size_bytes=tmp_path.stat().st_size,
-    )
 
 from datetime import date
 from pathlib import Path
