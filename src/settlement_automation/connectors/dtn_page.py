@@ -2,8 +2,14 @@ import time
 from datetime import date
 
 from config.dtn_reports import DTNReportTarget
-from settlement_automation.connectors.dtn_date import format_dtn_dropdown_date
 from settlement_automation.exceptions import PortalDownloadError
+
+from settlement_automation.connectors.dtn_date import (
+    get_dtn_date_label_candidates,
+    get_dtn_date_value_candidates,
+    normalize_dtn_date_label,
+)
+from settlement_automation.exceptions import PortalNavigationError
 
 
 USERNAME_SELECTORS = [
@@ -117,41 +123,81 @@ def login_to_dtn(page, login_url: str, username: str, password: str) -> None:
 
 def select_dataconnect_date(page, business_date: date) -> str:
     """
-    Select the requested date in the DataConnect date dropdown.
+    Select DTN DataConnect date robustly.
 
-    Changing this dropdown triggers the table reload.
-    Do not click Refresh after this, because Refresh resets the date.
+    Do not rely on one exact label like 'June 5,2026 (Fri)' because
+    DTN uses zero-padded days for earlier month dates:
+        'June 05,2026 (Fri)'
     """
-    dtn_date_label = format_dtn_dropdown_date(business_date)
+    select = page.locator("select#date, select[name='date'], select").first
+    select.wait_for(state="visible", timeout=30000)
 
-    select_candidates = [
-        page.locator("select[name*='date' i]").first,
-        page.locator("select[id*='date' i]").first,
-        page.locator("select").first,
-    ]
+    target_labels = {
+        normalize_dtn_date_label(label)
+        for label in get_dtn_date_label_candidates(business_date)
+    }
+    target_values = {
+        value
+        for value in get_dtn_date_value_candidates(business_date)
+        if value
+    }
 
-    last_error = None
+    options = select.locator("option")
+    option_count = options.count()
 
-    for select in select_candidates:
+    available_options: list[str] = []
+    matched_index = None
+    matched_label = None
+    matched_value = None
+
+    for index in range(option_count):
+        option = options.nth(index)
+
         try:
-            if select.count() > 0 and select.is_visible():
-                select.select_option(label=dtn_date_label)
+            label = " ".join(option.inner_text(timeout=3000).split())
+        except Exception:
+            label = ""
 
-                try:
-                    select.dispatch_event("input")
-                    select.dispatch_event("change")
-                except Exception:
-                    pass
+        try:
+            value = option.get_attribute("value", timeout=3000) or ""
+        except Exception:
+            value = ""
 
-                page.wait_for_timeout(2000)
-                return dtn_date_label
+        available_options.append(f"{label} [value={value}]")
 
-        except Exception as exc:
-            last_error = exc
+        normalized_label = normalize_dtn_date_label(label)
 
-    raise PortalDownloadError(
-        f"Could not select DTN date option: {dtn_date_label}. Last error: {last_error}"
-    )
+        if value in target_values or normalized_label in target_labels:
+            matched_index = index
+            matched_label = label
+            matched_value = value
+            break
+
+    if matched_index is None:
+        preview = "\n".join(available_options[:20])
+        raise PortalNavigationError(
+            f"Could not find DTN date option for business_date={business_date}. "
+            f"Expected labels={get_dtn_date_label_candidates(business_date)}, "
+            f"expected values={sorted(target_values)}. "
+            f"First available options:\n{preview}"
+        )
+
+    try:
+        if matched_value:
+            select.select_option(value=matched_value, timeout=30000)
+        else:
+            select.select_option(index=matched_index, timeout=30000)
+    except Exception as exc:
+        raise PortalNavigationError(
+            f"Could not select DTN date option: {matched_label}. "
+            f"value={matched_value!r}, index={matched_index}. "
+            f"Original error: {exc}"
+        ) from exc
+
+    # Let DTN's onchange handler refresh the message table.
+    page.wait_for_timeout(1500)
+
+    return matched_label or str(business_date)
 
 def get_visible_table_like_text(page) -> str:
     """
