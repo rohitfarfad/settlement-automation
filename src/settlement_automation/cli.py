@@ -1,6 +1,13 @@
 import sys
 from pathlib import Path
 
+from settlement_automation.services.console_output import (
+    print_daily_totals,
+    print_mobile_adjustments,
+    print_mobile_adjustment_summary,
+    print_report_summary,
+    print_validation_result,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = PROJECT_ROOT / "src"
@@ -16,10 +23,6 @@ from decimal import Decimal
 
 from settlement_automation.services.report_processor import parse_report
 from settlement_automation.services.validation import validate_report
-from settlement_automation.services.reconciliation import (
-    summarize_mobile_adjustments,
-    get_mobile_adjustment_grand_total,
-)
 from settlement_automation.services.audit_exporter import export_audit_files
 
 
@@ -65,174 +68,6 @@ def print_report_header(report, file_path: str) -> None:
     print(f"{'Report Date':<18}: {getattr(report, 'report_date', 'UNKNOWN')}")
     print(f"{'Daily Totals':<18}: {len(getattr(report, 'daily_totals', []) or [])}")
     print(f"{'Mobile Adjustments':<18}: {len(getattr(report, 'mobile_adjustments', []) or [])}")
-
-
-def print_daily_totals(rows) -> None:
-    subsection("DAILY TOTALS")
-
-    if not rows:
-        print("No daily totals found.")
-        return
-
-    rows = sorted(rows, key=lambda row: (row.date, row.location_id))
-
-    print(
-        f"{'Date':<12} "
-        f"{'Location ID':<14} "
-        f"{'Location Name':<28} "
-        f"{'Gross':>14} "
-        f"{'Fees':>14} "
-        f"{'Net':>14}"
-    )
-    print("-" * LINE_WIDTH)
-
-    total_gross = Decimal("0")
-    total_fees = Decimal("0")
-    total_net = Decimal("0")
-
-    for row in rows:
-        total_gross += row.gross_amt
-        total_fees += row.fees
-        total_net += row.net_amt
-
-        print(
-            f"{str(row.date):<12} "
-            f"{row.location_id:<14} "
-            f"{safe_text(row.location_name, 28):<28} "
-            f"{money(row.gross_amt):>14} "
-            f"{money(row.fees):>14} "
-            f"{money(row.net_amt):>14}"
-        )
-
-    print("-" * LINE_WIDTH)
-    print(
-        f"{'TOTAL':<12} "
-        f"{'':<14} "
-        f"{'':<28} "
-        f"{money(total_gross):>14} "
-        f"{money(total_fees):>14} "
-        f"{money(total_net):>14}"
-    )
-
-
-def print_mobile_adjustments(rows) -> None:
-    subsection("BACKDATED MOBILE ADJUSTMENTS")
-
-    if not rows:
-        print("No backdated mobile adjustments found.")
-        return
-
-    rows = sorted(rows, key=lambda row: (row.date, row.location_id, row.source_code))
-
-    print(
-        f"{'Date':<12} "
-        f"{'Location ID':<14} "
-        f"{'Location Name':<28} "
-        f"{'Source':<8} "
-        f"{'Gross':>14} "
-        f"{'Fees':>14} "
-        f"{'Net':>14}"
-    )
-    print("-" * LINE_WIDTH)
-
-    for row in rows:
-        print(
-            f"{str(row.date):<12} "
-            f"{row.location_id:<14} "
-            f"{safe_text(row.location_name, 28):<28} "
-            f"{row.source_code:<8} "
-            f"{money(row.gross_amt):>14} "
-            f"{money(row.fees):>14} "
-            f"{money(row.net_amt):>14}"
-        )
-
-
-def print_mobile_adjustment_summary(rows) -> None:
-    subsection("BACKDATED MOBILE ADJUSTMENTS SUMMARY")
-
-    if not rows:
-        print("No backdated mobile adjustment summary found.")
-        return
-
-    summary_rows = summarize_mobile_adjustments(rows)
-    summary_rows = sorted(summary_rows, key=lambda row: (row.date, row.location_id))
-
-    print(
-        f"{'Date':<12} "
-        f"{'Location ID':<14} "
-        f"{'Location Name':<28} "
-        f"{'Gross':>14} "
-        f"{'Fees':>14} "
-        f"{'Net':>14}"
-    )
-    print("-" * LINE_WIDTH)
-
-    for row in summary_rows:
-        print(
-            f"{str(row.date):<12} "
-            f"{row.location_id:<14} "
-            f"{safe_text(row.location_name, 28):<28} "
-            f"{money(row.gross_amt):>14} "
-            f"{money(row.fees):>14} "
-            f"{money(row.net_amt):>14}"
-        )
-
-    gross, fees, net = get_mobile_adjustment_grand_total(rows)
-
-    print("-" * LINE_WIDTH)
-    print(
-        f"{'GRAND TOTAL':<12} "
-        f"{'':<14} "
-        f"{'':<28} "
-        f"{money(gross):>14} "
-        f"{money(fees):>14} "
-        f"{money(net):>14}"
-    )
-
-
-def print_validation_result(result) -> None:
-    subsection("VALIDATION")
-
-    issues = result.issues or []
-
-    errors = [issue for issue in issues if issue.level.upper() == "ERROR"]
-    warnings = [issue for issue in issues if issue.level.upper() == "WARNING"]
-    others = [
-        issue
-        for issue in issues
-        if issue.level.upper() not in {"ERROR", "WARNING"}
-    ]
-
-    if result.is_valid and not issues:
-        print("PASSED: No validation issues found.")
-        return
-
-    if errors:
-        print(f"ERRORS ({len(errors)})")
-        for index, issue in enumerate(errors, start=1):
-            print(f"  {index}. {issue.message}")
-
-    if warnings:
-        if errors:
-            print()
-
-        print(f"WARNINGS ({len(warnings)})")
-        for index, issue in enumerate(warnings, start=1):
-            print(f"  {index}. {issue.message}")
-
-    if others:
-        if errors or warnings:
-            print()
-
-        print(f"OTHER ISSUES ({len(others)})")
-        for index, issue in enumerate(others, start=1):
-            print(f"  {index}. [{issue.level}] {issue.message}")
-
-    print()
-    if result.is_valid:
-        print("STATUS: PASSED WITH WARNINGS")
-    else:
-        print("STATUS: FAILED")
 
 
 def print_exported_files(exported_files) -> None:
@@ -290,7 +125,7 @@ def main() -> int:
     report = parse_report(str(file_path))
     validation_result = validate_report(report)
 
-    print_report_header(report, str(file_path))
+    print_report_summary(report, raw_path=args.file)
     print_daily_totals(report.daily_totals)
     print_mobile_adjustments(report.mobile_adjustments)
     print_mobile_adjustment_summary(report.mobile_adjustments)

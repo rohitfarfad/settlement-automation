@@ -2,12 +2,23 @@ from _path_setup import PROJECT_ROOT  # noqa: F401
 
 import argparse
 from datetime import date, timedelta
-from pprint import pprint
 
 from config.settings import get_settings
 from config.supplier_accounts import get_supplier_account
 from settlement_automation.connectors.download_manager import DownloadManager
 from settlement_automation.ingestion.fetch_reports import fetch_reports_for_account
+from settlement_automation.services.console_output import (
+    print_daily_totals,
+    print_final_status,
+    print_mobile_adjustments,
+    print_mobile_adjustment_summary,
+    print_raw_file_info,
+    print_report_summary,
+    print_run_header,
+    print_validation_result,
+    section,
+    status_line,
+)
 from settlement_automation.services.diagnostics import (
     DiagnosticRecord,
     write_diagnostic_record,
@@ -62,10 +73,15 @@ def main() -> int:
     account = get_supplier_account(args.supplier)
     manager = DownloadManager(settings=settings)
 
-    print(
-        f"[STEP] Fetching supplier={account.supplier_name}, "
-        f"business_date={args.business_date}"
+    print_run_header(
+        title="FETCH AND PARSE PROBE",
+        supplier=account.supplier_name,
+        portal=account.portal_name,
+        business_date=args.business_date,
     )
+
+    section("FETCH")
+    print("Starting supplier fetch...")
 
     fetch_result = fetch_reports_for_account(
         account=account,
@@ -76,26 +92,39 @@ def main() -> int:
     )
 
     if not fetch_result.succeeded:
-        print(f"[FAILED] Fetch failed: {fetch_result.error_message}")
-        print(
-            "[INFO] Check diagnostics under: "
-            f"{diagnostics_dir(settings, account.supplier_name, args.business_date)}"
+        diagnostics_path = diagnostics_dir(
+            settings=settings,
+            supplier_name=account.supplier_name,
+            business_date=args.business_date,
         )
+
+        print()
+        print("FETCH FAILED")
+        status_line("Error", fetch_result.error_message)
+        status_line("Diagnostics", diagnostics_path)
+
+        print_final_status(success=False, diagnostics_path=diagnostics_path)
         return 1
 
-    print(f"[SUCCESS] Fetch completed. stored_reports={len(fetch_result.stored_reports)}")
+    print("Fetch completed successfully.")
+    status_line("Stored Reports", len(fetch_result.stored_reports))
 
     overall_success = True
+    last_diagnostic_path = None
 
-    for stored_report in fetch_result.stored_reports:
+    for index, stored_report in enumerate(fetch_result.stored_reports, start=1):
         raw_path = stored_report.raw_path
 
-        print("\n========== RAW REPORT ==========")
-        print(f"raw_path={raw_path}")
-        print(f"hash={stored_report.file_hash}")
-        print(f"size_bytes={stored_report.size_bytes}")
+        section(f"STORED REPORT {index} OF {len(fetch_result.stored_reports)}")
 
-        print("\n[STEP] Parsing raw report through official parser pipeline...")
+        print_raw_file_info(
+            raw_path=raw_path,
+            file_hash=stored_report.file_hash,
+            size_bytes=stored_report.size_bytes,
+        )
+
+        section("PARSE")
+        print("Parsing raw report through official parser pipeline...")
 
         try:
             report = parse_report(str(raw_path))
@@ -115,14 +144,21 @@ def main() -> int:
                 },
             )
 
-            print(f"[FAILED] parse_report failed for raw_path={raw_path}")
-            print(f"[ERROR] {exc}")
-            print(f"[DIAGNOSTIC] {diagnostic_path}")
-            return 1
+            last_diagnostic_path = diagnostic_path
+            overall_success = False
 
-        print("[SUCCESS] parse_report completed.")
+            print()
+            print("PARSE FAILED")
+            status_line("Raw Path", raw_path)
+            status_line("Error", exc)
+            status_line("Diagnostic", diagnostic_path)
 
-        print("\n[STEP] Validating parsed report...")
+            continue
+
+        print("parse_report completed successfully.")
+
+        section("VALIDATE")
+        print("Validating parsed report...")
 
         try:
             validation_result = validate_report(report)
@@ -144,22 +180,24 @@ def main() -> int:
                 },
             )
 
-            print(f"[FAILED] validate_report failed for raw_path={raw_path}")
-            print(f"[ERROR] {exc}")
-            print(f"[DIAGNOSTIC] {diagnostic_path}")
-            return 1
+            last_diagnostic_path = diagnostic_path
+            overall_success = False
 
-        print("[SUCCESS] validate_report completed.")
+            print()
+            print("VALIDATION ERROR")
+            status_line("Raw Path", raw_path)
+            status_line("Error", exc)
+            status_line("Diagnostic", diagnostic_path)
 
-        print("\n========== PARSED DAILY TOTALS ==========")
-        pprint(getattr(report, "daily_totals", None))
+            continue
 
-        print("\n========== MOBILE ADJUSTMENTS ==========")
-        pprint(getattr(report, "mobile_adjustments", None))
+        print("validate_report completed successfully.")
 
-        print("\n========== VALIDATION ==========")
-        print(f"is_valid={validation_result.is_valid}")
-        pprint(validation_result.issues)
+        print_report_summary(report, raw_path=raw_path)
+        print_daily_totals(report.daily_totals)
+        print_mobile_adjustments(report.mobile_adjustments)
+        print_mobile_adjustment_summary(report.mobile_adjustments)
+        print_validation_result(validation_result)
 
         if not validation_result.is_valid:
             overall_success = False
@@ -191,18 +229,15 @@ def main() -> int:
                 settings=settings,
             )
 
-            print(f"[DIAGNOSTIC] {diagnostic_path}")
+            last_diagnostic_path = diagnostic_path
+            status_line("Validation Diagnostic", diagnostic_path)
 
-    if overall_success:
-        print("\n[SUCCESS] Fetch, parse, and validation completed successfully.")
-        return 0
-
-    print("\n[FAILED] Fetch and parse completed, but validation failed.")
-    print(
-        "[INFO] Check diagnostics under: "
-        f"{diagnostics_dir(settings, account.supplier_name, args.business_date)}"
+    print_final_status(
+        success=overall_success,
+        diagnostics_path=last_diagnostic_path,
     )
-    return 1
+
+    return 0 if overall_success else 1
 
 
 if __name__ == "__main__":
