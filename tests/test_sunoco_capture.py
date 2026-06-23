@@ -32,18 +32,23 @@ def test_validate_sunoco_json_text_accepts_valid_json():
 
     json_text = """
     {
+      "@odata.context": "https://api.portal.sunocolp.com/odata/$metadata#SettlementSummary",
+      "@odata.count": 1,
       "value": [
         {
           "settlementDate": "2026-06-17T00:00:00",
           "totalSalesAmount": 10461.02,
-          "totalDealerFeeAmount": -221.05
+          "totalDealerFeeAmount": -221.05,
+          "totalAdjustedNetAmount": 10241.15,
+          "location": {
+            "shipToNumber": "0326461100"
+          }
         }
       ]
     }
     """
 
     validate_sunoco_json_text(json_text, target)
-
 
 def test_validate_sunoco_json_text_rejects_invalid_json():
     target = get_sunoco_report_target()
@@ -75,16 +80,22 @@ def test_save_sunoco_json_text_writes_tmp_json(tmp_path):
     target = get_sunoco_report_target()
 
     json_text = """
-    {
-      "value": [
         {
-          "settlementDate": "2026-06-17T00:00:00",
-          "totalSalesAmount": 10461.02,
-          "totalDealerFeeAmount": -221.05
+          "@odata.context": "https://api.portal.sunocolp.com/odata/$metadata#SettlementSummary",
+          "@odata.count": 1,
+          "value": [
+            {
+              "settlementDate": "2026-06-17T00:00:00",
+              "totalSalesAmount": 10461.02,
+              "totalDealerFeeAmount": -221.05,
+              "totalAdjustedNetAmount": 10241.15,
+              "location": {
+                "shipToNumber": "0326461100"
+              }
+            }
+          ]
         }
-      ]
-    }
-    """
+        """
 
     tmp_path_result = save_sunoco_json_text(
         json_text=json_text,
@@ -96,5 +107,5 @@ def test_save_sunoco_json_text_writes_tmp_json(tmp_path):
     )
 
     assert tmp_path_result.exists()
-    assert tmp_path_result.suffix == ".json"
+    assert tmp_path_result.suffix == ".txt"
     assert "sunoco_settlement_2026-06-17_business_2026-06-16" in tmp_path_result.name

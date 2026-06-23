@@ -24,6 +24,9 @@ def get_dtn_portal_rule() -> PortalRule:
 def get_sunoco_portal_rule() -> PortalRule:
     return PortalRule(
         portal_name="sunoco",
-        login_url=os.getenv("SUNOCO_LOGIN_URL", ""),
-        reports_url=os.getenv("SUNOCO_REPORTS_URL", ""),
+        login_url=os.getenv("SUNOCO_LOGIN_URL", "https://portal.sunocolp.com/"),
+        reports_url=os.getenv(
+            "SUNOCO_REPORTS_URL",
+            "https://portal.sunocolp.com/financial/settlement",
+        ),
     )

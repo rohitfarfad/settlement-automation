@@ -27,7 +27,6 @@ def build_sunoco_tmp_report_path(
         f"business_{business_date.isoformat()}{target.output_extension}"
     )
 
-
 def validate_sunoco_json_text(
     json_text: str,
     target: SunocoReportTarget,
@@ -75,7 +74,7 @@ def save_sunoco_json_text(
     # Reformat JSON for stable readable raw storage.
     parsed: Any = json.loads(json_text)
     tmp_path.write_text(
-        json.dumps(parsed, indent=2, sort_keys=True),
+        json.dumps(parsed, indent=4),
         encoding="utf-8",
     )
 

@@ -16,6 +16,739 @@ data/raw/{portal}/{supplier}/YYYY/MM/DD/
 Official parser pipeline can process the stored raw file
 ```
 
+## Project Structure Additions for Sunoco Fetching
+
+The Sunoco connector is now implemented separately from the DTN connector because Sunoco uses its own portal and an authenticated API response instead of the DTN DataConnect message table.
+
+Add the following Sunoco-related files to the project structure above:
+
+```text
+config/
+├── sunoco_reports.py            # Sunoco report format and required JSON markers
+
+src/
+└── settlement_automation/
+    ├── connectors/
+    │   ├── sunoco_portal.py     # Real Sunoco connector
+    │   ├── sunoco_page.py       # Sunoco login helpers
+    │   ├── sunoco_api.py        # SettlementSummary API URL/header/pagination logic
+    │   ├── sunoco_capture.py    # Save and validate Sunoco JSON text as .txt
+    │   └── sunoco_date.py       # Portal request date helper
+    │
+    └── services/
+        └── diagnostics.py       # Shared diagnostics used by Sunoco and DTN
+
+scripts/
+├── probe_sunoco_login.py        # Sunoco login probe
+├── probe_sunoco_settlement.py   # UI/date-field settlement search probe
+└── probe_sunoco_api.py          # Working API-header replay probe
+
+tests/
+├── test_sunoco_reports.py
+├── test_sunoco_capture.py
+├── test_sunoco_date.py
+└── test_sunoco_api.py
+```
+
+Sunoco temporary captures are stored under:
+
+```text
+data/tmp/sunoco/{business_date}/
+```
+
+Sunoco raw files stored by `DownloadManager` are stored under:
+
+```text
+data/raw/sunoco/YYYY/MM/DD/
+```
+
+---
+
+## Updated Sunoco Environment Variables
+
+The `.env.example` Sunoco section should include:
+
+```env
+# Sunoco portal credentials
+SUNOCO_USERNAME=
+SUNOCO_PASSWORD=
+
+# Sunoco portal URLs
+SUNOCO_LOGIN_URL=https://portal.sunocolp.com/
+SUNOCO_REPORTS_URL=https://portal.sunocolp.com/financial/settlement
+```
+
+The local `.env` file should contain real Sunoco credentials, but `.env` must never be committed.
+
+---
+
+## Sunoco Fetch Flow
+
+Sunoco does not use DTN DataConnect. It uses a separate portal:
+
+```text
+https://portal.sunocolp.com/
+```
+
+The stable Credit Card Settlement Summary page is:
+
+```text
+https://portal.sunocolp.com/financial/settlement
+```
+
+Manual Sunoco flow:
+
+```text
+1. Open Sunoco portal login:
+   https://portal.sunocolp.com/
+
+2. Login with Sunoco credentials.
+
+3. Navigate:
+   Financial tab
+   ↓
+   Credit Card Summary submenu
+
+4. Stable settlement page opens:
+   https://portal.sunocolp.com/financial/settlement
+
+5. Select date range:
+   A/R Processed Date From = settlement date
+   To = same settlement date
+
+6. Click Search.
+
+7. Results display in a table.
+
+8. The useful parser input is the JSON response from:
+   https://api.portal.sunocolp.com/odata/SettlementSummary
+```
+
+The automated Sunoco connector does not rely on the visible table data. It uses the browser only to authenticate and capture the API authorization headers.
+
+Automated Sunoco flow:
+
+```text
+1. Open https://portal.sunocolp.com/
+2. Login with Sunoco credentials.
+3. Open https://portal.sunocolp.com/financial/settlement
+4. Let the frontend make its normal SettlementSummary API request.
+5. Capture the real request headers, including authorization.
+6. Build an exact-date SettlementSummary API URL.
+7. Replay the API request using captured auth headers.
+8. Fetch all pages of settlement data.
+9. Preserve @odata.context so parser detection works.
+10. Save valid JSON text as a .txt file.
+11. Return temp file path to DownloadManager.
+12. DownloadManager stores it under data/raw/sunoco/YYYY/MM/DD/.
+```
+
+The connector should not parse, validate, reconcile, or write Excel output.
+
+Its job is only:
+
+```text
+login → capture API auth headers → request exact settlement date → save raw JSON text → return local file path
+```
+
+---
+
+## Sunoco Date Rule
+
+Sunoco has a different date convention from CITGO and Valero.
+
+The pipeline input date is the business date.
+
+The Sunoco portal/API must be requested by settlement date.
+
+```text
+business_date = 2026-06-16
+portal settlement date = 2026-06-17
+```
+
+Fetcher responsibility:
+
+```text
+business_date + 1 day = settlement date to request from Sunoco portal/API
+```
+
+Parser responsibility:
+
+```text
+JSON settlementDate - 1 day = business date in ParsedReport
+```
+
+Important separation:
+
+```text
+The fetcher only uses business_date + 1 to request the correct portal data.
+The fetcher must not rewrite settlementDate in the JSON.
+The parser already handles settlementDate → business date conversion.
+```
+
+The helper for the fetching side is:
+
+```text
+src/settlement_automation/connectors/sunoco_date.py
+```
+
+Expected behavior:
+
+```python
+get_sunoco_portal_request_date(date(2026, 6, 16))
+# returns date(2026, 6, 17)
+```
+
+---
+
+## Sunoco API Fetch Details
+
+The Sunoco data comes from:
+
+```text
+https://api.portal.sunocolp.com/odata/SettlementSummary
+```
+
+The API request uses an OData date filter like:
+
+```text
+settlementDate ge 2026-06-17T05:00:00.000Z
+and
+settlementDate le 2026-06-18T04:59:59.999Z
+```
+
+The connector must use the authenticated frontend request headers captured from the browser session. A direct API request without those headers returns `401`.
+
+Working strategy:
+
+```text
+1. Login in browser.
+2. Open settlement page.
+3. Capture a real frontend request to SettlementSummary.
+4. Reuse its auth headers.
+5. Make exact-date SettlementSummary request.
+```
+
+The connector should fetch all pages by using:
+
+```text
+$skip
+$top
+@odata.count
+```
+
+The combined saved JSON must preserve:
+
+```text
+@odata.context
+@odata.count
+value
+```
+
+`@odata.context` is important because parser detection currently checks for `SettlementSummary`.
+
+---
+
+## Sunoco Raw File Contract
+
+Sunoco raw files should be valid JSON text saved with a `.txt` extension.
+
+Example expected raw file structure:
+
+```json
+{
+    "@odata.context": "https://api.portal.sunocolp.com/odata/$metadata#SettlementSummary(...)",
+    "@odata.count": 12,
+    "value": [
+        {
+            "settlementDate": "2026-06-17T00:00:00-05:00",
+            "totalSalesAmount": 10461.02,
+            "totalDealerFeeAmount": -221.05,
+            "totalAdjustedNetAmount": 10241.15,
+            "location": {
+                "shipToNumber": "0326461100",
+                "shipToCustomerName": "CENTRAL AVE SUNOCO"
+            }
+        }
+    ]
+}
+```
+
+The fetcher must save:
+
+```text
+valid JSON text
+```
+
+The fetcher must not save:
+
+```text
+[object Object]
+browser-rendered table text
+partial JSON
+JSON without @odata.context
+```
+
+The file extension is `.txt` because the existing parser pipeline expects raw supplier text files, but the content remains valid JSON.
+
+Expected generated temp file example:
+
+```text
+data/tmp/sunoco/2026-06-16/sunoco_settlement_2026-06-17_business_2026-06-16.txt
+```
+
+Expected stored raw file location:
+
+```text
+data/raw/sunoco/2026/06/16/
+```
+
+---
+
+## Sunoco Important Files
+
+### `config/sunoco_reports.py`
+
+Defines expected Sunoco output format and required JSON markers.
+
+Important markers:
+
+```text
+SettlementSummary
+settlementDate
+totalSalesAmount
+totalDealerFeeAmount
+totalAdjustedNetAmount
+shipToNumber
+```
+
+These markers help verify that the captured response is the correct parser-compatible Sunoco response.
+
+### `src/settlement_automation/connectors/sunoco_page.py`
+
+Contains Sunoco browser login helpers.
+
+Responsibilities:
+
+```text
+- find username/password fields
+- submit login form
+- wait until authenticated session is detected
+```
+
+### `src/settlement_automation/connectors/sunoco_api.py`
+
+Contains Sunoco SettlementSummary API helpers.
+
+Responsibilities:
+
+```text
+- identify SettlementSummary API requests
+- sanitize captured replay headers
+- build exact-date OData API URLs
+- paginate results using $skip and $top
+- preserve @odata.context
+- return combined JSON text
+```
+
+### `src/settlement_automation/connectors/sunoco_capture.py`
+
+Validates and saves Sunoco JSON text.
+
+Responsibilities:
+
+```text
+- reject empty response
+- reject invalid JSON
+- reject JSON missing required markers
+- save parser-compatible JSON text as .txt
+```
+
+### `src/settlement_automation/connectors/sunoco_date.py`
+
+Contains the portal request date helper.
+
+Responsibility:
+
+```text
+business date → settlement date requested from portal/API
+```
+
+It does not implement parser-side date conversion.
+
+### `src/settlement_automation/connectors/sunoco_portal.py`
+
+Real Sunoco connector.
+
+Responsibilities:
+
+```text
+- login to Sunoco portal
+- open settlement page
+- capture SettlementSummary auth headers
+- request exact settlement date through API
+- save raw JSON text as .txt
+- return temp file path
+```
+
+---
+
+## Sunoco Common Commands
+
+### Probe Sunoco login
+
+Use this to verify login form detection and authenticated session behavior.
+
+```bash
+HEADLESS_BROWSER=false python scripts/probe_sunoco_login.py \
+  --attempt-login \
+  --pause
+```
+
+Expected:
+
+```text
+[SUCCESS] Sunoco login appears successful.
+after_login_url=https://portal.sunocolp.com/home/messages
+```
+
+### Probe Sunoco API capture
+
+Use this to test the working Sunoco API-header replay flow.
+
+```bash
+HEADLESS_BROWSER=false python scripts/probe_sunoco_api.py \
+  --business-date 2026-06-16
+```
+
+Expected:
+
+```text
+[SUCCESS] Captured SettlementSummary API request headers.
+[SUCCESS] Captured and saved Sunoco JSON.
+tmp_path=data/tmp/sunoco/2026-06-16/sunoco_settlement_2026-06-17_business_2026-06-16.txt
+```
+
+### Inspect generated Sunoco temp file
+
+```bash
+head -n 10 data/tmp/sunoco/2026-06-16/sunoco_settlement_2026-06-17_business_2026-06-16.txt
+```
+
+Expected first fields:
+
+```json
+{
+    "@odata.context": "https://api.portal.sunocolp.com/odata/$metadata#SettlementSummary...",
+    "@odata.count": 12,
+    "value": [
+```
+
+### Run Sunoco fetch only
+
+Runs the real Sunoco connector and stores the file through `DownloadManager`.
+
+```bash
+HEADLESS_BROWSER=false python scripts/fetch_only.py \
+  --supplier sunoco \
+  --business-date 2026-06-16
+```
+
+Expected:
+
+```text
+[SUCCESS] supplier=sunoco portal=sunoco business_date=2026-06-16
+  raw_path=data/raw/sunoco/2026/06/16/...
+  hash=...
+  size_bytes=...
+```
+
+### Run Sunoco fetch and parse compatibility probe
+
+```bash
+HEADLESS_BROWSER=false python scripts/fetch_and_parse_probe.py \
+  --supplier sunoco \
+  --business-date 2026-06-16
+```
+
+Expected:
+
+```text
+[SUCCESS] Fetch completed
+[SUCCESS] parse_report completed
+[SUCCESS] validate_report completed
+```
+
+### Run readable CLI on Sunoco raw file
+
+```bash
+python src/settlement_automation/cli2.py \
+  --file "$(ls data/raw/sunoco/2026/06/16/*.txt | tail -n 1)"
+```
+
+Expected sections:
+
+```text
+REPORT SUMMARY
+DAILY TOTALS
+BACKDATED MOBILE ADJUSTMENTS
+BACKDATED MOBILE ADJUSTMENTS SUMMARY
+VALIDATION
+```
+
+---
+
+## Sunoco Diagnostics
+
+Sunoco diagnostics are written under:
+
+```text
+output/diagnostics/sunoco/{business_date}/
+```
+
+Browser artifacts are written under:
+
+```text
+output/traces/
+```
+
+Sunoco diagnostics should include:
+
+```text
+supplier_name
+portal_name
+business_date
+step_name
+message
+traceback_text
+login_url
+reports_url
+settlement_date
+captured_settlement_url
+captured_headers_found
+screenshot_path
+html_path
+trace_path
+```
+
+Sensitive headers such as `authorization`, cookies, JWTs, and CSRF tokens must not be written to diagnostics.
+
+Common Sunoco failure cases:
+
+```text
+login failed
+settlement page did not load
+SettlementSummary headers were not captured
+API returned 401
+API response was not valid JSON
+JSON was missing required parser markers
+parser could not detect SUNOCO
+```
+
+---
+
+## Sunoco Tests
+
+Run Sunoco-specific tests:
+
+```bash
+pytest tests/test_sunoco_date.py \
+       tests/test_sunoco_reports.py \
+       tests/test_sunoco_capture.py \
+       tests/test_sunoco_api.py \
+       tests/test_sunoco_parser.py
+```
+
+Useful coverage:
+
+```text
+- portal request date = business date + 1
+- Sunoco report target markers are configured
+- invalid JSON is rejected
+- missing required JSON markers are rejected
+- API URL contains correct settlementDate filter
+- replay headers preserve authorization and remove transport headers
+- pagination combines multiple API pages
+- @odata.context is preserved
+- parser detects and extracts Sunoco JSON correctly
+```
+
+---
+
+## Sunoco Working Status
+
+Confirmed working:
+
+```text
+- Sunoco credentials load from .env
+- Browser launches through Playwright
+- Sunoco login succeeds
+- Settlement page opens at https://portal.sunocolp.com/financial/settlement
+- Frontend SettlementSummary API request can be captured
+- Captured auth headers can be replayed
+- Exact settlement-date API request works
+- API response is saved as parser-compatible .txt JSON
+- @odata.context is preserved for parser detection
+- Sunoco raw file parses through parse_report()
+- Extracted Sunoco daily totals are correct
+- Sunoco validation passes
+- Sunoco connector works through fetch_only.py
+```
+
+Known Sunoco behavior:
+
+```text
+The visible search UI date fields were not reliable for automation.
+Filling From/To date inputs did not update the underlying portal search state.
+The stable solution is authenticated API replay, not UI date-field search.
+```
+
+Important Sunoco parser compatibility note:
+
+```text
+The generated raw file must include @odata.context containing SettlementSummary.
+Without SettlementSummary, parser_registry.py may fail with:
+ValueError("No matching parser found for this report")
+```
+
+---
+
+## Updated Supplier / Portal Status
+
+Current supplier setup is now:
+
+```text
+Sunoco
+  Portal: Sunoco portal
+  Login URL: https://portal.sunocolp.com/
+  Settlement URL: https://portal.sunocolp.com/financial/settlement
+  API: https://api.portal.sunocolp.com/odata/SettlementSummary
+  Status: connector implemented and verified through fetch + parse probe
+
+CITGO
+  Portal: DTN Fuel Buyer
+  DTN tab: DataConnect
+  Supplier row: Citgo Petroleum
+  Group: Credit Card
+  Document: Credit Card Memo
+  Status: connector implemented and verified through fetch + parse probe
+
+Valero
+  Portal: DTN Fuel Buyer
+  DTN tab: DataConnect
+  Supplier row: Valero R & M
+  Group: Credit Card
+  Document: Credit Card Memo
+  Status: connector implemented and verified through fetch + parse probe
+```
+
+---
+
+## Updated Next Development Steps
+
+Since the Sunoco connector is now implemented, the next development steps are:
+
+### 1. Build all-suppliers fetch-and-parse dry run
+
+Create or update a script that runs all active suppliers for one business date:
+
+```text
+sunoco
+citgo
+valero
+```
+
+The script should print:
+
+```text
+supplier
+fetch status
+raw path
+parse status
+validation status
+diagnostic path if failed
+```
+
+### 2. Implement daily orchestration
+
+Create the production-style daily command:
+
+```bash
+HEADLESS_BROWSER=true python scripts/run_daily.py \
+  --business-date 2026-06-16
+```
+
+Expected flow:
+
+```text
+fetch all suppliers
+store raw reports
+parse all raw reports
+validate all parsed reports
+export audit CSVs
+later write Excel workbook
+```
+
+### 3. Add run-state tracking
+
+Track one row per supplier/date:
+
+```text
+supplier
+portal
+business_date
+status
+raw_path
+file_hash
+started_at
+finished_at
+diagnostic_path
+```
+
+SQLite is sufficient:
+
+```text
+state/report_runs.sqlite
+```
+
+### 4. Add retry/backoff
+
+Recommended retry points:
+
+```text
+portal login
+DataConnect page load
+Sunoco settlement page load
+Sunoco API request
+DTN date selection
+DTN row click/capture
+```
+
+### 5. Add notification/report summary
+
+After daily run completes, produce a summary:
+
+```text
+successful suppliers
+failed suppliers
+validation warnings/errors
+raw paths
+audit CSV paths
+diagnostic paths
+```
+
+### 6. Implement Excel writer
+
+Excel writer should only consume normalized parser output:
+
+```python
+report.daily_totals
+summarize_mobile_adjustments(report.mobile_adjustments)
+```
+
+It should not read raw supplier files directly.
+
+
 ---
 
 ## Updated Project Structure

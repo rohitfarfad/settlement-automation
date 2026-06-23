@@ -13,12 +13,15 @@ class SunocoReportTarget:
 SUNOCO_REPORT_TARGET = SunocoReportTarget(
     supplier_name="sunoco",
     report_format="json",
-    output_extension=".json",
+    output_extension=".txt",
     portal_request_date_rule="request_settlement_date_as_business_date_plus_one",
     required_json_markers=(
+        "SettlementSummary",
         "totalSalesAmount",
         "totalDealerFeeAmount",
         "settlementDate",
+        "totalAdjustedNetAmount",
+        "shipToNumber",
     ),
 )
 
