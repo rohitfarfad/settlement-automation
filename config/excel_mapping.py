@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import date
 from enum import Enum
 from pathlib import Path
-
+from decimal import Decimal
 from config.locations import CITGO_LOCATIONS, SUNOCO_LOCATIONS, VALERO_LOCATIONS
 
 
@@ -266,3 +266,11 @@ def resolve_month_sheet_name(
             return normalized_available[normalized_candidate]
 
     return None
+
+@dataclass(frozen=True)
+class ExcelFeeValidationPolicy:
+    enabled: bool = True
+    tolerance: Decimal = Decimal("0.02")
+
+    # Later, when workbook cells are opened, validate that CC Fee cells are formulas.
+    require_formula_cell: bool = True
