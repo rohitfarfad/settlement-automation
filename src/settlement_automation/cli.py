@@ -21,6 +21,13 @@ for path in (PROJECT_ROOT, SRC_DIR):
 import argparse
 from decimal import Decimal
 
+from settlement_automation.services.reconciliation import (
+    summarize_mobile_adjustments,
+    get_mobile_adjustment_grand_total,
+    summarize_valero_pay_plus_adjustments,
+    get_valero_pay_plus_grand_total,
+)
+
 from settlement_automation.services.report_processor import parse_report
 from settlement_automation.services.validation import validate_report
 from settlement_automation.services.audit_exporter import export_audit_files
@@ -69,6 +76,68 @@ def print_report_header(report, file_path: str) -> None:
     print(f"{'Daily Totals':<18}: {len(getattr(report, 'daily_totals', []) or [])}")
     print(f"{'Mobile Adjustments':<18}: {len(getattr(report, 'mobile_adjustments', []) or [])}")
 
+def print_valero_pay_plus_adjustments(rows) -> None:
+    subsection("VALERO PAY+ ADJUSTMENTS")
+
+    if not rows:
+        print("No Valero Pay+ adjustments found.")
+        return
+
+    rows = sorted(rows, key=lambda row: (row.date, row.location_id, row.source_code or ""))
+
+    print(
+        f"{'Date':<12} "
+        f"{'Location ID':<14} "
+        f"{'Location Name':<28} "
+        f"{'Source':<8} "
+        f"{'Amount':>14}"
+    )
+    print("-" * LINE_WIDTH)
+
+    for row in rows:
+        print(
+            f"{str(row.date):<12} "
+            f"{row.location_id:<14} "
+            f"{safe_text(row.location_name, 28):<28} "
+            f"{(row.source_code or ''):<8} "
+            f"{money(row.amount):>14}"
+        )
+
+
+def print_valero_pay_plus_summary(rows) -> None:
+    subsection("VALERO PAY+ SUMMARY")
+
+    if not rows:
+        print("No Valero Pay+ summary found.")
+        return
+
+    summary_rows = summarize_valero_pay_plus_adjustments(rows)
+
+    print(
+        f"{'Date':<12} "
+        f"{'Location ID':<14} "
+        f"{'Location Name':<28} "
+        f"{'Amount':>14}"
+    )
+    print("-" * LINE_WIDTH)
+
+    for row in summary_rows:
+        print(
+            f"{str(row.date):<12} "
+            f"{row.location_id:<14} "
+            f"{safe_text(row.location_name, 28):<28} "
+            f"{money(row.amount):>14}"
+        )
+
+    total = get_valero_pay_plus_grand_total(rows)
+
+    print("-" * LINE_WIDTH)
+    print(
+        f"{'GRAND TOTAL':<12} "
+        f"{'':<14} "
+        f"{'':<28} "
+        f"{money(total):>14}"
+    )
 
 def print_exported_files(exported_files) -> None:
     subsection("EXPORTED AUDIT FILES")
@@ -129,6 +198,9 @@ def main() -> int:
     print_daily_totals(report.daily_totals)
     print_mobile_adjustments(report.mobile_adjustments)
     print_mobile_adjustment_summary(report.mobile_adjustments)
+    pay_plus_rows = getattr(report, "valero_pay_plus_adjustments", [])
+    print_valero_pay_plus_adjustments(pay_plus_rows)
+    print_valero_pay_plus_summary(pay_plus_rows)
     print_validation_result(validation_result)
 
     if args.export_csv:

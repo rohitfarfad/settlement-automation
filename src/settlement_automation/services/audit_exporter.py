@@ -5,7 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from settlement_automation.models import ParsedReport
-from settlement_automation.services.reconciliation import summarize_mobile_adjustments
+from settlement_automation.services.reconciliation import summarize_mobile_adjustments, summarize_valero_pay_plus_adjustments
 from settlement_automation.services.validation import ValidationResult
 
 
@@ -63,6 +63,8 @@ def export_audit_files(
         "daily_totals": output_path / f"{prefix}_daily_totals.csv",
         "mobile_detail": output_path / f"{prefix}_mobile_adjustments_detail.csv",
         "mobile_summary": output_path / f"{prefix}_mobile_adjustments_summary.csv",
+        "valero_pay_plus_detail": output_path / f"{prefix}_valero_pay_plus_detail.csv",
+        "valero_pay_plus_summary": output_path / f"{prefix}_valero_pay_plus_summary.csv",
         "validation": output_path / f"{prefix}_validation.csv",
     }
 
@@ -79,6 +81,17 @@ def export_audit_files(
     write_csv(
         files["mobile_summary"],
         objects_to_rows(summarize_mobile_adjustments(report.mobile_adjustments)),
+    )
+    pay_plus_rows = getattr(report, "valero_pay_plus_adjustments", [])
+
+    write_csv(
+        files["valero_pay_plus_detail"],
+        objects_to_rows(pay_plus_rows),
+    )
+
+    write_csv(
+        files["valero_pay_plus_summary"],
+        objects_to_rows(summarize_valero_pay_plus_adjustments(pay_plus_rows)),
     )
 
     write_csv(

@@ -9,6 +9,15 @@ from decimal import Decimal
 from config.locations import CITGO_LOCATIONS, SUNOCO_LOCATIONS, VALERO_LOCATIONS
 
 
+EXCEL_COLUMNS = {
+    "date": "DATE",
+    "gross": "GROSS AMT",
+    "net": "NET AMT",
+    "fee": "CC FEE",
+    "mobile": "MOBILE PAY ADDED TO GROSS/NET",
+    "valero_pay_plus": "VALERO PAY +",
+}
+
 class ExcelWriteMode(str, Enum):
     SET = "set"
     ADD = "add"
@@ -18,6 +27,7 @@ class ExcelWriteMode(str, Enum):
 class MissingTargetPolicy(str, Enum):
     WARN_AND_SKIP = "warn_and_skip"
     ERROR = "error"
+
 
 
 @dataclass(frozen=True)

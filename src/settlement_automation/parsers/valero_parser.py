@@ -1,11 +1,12 @@
 import re
 from pathlib import Path
 
-from config.supplier_rules import VALERO_MOBILE_CODES
+from config.supplier_rules import VALERO_MOBILE_CODES, VALERO_PAYPLUS_CODES
 from settlement_automation.models import (
     DailySettlementTotal,
     MobileAdjustment,
     ParsedReport,
+    ValeroPayPlusAdjustment,
 )
 from settlement_automation.utils.dates import parse_mmdd, parse_mmddyy
 from settlement_automation.utils.money import parse_money
@@ -31,27 +32,44 @@ DETAIL_RE = re.compile(
     r"([\d,]+\.\d{2}[+-])"
 )
 
+PAYPLUS_RE = re.compile(
+    r"^\s*(\d+)\s+CRND\s+([A-Z0-9]+)\s+VP\+ Fuel Offer\s+"
+    r"(\d{2})-(\d{2})\s+([\d,]+\.\d{2}[+-])\s*$"
+)
+
 
 def is_valero_mobile_code(card_code: str) -> bool:
-    """
-    Valero mobile/Valero Pay codes usually start with VP.
-
-    Existing known codes are kept in VALERO_MOBILE_CODES, and startswith("VP")
-    catches newer variants such as VPDI, VPPQ, VPVN, etc.
-    """
     return card_code in VALERO_MOBILE_CODES or card_code.startswith("VP")
 
 
-def find_valero_business_dates(lines: list[str], year: int) -> set:
+def is_valero_payplus_code(card_code: str) -> bool:
+    return card_code in VALERO_PAYPLUS_CODES
+
+
+def parse_valero_mmdd(mmdd: str, report_date):
     """
-    Find all true business dates in the report.
+    Parse Valero MMDD using the report year.
 
-    Normal reports usually have one business date.
-    Monday/weekend reports can have multiple business dates, e.g. 0612, 0613, 0614.
+    If a January report ever contains a prior December transaction,
+    this prevents accidentally assigning it to the next December.
+    """
+    txn_date = parse_mmdd(mmdd, report_date.year)
 
-    A business date is any date that has at least one non-mobile detail row.
-    Older dates that contain only VP* rows are treated as backdated mobile
-    adjustments, not daily totals.
+    if txn_date > report_date:
+        txn_date = parse_mmdd(mmdd, report_date.year - 1)
+
+    return txn_date
+
+
+def find_valero_business_dates(lines: list[str], report_date) -> set:
+    """
+    A normal Valero report usually has one business date.
+
+    Monday/weekend reports can contain multiple business dates.
+    A true business date has at least one non-mobile detail row.
+
+    Mobile-only older dates should become MobileAdjustment rows,
+    not DailySettlementTotal rows.
     """
     business_dates = set()
     all_sub_dates = set()
@@ -59,18 +77,20 @@ def find_valero_business_dates(lines: list[str], year: int) -> set:
 
     for line in lines:
         sub = SUB_DATE_RE.match(line)
+
         if sub:
-            all_sub_dates.add(parse_mmdd(sub.group(1), year))
+            all_sub_dates.add(parse_valero_mmdd(sub.group(1), report_date))
             continue
 
         detail = DETAIL_RE.match(line)
+
         if not detail:
             continue
 
         mmdd, _, card_code, _, _, _, _, _, _ = detail.groups()
 
         if mmdd:
-            current_detail_date = parse_mmdd(mmdd, year)
+            current_detail_date = parse_valero_mmdd(mmdd, report_date)
 
         if current_detail_date and not is_valero_mobile_code(card_code):
             business_dates.add(current_detail_date)
@@ -83,23 +103,25 @@ def parse_valero_report(file_path: str) -> ParsedReport:
     lines = text.splitlines()
 
     report_date_match = MSR_RE.search(text)
+
     if not report_date_match:
         raise ValueError("Could not find Valero report date from MSR/DTN line")
 
     report_date = parse_mmddyy(report_date_match.group(1))
-    year = report_date.year
-
-    business_dates = find_valero_business_dates(lines, year)
+    business_dates = find_valero_business_dates(lines, report_date)
 
     if not business_dates:
         raise ValueError("No Valero business dates found")
 
     daily_totals = []
     mobile_adjustments = []
+    valero_pay_plus_adjustments = []
 
     current_location_id = None
     current_location_name = None
     current_detail_date = None
+
+    locations_by_id = {}
 
     for line in lines:
         dealer = DEALER_RE.match(line)
@@ -108,6 +130,29 @@ def parse_valero_report(file_path: str) -> ParsedReport:
             current_location_id = dealer.group(1)
             current_location_name = dealer.group(2).strip()
             current_detail_date = None
+            locations_by_id[current_location_id] = current_location_name
+            continue
+
+        # VP+ adjustment rows are outside dealer blocks, near the end of the report.
+        payplus = PAYPLUS_RE.match(line)
+
+        if payplus:
+            location_id, source_code, month, day, amount = payplus.groups()
+
+            if is_valero_payplus_code(source_code):
+                txn_date = parse_valero_mmdd(f"{month}{day}", report_date)
+
+                valero_pay_plus_adjustments.append(
+                    ValeroPayPlusAdjustment(
+                        supplier="VALERO",
+                        location_id=str(location_id),
+                        location_name=locations_by_id.get(str(location_id), "UNKNOWN"),
+                        date=txn_date,
+                        amount=parse_money(amount),
+                        source_code=source_code,
+                    )
+                )
+
             continue
 
         if current_location_id is None:
@@ -117,7 +162,7 @@ def parse_valero_report(file_path: str) -> ParsedReport:
 
         if sub:
             mmdd, _, gross, disc, fee, net = sub.groups()
-            txn_date = parse_mmdd(mmdd, year)
+            txn_date = parse_valero_mmdd(mmdd, report_date)
 
             if txn_date in business_dates:
                 daily_totals.append(
@@ -140,7 +185,7 @@ def parse_valero_report(file_path: str) -> ParsedReport:
             mmdd, _, card_code, _, _, gross, disc, fee, net = detail.groups()
 
             if mmdd:
-                current_detail_date = parse_mmdd(mmdd, year)
+                current_detail_date = parse_valero_mmdd(mmdd, report_date)
 
             if (
                 current_detail_date
@@ -161,11 +206,17 @@ def parse_valero_report(file_path: str) -> ParsedReport:
                 )
 
     daily_totals.sort(key=lambda row: (row.date, row.location_id))
-    mobile_adjustments.sort(key=lambda row: (row.date, row.location_id, row.source_code or ""))
+    mobile_adjustments.sort(
+        key=lambda row: (row.date, row.location_id, row.source_code or "")
+    )
+    valero_pay_plus_adjustments.sort(
+        key=lambda row: (row.date, row.location_id, row.source_code or "")
+    )
 
     return ParsedReport(
         supplier="VALERO",
         report_date=report_date,
         daily_totals=daily_totals,
         mobile_adjustments=mobile_adjustments,
+        valero_pay_plus_adjustments=valero_pay_plus_adjustments,
     )

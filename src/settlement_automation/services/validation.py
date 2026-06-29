@@ -90,6 +90,24 @@ def validate_report(report: ParsedReport) -> ValidationResult:
                             f"!= net {row.net_amt}.",
                 )
             )
+    for row in getattr(report, "valero_pay_plus_adjustments", []):
+        if row.location_name == "UNKNOWN":
+            issues.append(
+                ValidationIssue(
+                    level="WARNING",
+                    message=f"Unknown location name for Valero Pay+ adjustment "
+                            f"{row.supplier} {row.location_id} {row.date}.",
+                )
+            )
+
+        if row.amount < Decimal("0.00"):
+            issues.append(
+                ValidationIssue(
+                    level="WARNING",
+                    message=f"Negative Valero Pay+ adjustment for {row.supplier} "
+                            f"{row.location_id} {row.date}: {row.amount}.",
+                )
+            )
 
     has_errors = any(issue.level == "ERROR" for issue in issues)
 

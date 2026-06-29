@@ -7,3 +7,8 @@ VALERO_MOBILE_CODES = {
     "VALP",
     "VPAY",
 }
+
+VALERO_PAYPLUS_CODES = {
+    "VALP",
+    "VPAY",
+}
