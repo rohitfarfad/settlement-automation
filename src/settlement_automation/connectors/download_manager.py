@@ -11,14 +11,6 @@ from settlement_automation.utils.files import (
     sanitize_filename_part,
 )
 from settlement_automation.utils.hashing import calculate_sha256
-import shutil
-from dataclasses import dataclass
-from datetime import date
-from pathlib import Path
-
-from config.settings import AppSettings, get_settings
-from config.supplier_accounts import SupplierAccount
-from settlement_automation.utils.files import ensure_directory, sanitize_filename_part
 
 
 @dataclass(frozen=True)
@@ -31,7 +23,6 @@ class StoredRawReport:
     file_hash: str
     size_bytes: int
 
-
     @property
     def hash_prefix(self) -> str:
         return self.file_hash[:12]
@@ -41,132 +32,105 @@ class DownloadManager:
     """
     Stores raw report files downloaded from supplier portals.
 
-    This class does not parse reports.
-    It only moves/copies files into the project's raw storage layout.
+    This class does not parse reports. It only moves/copies files into the
+    project's raw storage layout.
+
+    Current storage layout:
+        data/raw/{supplier}/YYYY/MM/{supplier}_{YYYY-MM-DD}.txt
     """
 
     def __init__(self, settings: AppSettings | None = None):
         self.settings = settings or get_settings()
 
-    def build_raw_report_dir(
-            self,
-            account: SupplierAccount,
-            business_date: date,
-    ) -> Path:
-        """
-        Store reports by supplier and month.
-
-        New format:
-            data/raw/{supplier}/YYYY/MM/
-        """
-        supplier = sanitize_filename_part(account.supplier_name)
-
-        return (
-                self.settings.raw_data_dir
-                / supplier
-                / f"{business_date.year:04d}"
-                / f"{business_date.month:02d}"
-        )
-
-
-
-    def get_raw_directory(self, account: SupplierAccount, business_date: date) -> Path:
-        year = f"{business_date.year:04d}"
-        month = f"{business_date.month:02d}"
-        day = f"{business_date.day:02d}"
-
-        portal_name = sanitize_filename_part(account.portal_name)
-        supplier_name = sanitize_filename_part(account.supplier_name)
-
-        if portal_name == "dtn":
-            return (
-                self.settings.raw_data_dir
-                / portal_name
-                / supplier_name
-                / year
-                / month
-                / day
-            )
-
-        return self.settings.raw_data_dir / supplier_name / year / month / day
-
-    def build_raw_report_filename(
+    def get_raw_directory(
         self,
         account: SupplierAccount,
         business_date: date,
+    ) -> Path:
+        supplier_name = sanitize_filename_part(account.supplier_name)
+
+        return (
+            self.settings.raw_data_dir
+            / supplier_name
+            / f"{business_date.year:04d}"
+            / f"{business_date.month:02d}"
+        )
+
+    def build_raw_filename(
+        self,
         source_path: Path,
+        account: SupplierAccount,
+        business_date: date,
+        file_hash: str | None = None,
     ) -> str:
         """
-        New final raw filename format:
+        Final stored filename format:
             {supplier}_{YYYY-MM-DD}.txt
 
-        We intentionally do not include:
-            - portal name
-            - document name
-            - row number
-            - hash suffix
+        file_hash is accepted for backward compatibility with older calls,
+        but it is intentionally not used in the filename.
         """
-        supplier = sanitize_filename_part(account.supplier_name)
-        suffix = source_path.suffix or ".txt"
+        supplier_name = sanitize_filename_part(account.supplier_name)
+        extension = Path(source_path).suffix.lower() or ".txt"
 
-        return f"{supplier}_{business_date.isoformat()}{suffix}"
-
-    def build_raw_report_path(
-            self,
-            account: SupplierAccount,
-            business_date: date,
-            source_path: Path,
-    ) -> Path:
-        raw_dir = self.build_raw_report_dir(
-            account=account,
-            business_date=business_date,
-        )
-
-        filename = self.build_raw_report_filename(
-            account=account,
-            business_date=business_date,
-            source_path=source_path,
-        )
-
-        return raw_dir / filename
+        return f"{supplier_name}_{business_date.isoformat()}{extension}"
 
     def store_raw_report(
         self,
         source_path: Path,
         account: SupplierAccount,
         business_date: date,
-        remove_source: bool = True,
+        remove_source: bool = False,
     ) -> StoredRawReport:
         """
-        Store one fetched raw report in the standardized raw folder.
+        Store a downloaded report in data/raw.
 
-        This intentionally overwrites the same supplier/date file on rerun.
-        The hash is still calculated and returned for audit/logging, but it is
-        no longer included in the filename.
+        Same supplier + same business date now maps to the same final raw path.
+        Reruns overwrite the existing file.
         """
         source_path = Path(source_path)
 
         if not source_path.exists():
-            raise FileNotFoundError(f"Source report does not exist: {source_path}")
+            raise FileNotFoundError(f"Downloaded file does not exist: {source_path}")
 
-        destination_path = self.build_raw_report_path(
+        if not source_path.is_file():
+            raise ValueError(f"Downloaded path is not a file: {source_path}")
+
+        source_hash = calculate_sha256(source_path)
+        source_size_bytes = get_file_size_bytes(source_path)
+
+        raw_directory = self.get_raw_directory(
             account=account,
             business_date=business_date,
+        )
+        ensure_directory(raw_directory)
+
+        raw_filename = self.build_raw_filename(
             source_path=source_path,
+            account=account,
+            business_date=business_date,
+            file_hash=source_hash,
         )
 
-        ensure_directory(destination_path.parent)
+        raw_path = raw_directory / raw_filename
+
+        if raw_path.exists():
+            raw_path.unlink()
 
         if remove_source:
-            shutil.move(str(source_path), str(destination_path))
+            shutil.move(str(source_path), str(raw_path))
         else:
-            shutil.copy2(str(source_path), str(destination_path))
+            shutil.copy2(source_path, raw_path)
 
-        file_hash = calculate_sha256(destination_path)
-        size_bytes = destination_path.stat().st_size
+        final_hash = calculate_sha256(raw_path)
+        final_size_bytes = get_file_size_bytes(raw_path)
 
         return StoredRawReport(
-            raw_path=destination_path,
-            file_hash=file_hash,
-            size_bytes=size_bytes,
+            supplier_name=account.supplier_name,
+            portal_name=account.portal_name,
+            business_date=business_date,
+            original_filename=source_path.name,
+            raw_path=raw_path,
+            file_hash=final_hash,
+            size_bytes=final_size_bytes or source_size_bytes,
         )
