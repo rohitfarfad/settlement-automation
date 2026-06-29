@@ -33,17 +33,12 @@ class ExcelColumnHeaders:
 class ValeroMobileAdjustmentPolicy:
     aggregate_before_write: bool = True
 
-    # Daily total values are treated as the base values.
+    # Daily total values are treated as base values.
     gross_behavior: ExcelWriteMode = ExcelWriteMode.SET
     net_behavior: ExcelWriteMode = ExcelWriteMode.SET
 
-    # For now, keep fee simple/configurable.
-    # Later, we can change this to SET or ADD if the workbook convention requires it.
-    fee_behavior: ExcelWriteMode = ExcelWriteMode.SET
-
-    # The mobile column should receive the summarized mobile net amount.
+    # Do not write CC Fee. Excel formula handles it.
     mobile_column_value: str = "net_amt"
-
 
 @dataclass(frozen=True)
 class ExcelWriterPolicy:
@@ -59,17 +54,22 @@ class ExcelWriterPolicy:
     # For safety: do not blindly overwrite formulas unless explicitly allowed later.
     overwrite_formulas: bool = False
 
+@dataclass(frozen=True)
+class ExcelFeeValidationPolicy:
+    enabled: bool = True
+    tolerance: Decimal = Decimal("0.02")
+
+    # Later, when workbook cells are opened, validate that CC Fee cells are formulas.
+    require_formula_cell: bool = True
 
 @dataclass(frozen=True)
 class ExcelMapping:
     columns: ExcelColumnHeaders = ExcelColumnHeaders()
     valero_mobile_policy: ValeroMobileAdjustmentPolicy = ValeroMobileAdjustmentPolicy()
+    fee_validation_policy: ExcelFeeValidationPolicy = ExcelFeeValidationPolicy()
     writer_policy: ExcelWriterPolicy = ExcelWriterPolicy()
 
     header_scan_max_rows: int = 10
-
-    # Files are expected like:
-    # 2026 CC MONTECELLO VALERO.xlsx
     workbook_extension: str = ".xlsx"
 
 
@@ -267,10 +267,3 @@ def resolve_month_sheet_name(
 
     return None
 
-@dataclass(frozen=True)
-class ExcelFeeValidationPolicy:
-    enabled: bool = True
-    tolerance: Decimal = Decimal("0.02")
-
-    # Later, when workbook cells are opened, validate that CC Fee cells are formulas.
-    require_formula_cell: bool = True

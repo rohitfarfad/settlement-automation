@@ -22,7 +22,7 @@ VALERO_LOCATIONS = {
     "26740": "Montgomery Valero",
     "30371": "Walker Valero",
     "30408": "Cornell St Valero",
-    "30525": "Valero Central Ave",
+    "30525": "Central Ave Valero",
     "30530": "CHAMPLAIN VALERO",
     "32966": "Fort Ann Valero",
     "45371": "Slate Hill Valero",
