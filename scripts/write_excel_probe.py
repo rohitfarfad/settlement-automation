@@ -32,12 +32,31 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Folder where updated workbook copies will be written later.",
     )
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="Actually write copied workbooks under output root. Originals are untouched.",
+    )
+    parser.add_argument(
+        "--write-originals",
+        action="store_true",
+        help="Write directly into workbooks under workbook-root. Use only with dummy/test workbooks first.",
+    )
+    parser.add_argument(
+        "--no-backup-originals",
+        action="store_true",
+        help="Do not create backups before writing original workbooks.",
+    )
+
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
     settings = get_settings()
+    if args.write_originals and not args.write:
+        print("[FAILED] --write-originals requires --write.")
+        return 1
 
     workbook_root = args.workbook_root or settings.excel_workbook_root
     output_root = args.output_root or settings.excel_output_dir
@@ -63,11 +82,13 @@ def main() -> int:
         return 1
 
     print("\n[STEP] Building Excel write preview...")
-    write_parsed_report_to_excel(
+    result = write_parsed_report_to_excel(
         report=report,
         workbook_root=workbook_root,
         output_root=output_root,
-        dry_run=True,
+        dry_run=not args.write,
+        write_originals=args.write_originals,
+        backup_originals=not args.no_backup_originals,
     )
 
     print("\n[SUCCESS] Excel write preview completed.")

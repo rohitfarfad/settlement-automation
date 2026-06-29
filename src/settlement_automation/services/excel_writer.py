@@ -77,13 +77,13 @@ class ExcelWritePlan:
 @dataclass
 class ExcelWriteResult:
     dry_run: bool
+    write_originals: bool
     plan: ExcelWritePlan
     resolution: ExcelPlanResolution | None = None
     apply_result: ExcelApplyResult | None = None
     written_count: int = 0
     skipped_count: int = 0
     warnings: list[str] = field(default_factory=list)
-
 
 @dataclass(frozen=True)
 class ExcelResolvedValue:
@@ -425,6 +425,510 @@ def _append_valero_mobile_summary_values(
         ]
     )
 
+def _to_excel_number(value: Decimal) -> float:
+    return float(value.quantize(Decimal("0.01")))
+
+
+def _coerce_decimal(value: Any) -> Decimal | None:
+    if value is None:
+        return None
+
+    if isinstance(value, Decimal):
+        return value
+
+    if isinstance(value, int | float):
+        return Decimal(str(value))
+
+    if isinstance(value, str):
+        text = value.strip()
+
+        if text.startswith("="):
+            return None
+
+        text = text.replace(",", "").replace("$", "")
+
+        if text == "":
+            return None
+
+        try:
+            return Decimal(text)
+        except Exception:
+            return None
+
+    return None
+
+
+def _is_effectively_zero(value: Decimal | None) -> bool:
+    return value is None or abs(value) <= Decimal("0.005")
+
+
+def _decimal_equal(a: Decimal | None, b: Decimal, tolerance: Decimal = Decimal("0.01")) -> bool:
+    if a is None:
+        return False
+    return abs(a - b) <= tolerance
+
+
+def _format_change_value(value: object) -> object:
+    if isinstance(value, Decimal):
+        return _to_excel_number(value)
+    return value
+
+def _get_output_workbook_path(
+    *,
+    original_workbook_path: Path,
+    output_root: Path,
+    report_date: date,
+) -> Path:
+    return output_root / report_date.isoformat() / original_workbook_path.name
+
+
+def _copy_workbooks_to_output(
+    *,
+    workbook_paths: set[Path],
+    output_root: Path,
+    report_date: date,
+    overwrite: bool = True,
+) -> dict[Path, Path]:
+    output_paths: dict[Path, Path] = {}
+
+    for workbook_path in workbook_paths:
+        output_path = _get_output_workbook_path(
+            original_workbook_path=workbook_path,
+            output_root=output_root,
+            report_date=report_date,
+        )
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if output_path.exists() and not overwrite:
+            output_paths[workbook_path] = output_path
+            continue
+
+        copy2(workbook_path, output_path)
+        output_paths[workbook_path] = output_path
+
+    return output_paths
+
+
+def _apply_set_value(
+    *,
+    ws,
+    resolved: ExcelResolvedValue,
+    output_path: Path,
+    warnings: list[str],
+) -> ExcelAppliedChange:
+    planned = resolved.planned_value
+    target = planned.target
+
+    cell = ws[resolved.cell_ref]
+    old_value = cell.value
+
+    if _is_formula_value(old_value) and not EXCEL_MAPPING.writer_policy.overwrite_formulas:
+        warning = (
+            f"Skipped formula cell write: workbook={output_path.name}, "
+            f"sheet={resolved.sheet_name}, cell={resolved.cell_ref}, "
+            f"field={planned.field_name}, value={old_value!r}"
+        )
+        warnings.append(warning)
+
+        return ExcelAppliedChange(
+            supplier=target.supplier,
+            location_id=target.location_id,
+            location_name=target.location_name,
+            business_date=target.business_date,
+            workbook_path=resolved.workbook_path,
+            output_path=output_path,
+            sheet_name=resolved.sheet_name,
+            cell_ref=resolved.cell_ref,
+            field_name=planned.field_name,
+            column_header=planned.column_header,
+            source=planned.source,
+            mode=planned.mode,
+            old_value=old_value,
+            new_value=old_value,
+            status="skipped_formula",
+        )
+
+    new_value = _to_excel_number(planned.value)
+    cell.value = new_value
+
+    return ExcelAppliedChange(
+        supplier=target.supplier,
+        location_id=target.location_id,
+        location_name=target.location_name,
+        business_date=target.business_date,
+        workbook_path=resolved.workbook_path,
+        output_path=output_path,
+        sheet_name=resolved.sheet_name,
+        cell_ref=resolved.cell_ref,
+        field_name=planned.field_name,
+        column_header=planned.column_header,
+        source=planned.source,
+        mode=planned.mode,
+        old_value=old_value,
+        new_value=new_value,
+        status="written",
+    )
+
+def _mobile_group_key(resolved: ExcelResolvedValue) -> tuple[Path, str, int, str, str, date]:
+    planned = resolved.planned_value
+    target = planned.target
+
+    return (
+        resolved.workbook_path,
+        resolved.sheet_name,
+        resolved.row_number,
+        target.supplier,
+        target.location_id,
+        target.business_date,
+    )
+
+
+def _apply_mobile_adjustment_group(
+    *,
+    wb,
+    output_path: Path,
+    group_values: list[ExcelResolvedValue],
+    warnings: list[str],
+) -> list[ExcelAppliedChange]:
+    changes: list[ExcelAppliedChange] = []
+
+    by_field = {
+        resolved.planned_value.field_name: resolved
+        for resolved in group_values
+    }
+
+    gross_resolved = by_field.get("gross_amt")
+    net_resolved = by_field.get("net_amt")
+    mobile_resolved = by_field.get("mobile_pay_added_to_gross_net")
+
+    if gross_resolved is None or net_resolved is None or mobile_resolved is None:
+        warning = (
+            f"Incomplete mobile adjustment group in workbook={output_path.name}: "
+            f"fields={sorted(by_field)}"
+        )
+        warnings.append(warning)
+        return changes
+
+    ws = wb[gross_resolved.sheet_name]
+
+    gross_cell = ws[gross_resolved.cell_ref]
+    net_cell = ws[net_resolved.cell_ref]
+    mobile_cell = ws[mobile_resolved.cell_ref]
+
+    gross_old = gross_cell.value
+    net_old = net_cell.value
+    mobile_old = mobile_cell.value
+
+    existing_mobile_net = _coerce_decimal(mobile_old)
+    planned_mobile_gross = gross_resolved.planned_value.value
+    planned_mobile_net = net_resolved.planned_value.value
+
+    target = gross_resolved.planned_value.target
+
+    already_applied = _decimal_equal(existing_mobile_net, planned_mobile_net)
+    has_different_existing_mobile = (
+        existing_mobile_net is not None
+        and not _is_effectively_zero(existing_mobile_net)
+        and not already_applied
+    )
+
+    if already_applied:
+        # Make the mobile column deterministic, but do not add again.
+        mobile_cell.value = _to_excel_number(planned_mobile_net)
+
+        for resolved in [gross_resolved, net_resolved, mobile_resolved]:
+            planned = resolved.planned_value
+            cell = ws[resolved.cell_ref]
+            changes.append(
+                ExcelAppliedChange(
+                    supplier=target.supplier,
+                    location_id=target.location_id,
+                    location_name=target.location_name,
+                    business_date=target.business_date,
+                    workbook_path=resolved.workbook_path,
+                    output_path=output_path,
+                    sheet_name=resolved.sheet_name,
+                    cell_ref=resolved.cell_ref,
+                    field_name=planned.field_name,
+                    column_header=planned.column_header,
+                    source=planned.source,
+                    mode=planned.mode,
+                    old_value=cell.value,
+                    new_value=cell.value,
+                    status="skipped_already_applied",
+                )
+            )
+
+        return changes
+
+    if has_different_existing_mobile:
+        warning = (
+            f"Existing mobile value differs from planned value. "
+            f"Skipping mobile add to avoid double-counting/corruption: "
+            f"workbook={output_path.name}, sheet={gross_resolved.sheet_name}, "
+            f"date={target.business_date}, location={target.location_id}, "
+            f"existing_mobile={existing_mobile_net}, planned_mobile_net={planned_mobile_net}"
+        )
+        warnings.append(warning)
+
+        for resolved in [gross_resolved, net_resolved, mobile_resolved]:
+            planned = resolved.planned_value
+            cell = ws[resolved.cell_ref]
+            changes.append(
+                ExcelAppliedChange(
+                    supplier=target.supplier,
+                    location_id=target.location_id,
+                    location_name=target.location_name,
+                    business_date=target.business_date,
+                    workbook_path=resolved.workbook_path,
+                    output_path=output_path,
+                    sheet_name=resolved.sheet_name,
+                    cell_ref=resolved.cell_ref,
+                    field_name=planned.field_name,
+                    column_header=planned.column_header,
+                    source=planned.source,
+                    mode=planned.mode,
+                    old_value=cell.value,
+                    new_value=cell.value,
+                    status="skipped_existing_mobile_mismatch",
+                )
+            )
+
+        return changes
+
+    gross_existing = _coerce_decimal(gross_old)
+    net_existing = _coerce_decimal(net_old)
+
+    if gross_existing is None or net_existing is None:
+        warning = (
+            f"Cannot apply mobile adjustment because Gross/NET cell is not numeric: "
+            f"workbook={output_path.name}, sheet={gross_resolved.sheet_name}, "
+            f"date={target.business_date}, location={target.location_id}, "
+            f"gross={gross_old!r}, net={net_old!r}"
+        )
+        warnings.append(warning)
+        return changes
+
+    if _is_formula_value(gross_old) or _is_formula_value(net_old):
+        warning = (
+            f"Cannot apply mobile adjustment over formula Gross/NET cells: "
+            f"workbook={output_path.name}, sheet={gross_resolved.sheet_name}, "
+            f"date={target.business_date}, location={target.location_id}, "
+            f"gross={gross_old!r}, net={net_old!r}"
+        )
+        warnings.append(warning)
+        return changes
+
+    gross_new = _to_excel_number(gross_existing + planned_mobile_gross)
+    net_new = _to_excel_number(net_existing + planned_mobile_net)
+    mobile_new = _to_excel_number(planned_mobile_net)
+
+    gross_cell.value = gross_new
+    net_cell.value = net_new
+    mobile_cell.value = mobile_new
+
+    for resolved, old_value, new_value in [
+        (gross_resolved, gross_old, gross_new),
+        (net_resolved, net_old, net_new),
+        (mobile_resolved, mobile_old, mobile_new),
+    ]:
+        planned = resolved.planned_value
+        changes.append(
+            ExcelAppliedChange(
+                supplier=target.supplier,
+                location_id=target.location_id,
+                location_name=target.location_name,
+                business_date=target.business_date,
+                workbook_path=resolved.workbook_path,
+                output_path=output_path,
+                sheet_name=resolved.sheet_name,
+                cell_ref=resolved.cell_ref,
+                field_name=planned.field_name,
+                column_header=planned.column_header,
+                source=planned.source,
+                mode=planned.mode,
+                old_value=old_value,
+                new_value=new_value,
+                status="written",
+            )
+        )
+
+    return changes
+
+def apply_excel_write_plan(
+    *,
+    plan: ExcelWritePlan,
+    resolution: ExcelPlanResolution,
+    output_root: Path,
+    dry_run: bool,
+    write_originals: bool = False,
+    backup_originals: bool = True,
+) -> ExcelApplyResult:
+    apply_result = ExcelApplyResult()
+
+    if resolution.warnings:
+        apply_result.warnings.extend(
+            "Resolution warning before apply: " + warning
+            for warning in resolution.warnings
+        )
+
+    if dry_run:
+        return apply_result
+
+    resolved_workbooks = {
+        resolved.workbook_path
+        for resolved in resolution.resolved_values
+    }
+
+    output_paths = _prepare_workbook_targets(
+        workbook_paths=resolved_workbooks,
+        output_root=output_root,
+        report_date=plan.report_date,
+        write_originals=write_originals,
+        backup_originals=backup_originals,
+        overwrite_output_copies=True,
+    )
+
+    resolved_by_output_workbook: dict[Path, list[ExcelResolvedValue]] = defaultdict(list)
+
+    for resolved in resolution.resolved_values:
+        output_path = output_paths[resolved.workbook_path]
+        resolved_by_output_workbook[output_path].append(resolved)
+
+    for output_path, workbook_values in resolved_by_output_workbook.items():
+        try:
+            wb = load_workbook(output_path, data_only=False)
+        except Exception as exc:
+            apply_result.warnings.append(
+                f"Could not open output workbook={output_path}. Error: {exc}"
+            )
+            continue
+
+        simple_set_values: list[ExcelResolvedValue] = []
+        mobile_values_by_group: dict[
+            tuple[Path, str, int, str, str, date],
+            list[ExcelResolvedValue],
+        ] = defaultdict(list)
+
+        for resolved in workbook_values:
+            planned = resolved.planned_value
+
+            if planned.source == "mobile_adjustment_summary":
+                mobile_values_by_group[_mobile_group_key(resolved)].append(resolved)
+            else:
+                simple_set_values.append(resolved)
+
+        for resolved in simple_set_values:
+            ws = wb[resolved.sheet_name]
+            change = _apply_set_value(
+                ws=ws,
+                resolved=resolved,
+                output_path=output_path,
+                warnings=apply_result.warnings,
+            )
+            apply_result.changes.append(change)
+
+        for group_values in mobile_values_by_group.values():
+            changes = _apply_mobile_adjustment_group(
+                wb=wb,
+                output_path=output_path,
+                group_values=group_values,
+                warnings=apply_result.warnings,
+            )
+            apply_result.changes.extend(changes)
+
+        wb.save(output_path)
+
+    return apply_result
+
+
+def preview_excel_apply_result(apply_result: ExcelApplyResult) -> None:
+    print("\n========== EXCEL APPLY RESULT ==========")
+    print(f"written_count={apply_result.written_count}")
+    print(f"skipped_count={apply_result.skipped_count}")
+    print(f"warnings={len(apply_result.warnings)}")
+
+    print("\n========== APPLIED CELL CHANGES ==========")
+    for change in apply_result.changes:
+        print(
+            f"{change.status}: {change.supplier} | {change.location_id} | "
+            f"{change.location_name} | {change.business_date} | "
+            f"{change.output_path.name} | {change.sheet_name}!{change.cell_ref} | "
+            f"{change.column_header} | {change.source} | {change.mode} | "
+            f"{change.old_value!r} -> {change.new_value!r}"
+        )
+
+    if apply_result.warnings:
+        print("\n========== EXCEL APPLY WARNINGS ==========")
+        for warning in apply_result.warnings:
+            print(f"WARNING: {warning}")
+
+def _get_backup_workbook_path(
+    *,
+    original_workbook_path: Path,
+    output_root: Path,
+    report_date: date,
+) -> Path:
+    return (
+        output_root
+        / "_backups"
+        / report_date.isoformat()
+        / original_workbook_path.name
+    )
+
+
+def _prepare_workbook_targets(
+    *,
+    workbook_paths: set[Path],
+    output_root: Path,
+    report_date: date,
+    write_originals: bool,
+    backup_originals: bool,
+    overwrite_output_copies: bool = True,
+) -> dict[Path, Path]:
+    """
+    Returns:
+        original workbook path -> workbook path that should be edited
+
+    Copy mode:
+        data/workbooks/A.xlsx -> output/excel/<date>/A.xlsx
+
+    Original mode:
+        data/workbooks/A.xlsx -> data/workbooks/A.xlsx
+        optionally creates backup under output/excel/_backups/<date>/A.xlsx
+    """
+    target_paths: dict[Path, Path] = {}
+
+    for workbook_path in workbook_paths:
+        if write_originals:
+            if backup_originals:
+                backup_path = _get_backup_workbook_path(
+                    original_workbook_path=workbook_path,
+                    output_root=output_root,
+                    report_date=report_date,
+                )
+                backup_path.parent.mkdir(parents=True, exist_ok=True)
+
+                if not backup_path.exists():
+                    copy2(workbook_path, backup_path)
+
+            target_paths[workbook_path] = workbook_path
+            continue
+
+        output_path = _get_output_workbook_path(
+            original_workbook_path=workbook_path,
+            output_root=output_root,
+            report_date=report_date,
+        )
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if overwrite_output_copies or not output_path.exists():
+            copy2(workbook_path, output_path)
+
+        target_paths[workbook_path] = output_path
+
+    return target_paths
 
 def build_excel_write_plan(
     *,
@@ -516,6 +1020,8 @@ def write_parsed_report_to_excel(
     workbook_root: Path,
     output_root: Path,
     dry_run: bool = True,
+    write_originals: bool = False,
+    backup_originals: bool = True,
 ) -> ExcelWriteResult:
     plan = build_excel_write_plan(
         report=report,
@@ -527,13 +1033,38 @@ def write_parsed_report_to_excel(
     resolution = resolve_excel_write_plan_targets(plan)
     preview_excel_resolution(resolution)
 
+    if resolution.warnings:
+        print(
+            "\n[WARNING] Resolution produced warnings. "
+            "Continuing only if dry_run=True; write mode will still copy files "
+            "but may skip unsafe cells."
+        )
+
+    apply_result = apply_excel_write_plan(
+        plan=plan,
+        resolution=resolution,
+        output_root=output_root,
+        dry_run=dry_run,
+        write_originals=write_originals,
+        backup_originals=backup_originals,
+    )
+    preview_excel_apply_result(apply_result)
+
     return ExcelWriteResult(
         dry_run=dry_run,
+        write_originals=write_originals,
         plan=plan,
-        written_count=0,
-        skipped_count=len(resolution.warnings),
-        warnings=plan.warnings.copy() + resolution.warnings.copy(),
+        resolution=resolution,
+        apply_result=apply_result,
+        written_count=apply_result.written_count,
+        skipped_count=apply_result.skipped_count,
+        warnings=(
+                plan.warnings.copy()
+                + resolution.warnings.copy()
+                + apply_result.warnings.copy()
+        ),
     )
+
 
 def _validate_fee_math(
     *,
