@@ -1,7 +1,8 @@
 import re
+from collections import defaultdict
 from pathlib import Path
 
-from config.supplier_rules import VALERO_MOBILE_CODES, VALERO_PAYPLUS_CODES
+from config.supplier_rules import VALERO_MOBILE_CODES
 from settlement_automation.models import (
     DailySettlementTotal,
     MobileAdjustment,
@@ -43,14 +44,16 @@ def is_valero_mobile_code(card_code: str) -> bool:
 
 
 def is_valero_payplus_code(card_code: str) -> bool:
-    return card_code in VALERO_PAYPLUS_CODES
+    # The regex already guarantees this is a "VP+ Fuel Offer" row.
+    # Do not restrict to VALP/VPAY only, because some valid rows use VISA.
+    return True
 
 
 def parse_valero_mmdd(mmdd: str, report_date):
     """
     Parse Valero MMDD using the report year.
 
-    If a January report ever contains a prior December transaction,
+    If a January report contains a prior December transaction,
     this prevents accidentally assigning it to the next December.
     """
     txn_date = parse_mmdd(mmdd, report_date.year)
@@ -61,25 +64,42 @@ def parse_valero_mmdd(mmdd: str, report_date):
     return txn_date
 
 
-def find_valero_business_dates(lines: list[str], report_date) -> set:
+def find_valero_business_dates_by_location(
+    lines: list[str],
+    report_date,
+) -> dict[str, set]:
     """
-    A normal Valero report usually has one business date.
+    Find true business dates per dealer/location.
 
-    Monday/weekend reports can contain multiple business dates.
-    A true business date has at least one non-mobile detail row.
+    A date is a business date for a specific location only if that same
+    dealer block has at least one non-mobile detail row for that date.
 
-    Mobile-only older dates should become MobileAdjustment rows,
-    not DailySettlementTotal rows.
+    This prevents mobile-only prior-day rows from being treated as daily totals
+    just because another location has real business activity on that date.
     """
-    business_dates = set()
-    all_sub_dates = set()
+    business_dates_by_location = defaultdict(set)
+    all_sub_dates_by_location = defaultdict(set)
+
+    current_location_id = None
     current_detail_date = None
 
     for line in lines:
+        dealer = DEALER_RE.match(line)
+
+        if dealer:
+            current_location_id = dealer.group(1)
+            current_detail_date = None
+            continue
+
+        if current_location_id is None:
+            continue
+
         sub = SUB_DATE_RE.match(line)
 
         if sub:
-            all_sub_dates.add(parse_valero_mmdd(sub.group(1), report_date))
+            all_sub_dates_by_location[current_location_id].add(
+                parse_valero_mmdd(sub.group(1), report_date)
+            )
             continue
 
         detail = DETAIL_RE.match(line)
@@ -93,9 +113,15 @@ def find_valero_business_dates(lines: list[str], report_date) -> set:
             current_detail_date = parse_valero_mmdd(mmdd, report_date)
 
         if current_detail_date and not is_valero_mobile_code(card_code):
-            business_dates.add(current_detail_date)
+            business_dates_by_location[current_location_id].add(current_detail_date)
 
-    return business_dates or all_sub_dates
+    # Fallback per location: if a location has SUB rows but no detail rows matched,
+    # preserve old behavior for that location only.
+    for location_id, sub_dates in all_sub_dates_by_location.items():
+        if location_id not in business_dates_by_location:
+            business_dates_by_location[location_id] = sub_dates
+
+    return dict(business_dates_by_location)
 
 
 def parse_valero_report(file_path: str) -> ParsedReport:
@@ -108,9 +134,13 @@ def parse_valero_report(file_path: str) -> ParsedReport:
         raise ValueError("Could not find Valero report date from MSR/DTN line")
 
     report_date = parse_mmddyy(report_date_match.group(1))
-    business_dates = find_valero_business_dates(lines, report_date)
 
-    if not business_dates:
+    business_dates_by_location = find_valero_business_dates_by_location(
+        lines,
+        report_date,
+    )
+
+    if not business_dates_by_location:
         raise ValueError("No Valero business dates found")
 
     daily_totals = []
@@ -158,13 +188,18 @@ def parse_valero_report(file_path: str) -> ParsedReport:
         if current_location_id is None:
             continue
 
+        location_business_dates = business_dates_by_location.get(
+            str(current_location_id),
+            set(),
+        )
+
         sub = SUB_DATE_RE.match(line)
 
         if sub:
             mmdd, _, gross, disc, fee, net = sub.groups()
             txn_date = parse_valero_mmdd(mmdd, report_date)
 
-            if txn_date in business_dates:
+            if txn_date in location_business_dates:
                 daily_totals.append(
                     DailySettlementTotal(
                         supplier="VALERO",
@@ -189,7 +224,7 @@ def parse_valero_report(file_path: str) -> ParsedReport:
 
             if (
                 current_detail_date
-                and current_detail_date not in business_dates
+                and current_detail_date not in location_business_dates
                 and is_valero_mobile_code(card_code)
             ):
                 mobile_adjustments.append(
