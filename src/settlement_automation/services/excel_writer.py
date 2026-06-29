@@ -20,9 +20,17 @@ from config.excel_mapping import (
     resolve_month_sheet_name,
     normalize_excel_text
 )
-from settlement_automation.models import DailySettlementTotal, MobileAdjustment, ParsedReport
-from settlement_automation.services.reconciliation import summarize_mobile_adjustments
+from settlement_automation.services.reconciliation import (
+    summarize_mobile_adjustments,
+    summarize_valero_pay_plus_adjustments,
+)
 
+from settlement_automation.models import (
+    DailySettlementTotal,
+    MobileAdjustment,
+    ParsedReport,
+    ValeroPayPlusAdjustment,
+)
 
 @dataclass(frozen=True)
 class ExcelFeeValidation:
@@ -423,6 +431,33 @@ def _append_valero_mobile_summary_values(
                 mode="set",
             ),
         ]
+    )
+
+def _append_valero_pay_plus_values(
+    *,
+    plan: ExcelWritePlan,
+    workbook_root: Path,
+    row: ValeroPayPlusAdjustment,
+) -> None:
+    columns = EXCEL_MAPPING.columns
+
+    target = _build_target_without_opening_workbook(
+        workbook_root=workbook_root,
+        supplier=row.supplier,
+        location_id=row.location_id,
+        location_name=row.location_name,
+        business_date=row.date,
+    )
+
+    plan.planned_values.append(
+        ExcelPlannedValue(
+            target=target,
+            field_name="valero_pay_plus",
+            column_header=columns.valero_pay_plus,
+            value=row.amount,
+            source="valero_pay_plus_summary",
+            mode="set",
+        )
     )
 
 def _to_excel_number(value: Decimal) -> float:
@@ -958,11 +993,32 @@ def build_excel_write_plan(
                 workbook_root=workbook_root,
                 row=row,
             )
-    elif report.mobile_adjustments:
-        plan.warnings.append(
-            f"Ignoring {len(report.mobile_adjustments)} mobile adjustment rows "
-            f"for non-Valero supplier={supplier}."
+
+        valero_pay_plus_rows = getattr(report, "valero_pay_plus_adjustments", [])
+        valero_pay_plus_summary_rows = summarize_valero_pay_plus_adjustments(
+            valero_pay_plus_rows
         )
+
+        for row in valero_pay_plus_summary_rows:
+            _append_valero_pay_plus_values(
+                plan=plan,
+                workbook_root=workbook_root,
+                row=row,
+            )
+    else:
+        if report.mobile_adjustments:
+            plan.warnings.append(
+                f"Ignoring {len(report.mobile_adjustments)} mobile adjustment rows "
+                f"for non-Valero supplier={supplier}."
+            )
+
+        valero_pay_plus_rows = getattr(report, "valero_pay_plus_adjustments", [])
+
+        if valero_pay_plus_rows:
+            plan.warnings.append(
+                f"Ignoring {len(valero_pay_plus_rows)} Valero Pay+ rows "
+                f"for non-Valero supplier={supplier}."
+            )
 
     return plan
 

@@ -30,7 +30,7 @@ from settlement_automation.connectors.dtn_page import (
     login_to_dtn,
     open_dataconnect_direct,
     select_dataconnect_date,
-    wait_for_dataconnect_rows,
+    wait_for_dataconnect_message_list_loaded,
 )
 from settlement_automation.exceptions import PortalDownloadError
 from settlement_automation.ingestion.fetch_reports import FetchResult
@@ -48,6 +48,11 @@ def capture_one_dtn_supplier_report_from_open_session(
     Capture one supplier's DTN report using an already-authenticated DTN session.
 
     This function does not login. Caller owns the browser session.
+
+    Important:
+    We wait only for the message list to load, not for the specific target row.
+    This makes missing reports fail fast, which is important for date ranges
+    where weekends may not have CITGO/Valero reports.
     """
     portal_rule = get_dtn_portal_rule()
     target = get_dtn_report_target(account.supplier_name)
@@ -62,10 +67,9 @@ def capture_one_dtn_supplier_report_from_open_session(
         business_date=business_date,
     )
 
-    wait_for_dataconnect_rows(
+    wait_for_dataconnect_message_list_loaded(
         page=page,
-        target=target,
-        timeout_seconds=60,
+        timeout_seconds=15,
     )
 
     rows = find_matching_report_rows_by_text(page, target)
@@ -79,8 +83,8 @@ def capture_one_dtn_supplier_report_from_open_session(
     last_captured_preview = ""
 
     for row_index in range(1, len(rows) + 1):
-        # Clicking a report opens it in the same page, so always reopen
-        # DataConnect before each candidate row attempt.
+        # Clicking a report opens it in the same page, so reopen DataConnect
+        # before each candidate row attempt.
         open_dataconnect_direct(
             page=page,
             dataconnect_url=portal_rule.dataconnect_url,
@@ -91,10 +95,9 @@ def capture_one_dtn_supplier_report_from_open_session(
             business_date=business_date,
         )
 
-        wait_for_dataconnect_rows(
+        wait_for_dataconnect_message_list_loaded(
             page=page,
-            target=target,
-            timeout_seconds=60,
+            timeout_seconds=15,
         )
 
         fresh_rows = find_matching_report_rows_by_text(page, target)
@@ -131,7 +134,6 @@ def capture_one_dtn_supplier_report_from_open_session(
         f"supplier={account.supplier_name}, business_date={business_date}. "
         f"Last captured preview: {last_captured_preview!r}"
     )
-
 
 def make_failed_fetch_result(
     *,

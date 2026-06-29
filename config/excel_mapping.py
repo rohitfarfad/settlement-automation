@@ -37,7 +37,7 @@ class ExcelColumnHeaders:
     net_amt: str = "NET AMT"
     fees: str = "CC Fee"
     mobile_pay: str = "MOBILE PAY ADDED TO GROSS/NET"
-
+    valero_pay_plus: str = "VALERO PAY +"
 
 @dataclass(frozen=True)
 class ValeroMobileAdjustmentPolicy:

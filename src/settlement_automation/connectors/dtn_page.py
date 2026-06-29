@@ -249,6 +249,67 @@ def wait_for_dataconnect_rows(
         f"Target={target.report_name if target else 'unknown'}"
     )
 
+
+
+def wait_for_dataconnect_message_list_loaded(
+    page,
+    timeout_seconds: int = 15,
+) -> None:
+    """
+    Wait until the DTN DataConnect message list has finished loading.
+
+    This intentionally does NOT wait for a target supplier/report row.
+    It only waits until the table/list is ready enough to inspect.
+
+    This is useful for date-range downloads where reports may be missing
+    on weekends or older dates.
+    """
+    deadline = time.time() + timeout_seconds
+    last_body_preview = ""
+
+    while time.time() < deadline:
+        try:
+            body_text = page.locator("body").inner_text(timeout=3000)
+        except Exception:
+            body_text = ""
+
+        normalized = " ".join(body_text.split())
+        last_body_preview = normalized[:1000]
+
+        loading_finished = "Loading..." not in body_text
+
+        has_table_header = (
+            "Supplier" in body_text
+            and "Received Date" in body_text
+            and "Document" in body_text
+        )
+
+        has_datatables_footer = (
+            "Showing" in body_text
+            and "entries" in body_text
+        )
+
+        has_empty_state = (
+            "No data available" in body_text
+            or "No matching records" in body_text
+            or "0 entries" in body_text
+            or "Showing 0 to 0" in body_text
+        )
+
+        if loading_finished and (
+            has_table_header
+            or has_datatables_footer
+            or has_empty_state
+        ):
+            return
+
+        page.wait_for_timeout(500)
+
+    raise PortalNavigationError(
+        "DTN DataConnect message list did not finish loading. "
+        f"Last page text preview: {last_body_preview}"
+    )
+
 def find_matching_report_rows_by_text(page, target: DTNReportTarget) -> list:
     """
     Find clean DTN message table rows matching the configured supplier target.
