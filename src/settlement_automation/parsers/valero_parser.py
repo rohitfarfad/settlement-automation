@@ -1,5 +1,5 @@
 import re
-from collections import defaultdict
+from datetime import timedelta
 from pathlib import Path
 
 from config.supplier_rules import VALERO_MOBILE_CODES
@@ -8,6 +8,7 @@ from settlement_automation.models import (
     MobileAdjustment,
     ParsedReport,
     ValeroPayPlusAdjustment,
+    ValeroMonthlyCharge,
 )
 from settlement_automation.utils.dates import parse_mmdd, parse_mmddyy
 from settlement_automation.utils.money import parse_money
@@ -26,7 +27,7 @@ SUB_DATE_RE = re.compile(
 
 DETAIL_RE = re.compile(
     r"^\s*(?:(\d{4})\s+)?"
-    r"(POS|CRND)\s+([A-Z0-9]+)\s+([A-Z]+)\s+(\d+)\s+"
+    r"([A-Z]+)\s+([A-Z0-9]+)\s+([A-Z]+)\s+(\d+)\s+"
     r"([\d,]+\.\d{2}[+-])\s+"
     r"([\d,]+\.\d{2}[+-])\s+"
     r"([\d,]+\.\d{2}[+-])\s+"
@@ -38,14 +39,18 @@ PAYPLUS_RE = re.compile(
     r"(\d{2})-(\d{2})\s+([\d,]+\.\d{2}[+-])\s*$"
 )
 
+MONTHLY_CHARGE_RE = re.compile(
+    r"^\s*(\d+)\s+MONTHLY\s+(.+?)\s+BILLING\s+([\d,]+\.\d{2}[+-])\s*$",
+    re.IGNORECASE,
+)
 
 def is_valero_mobile_code(card_code: str) -> bool:
     return card_code in VALERO_MOBILE_CODES or card_code.startswith("VP")
 
 
 def is_valero_payplus_code(card_code: str) -> bool:
-    # The regex already guarantees this is a "VP+ Fuel Offer" row.
-    # Do not restrict to VALP/VPAY only, because some valid rows use VISA.
+    # PAYPLUS_RE already guarantees this is a "VP+ Fuel Offer" row.
+    # Do not restrict to VALP/VPAY only because some valid rows use VISA.
     return True
 
 
@@ -64,65 +69,61 @@ def parse_valero_mmdd(mmdd: str, report_date):
     return txn_date
 
 
-def find_valero_business_dates_by_location(
-    lines: list[str],
-    report_date,
-) -> dict[str, set]:
-    """
-    Find true business dates per dealer/location.
-
-    A date is a business date for a specific location only if that same
-    dealer block has at least one non-mobile detail row for that date.
-
-    This prevents mobile-only prior-day rows from being treated as daily totals
-    just because another location has real business activity on that date.
-    """
-    business_dates_by_location = defaultdict(set)
-    all_sub_dates_by_location = defaultdict(set)
-
-    current_location_id = None
-    current_detail_date = None
+def collect_valero_sub_dates(lines: list[str], report_date) -> set:
+    sub_dates = set()
 
     for line in lines:
-        dealer = DEALER_RE.match(line)
-
-        if dealer:
-            current_location_id = dealer.group(1)
-            current_detail_date = None
-            continue
-
-        if current_location_id is None:
-            continue
-
         sub = SUB_DATE_RE.match(line)
 
         if sub:
-            all_sub_dates_by_location[current_location_id].add(
-                parse_valero_mmdd(sub.group(1), report_date)
-            )
-            continue
+            sub_dates.add(parse_valero_mmdd(sub.group(1), report_date))
 
-        detail = DETAIL_RE.match(line)
+    return sub_dates
 
-        if not detail:
-            continue
 
-        mmdd, _, card_code, _, _, _, _, _, _ = detail.groups()
+def get_valero_settlement_dates(report_date, available_sub_dates: set) -> set:
+    """
+    Valero normally reports the previous business day's settlement.
 
-        if mmdd:
-            current_detail_date = parse_valero_mmdd(mmdd, report_date)
+    Monday reports include the weekend batch:
+    Friday, Saturday, and Sunday.
 
-        if current_detail_date and not is_valero_mobile_code(card_code):
-            business_dates_by_location[current_location_id].add(current_detail_date)
+    Older dates in the same report are treated as backdated/mobile
+    adjustments, not new daily totals.
+    """
+    if report_date.weekday() == 0:  # Monday
+        expected_dates = {
+            report_date - timedelta(days=3),
+            report_date - timedelta(days=2),
+            report_date - timedelta(days=1),
+        }
+    else:
+        expected_dates = {
+            report_date - timedelta(days=1),
+        }
 
-    # Fallback per location: if a location has SUB rows but no detail rows matched,
-    # preserve old behavior for that location only.
-    for location_id, sub_dates in all_sub_dates_by_location.items():
-        if location_id not in business_dates_by_location:
-            business_dates_by_location[location_id] = sub_dates
+    matched_dates = expected_dates & available_sub_dates
 
-    return dict(business_dates_by_location)
+    if matched_dates:
+        return matched_dates
 
+    # Safe fallback: if the expected calendar rule fails, parse the latest
+    # prior date only instead of treating all older dates as daily totals.
+    prior_dates = {d for d in available_sub_dates if d < report_date}
+
+    if prior_dates:
+        return {max(prior_dates)}
+
+    return set()
+
+def parse_valero_charge_amount(value: str):
+    """
+    Monthly charge rows are shown as negative amounts in the report,
+    for example 113.53-.
+
+    Store them as positive fee amounts so Excel can add them to CC FEE.
+    """
+    return abs(parse_money(value))
 
 def parse_valero_report(file_path: str) -> ParsedReport:
     text = Path(file_path).read_text(encoding="utf-8", errors="ignore")
@@ -135,17 +136,21 @@ def parse_valero_report(file_path: str) -> ParsedReport:
 
     report_date = parse_mmddyy(report_date_match.group(1))
 
-    business_dates_by_location = find_valero_business_dates_by_location(
-        lines,
-        report_date,
+    available_sub_dates = collect_valero_sub_dates(lines, report_date)
+    settlement_dates = get_valero_settlement_dates(
+        report_date=report_date,
+        available_sub_dates=available_sub_dates,
     )
 
-    if not business_dates_by_location:
-        raise ValueError("No Valero business dates found")
+    if not settlement_dates:
+        raise ValueError("No Valero settlement dates found")
+
+    monthly_charge_date = max(settlement_dates)
 
     daily_totals = []
     mobile_adjustments = []
     valero_pay_plus_adjustments = []
+    valero_monthly_charges = []
 
     current_location_id = None
     current_location_name = None
@@ -185,13 +190,27 @@ def parse_valero_report(file_path: str) -> ParsedReport:
 
             continue
 
-        if current_location_id is None:
+        monthly_charge = MONTHLY_CHARGE_RE.match(line)
+
+        if monthly_charge:
+            location_id, description, amount = monthly_charge.groups()
+            location_id = str(location_id)
+
+            valero_monthly_charges.append(
+                ValeroMonthlyCharge(
+                    supplier="VALERO",
+                    location_id=location_id,
+                    location_name=locations_by_id.get(location_id, "UNKNOWN"),
+                    date=monthly_charge_date,
+                    amount=parse_valero_charge_amount(amount),
+                    description=f"MONTHLY {description.strip()} BILLING",
+                )
+            )
+
             continue
 
-        location_business_dates = business_dates_by_location.get(
-            str(current_location_id),
-            set(),
-        )
+        if current_location_id is None:
+            continue
 
         sub = SUB_DATE_RE.match(line)
 
@@ -199,7 +218,7 @@ def parse_valero_report(file_path: str) -> ParsedReport:
             mmdd, _, gross, disc, fee, net = sub.groups()
             txn_date = parse_valero_mmdd(mmdd, report_date)
 
-            if txn_date in location_business_dates:
+            if txn_date in settlement_dates:
                 daily_totals.append(
                     DailySettlementTotal(
                         supplier="VALERO",
@@ -222,11 +241,11 @@ def parse_valero_report(file_path: str) -> ParsedReport:
             if mmdd:
                 current_detail_date = parse_valero_mmdd(mmdd, report_date)
 
-            if (
-                current_detail_date
-                and current_detail_date not in location_business_dates
-                and is_valero_mobile_code(card_code)
-            ):
+            # Any detail row from a non-settlement date is a backdated adjustment.
+            # This intentionally includes old-date non-VP rows like POS DBT,
+            # because they are part of the backdated amount that must be added
+            # to an existing Excel row instead of overwriting it.
+            if current_detail_date and current_detail_date not in settlement_dates:
                 mobile_adjustments.append(
                     MobileAdjustment(
                         supplier="VALERO",
@@ -248,10 +267,15 @@ def parse_valero_report(file_path: str) -> ParsedReport:
         key=lambda row: (row.date, row.location_id, row.source_code or "")
     )
 
+    valero_monthly_charges.sort(
+        key=lambda row: (row.date, row.location_id, row.description)
+    )
+
     return ParsedReport(
         supplier="VALERO",
         report_date=report_date,
         daily_totals=daily_totals,
         mobile_adjustments=mobile_adjustments,
         valero_pay_plus_adjustments=valero_pay_plus_adjustments,
+        valero_monthly_charges=valero_monthly_charges,
     )

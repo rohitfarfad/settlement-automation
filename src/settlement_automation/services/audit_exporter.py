@@ -3,10 +3,13 @@ from dataclasses import asdict
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
-
 from settlement_automation.models import ParsedReport
-from settlement_automation.services.reconciliation import summarize_mobile_adjustments, summarize_valero_pay_plus_adjustments
 from settlement_automation.services.validation import ValidationResult
+from settlement_automation.services.reconciliation import (
+    summarize_mobile_adjustments,
+    summarize_valero_pay_plus_adjustments,
+    summarize_valero_monthly_charges,
+)
 
 
 def clean_value(value):
@@ -66,6 +69,8 @@ def export_audit_files(
         "valero_pay_plus_detail": output_path / f"{prefix}_valero_pay_plus_detail.csv",
         "valero_pay_plus_summary": output_path / f"{prefix}_valero_pay_plus_summary.csv",
         "validation": output_path / f"{prefix}_validation.csv",
+        "valero_monthly_charges_detail": output_path / f"{prefix}_valero_monthly_charges_detail.csv",
+        "valero_monthly_charges_summary": output_path / f"{prefix}_valero_monthly_charges_summary.csv",
     }
 
     write_csv(
@@ -82,8 +87,9 @@ def export_audit_files(
         files["mobile_summary"],
         objects_to_rows(summarize_mobile_adjustments(report.mobile_adjustments)),
     )
-    pay_plus_rows = getattr(report, "valero_pay_plus_adjustments", [])
 
+
+    pay_plus_rows = getattr(report, "valero_pay_plus_adjustments", [])
     write_csv(
         files["valero_pay_plus_detail"],
         objects_to_rows(pay_plus_rows),
@@ -94,9 +100,21 @@ def export_audit_files(
         objects_to_rows(summarize_valero_pay_plus_adjustments(pay_plus_rows)),
     )
 
+    monthly_charge_rows = getattr(report, "valero_monthly_charges", [])
+    write_csv(
+        files["valero_monthly_charges_detail"],
+        objects_to_rows(monthly_charge_rows),
+    )
+
+    write_csv(
+        files["valero_monthly_charges_summary"],
+        objects_to_rows(summarize_valero_monthly_charges(monthly_charge_rows)),
+    )
+
     write_csv(
         files["validation"],
         validation_to_rows(validation_result),
     )
+
 
     return list(files.values())

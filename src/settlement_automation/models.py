@@ -37,9 +37,20 @@ class ValeroPayPlusAdjustment:
 
 
 @dataclass
+class ValeroMonthlyCharge:
+    supplier: str
+    location_id: str
+    location_name: str
+    date: date
+    amount: Decimal
+    description: str
+
+
+@dataclass
 class ParsedReport:
     supplier: str
     report_date: date
     daily_totals: list[DailySettlementTotal]
     mobile_adjustments: list[MobileAdjustment]
     valero_pay_plus_adjustments: list[ValeroPayPlusAdjustment] = field(default_factory=list)
+    valero_monthly_charges: list[ValeroMonthlyCharge] = field(default_factory=list)

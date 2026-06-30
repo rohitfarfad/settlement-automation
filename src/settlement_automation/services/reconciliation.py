@@ -1,13 +1,45 @@
-from collections import defaultdict
-from decimal import Decimal
-
-from settlement_automation.models import MobileAdjustment
-
-from collections import defaultdict
-from decimal import Decimal
-
 from settlement_automation.models import MobileAdjustment, ValeroPayPlusAdjustment
+from settlement_automation.models import ValeroMonthlyCharge
 
+
+from collections import defaultdict
+from decimal import Decimal
+
+
+def summarize_valero_monthly_charges(
+    rows: list[ValeroMonthlyCharge],
+) -> list[ValeroMonthlyCharge]:
+    grouped = defaultdict(lambda: Decimal("0.00"))
+    names = {}
+
+    for row in rows:
+        key = (row.supplier, row.location_id, row.location_name, row.date)
+        grouped[key] += row.amount
+        names[key] = row.location_name
+
+    summary = []
+
+    for key, amount in grouped.items():
+        supplier, location_id, location_name, txn_date = key
+
+        summary.append(
+            ValeroMonthlyCharge(
+                supplier=supplier,
+                location_id=location_id,
+                location_name=location_name,
+                date=txn_date,
+                amount=amount,
+                description="MONTHLY CHARGES TOTAL",
+            )
+        )
+
+    return sorted(summary, key=lambda row: (row.date, row.location_id))
+
+
+def get_valero_monthly_charges_grand_total(
+    rows: list[ValeroMonthlyCharge],
+) -> Decimal:
+    return sum((row.amount for row in rows), Decimal("0.00"))
 
 def summarize_mobile_adjustments(
     rows: list[MobileAdjustment],

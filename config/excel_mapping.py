@@ -14,6 +14,7 @@ EXCEL_COLUMNS = {
     "gross": "GROSS AMT",
     "net": "NET AMT",
     "fee": "CC FEE",
+    "monthly_valero_charges": "MONTHLY VAL CHGS IN FEES",
     "mobile": "MOBILE PAY ADDED TO GROSS/NET",
     "valero_pay_plus": "VALERO PAY +",
 }
