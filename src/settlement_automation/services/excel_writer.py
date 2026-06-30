@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
@@ -30,6 +31,7 @@ from settlement_automation.models import (
     MobileAdjustment,
     ParsedReport,
     ValeroPayPlusAdjustment,
+    ValeroMonthlyCharge,
 )
 
 @dataclass(frozen=True)
@@ -166,6 +168,430 @@ def _is_excel_temp_file(path: Path) -> bool:
     return path.name.startswith("~$")
 
 
+def _summarize_valero_monthly_charges(
+    rows: list[ValeroMonthlyCharge],
+) -> list[ValeroMonthlyCharge]:
+    grouped: dict[tuple[str, str, str, date], Decimal] = defaultdict(
+        lambda: Decimal("0.00")
+    )
+    descriptions: dict[tuple[str, str, str, date], list[str]] = defaultdict(list)
+
+    for row in rows:
+        key = (row.supplier, row.location_id, row.location_name, row.date)
+        grouped[key] += row.amount
+        descriptions[key].append(row.description)
+
+    summary: list[ValeroMonthlyCharge] = []
+
+    for key, amount in grouped.items():
+        supplier, location_id, location_name, charge_date = key
+
+        summary.append(
+            ValeroMonthlyCharge(
+                supplier=supplier,
+                location_id=location_id,
+                location_name=location_name,
+                date=charge_date,
+                amount=amount,
+                description="; ".join(sorted(set(descriptions[key]))),
+            )
+        )
+
+    return sorted(summary, key=lambda row: (row.date, row.location_id))
+
+
+def _monthly_charge_group_key(
+    resolved: ExcelResolvedValue,
+) -> tuple[Path, str, int, str, str, date]:
+    planned = resolved.planned_value
+    target = planned.target
+
+    return (
+        resolved.workbook_path,
+        resolved.sheet_name,
+        resolved.row_number,
+        target.supplier,
+        target.location_id,
+        target.business_date,
+    )
+
+def _append_valero_monthly_charge_values(
+    *,
+    plan: ExcelWritePlan,
+    workbook_root: Path,
+    row: ValeroMonthlyCharge,
+) -> None:
+    columns = EXCEL_MAPPING.columns
+
+    target = _build_target_without_opening_workbook(
+        workbook_root=workbook_root,
+        supplier=row.supplier,
+        location_id=row.location_id,
+        location_name=row.location_name,
+        business_date=row.date,
+    )
+
+    plan.planned_values.extend(
+        [
+            ExcelPlannedValue(
+                target=target,
+                field_name="monthly_valero_charges",
+                column_header=columns.monthly_valero_charges,
+                value=row.amount,
+                source="valero_monthly_charge_summary",
+                mode="set",
+            ),
+            ExcelPlannedValue(
+                target=target,
+                field_name="fees",
+                column_header=columns.fees,
+                value=row.amount,
+                source="valero_monthly_charge_summary",
+                mode="add_monthly_charge_to_fee_formula",
+            ),
+        ]
+    )
+
+def _apply_valero_monthly_charge_group(
+    *,
+    wb,
+    output_path: Path,
+    group_values: list[ExcelResolvedValue],
+    warnings: list[str],
+) -> list[ExcelAppliedChange]:
+    changes: list[ExcelAppliedChange] = []
+
+    by_field = {
+        resolved.planned_value.field_name: resolved
+        for resolved in group_values
+    }
+
+    monthly_resolved = by_field.get("monthly_valero_charges")
+    fee_resolved = by_field.get("fees")
+
+    if monthly_resolved is None or fee_resolved is None:
+        warning = (
+            f"Incomplete monthly charge group in workbook={output_path.name}: "
+            f"fields={sorted(by_field)}"
+        )
+        warnings.append(warning)
+        return changes
+
+    ws = wb[monthly_resolved.sheet_name]
+
+    monthly_cell = ws[monthly_resolved.cell_ref]
+    fee_cell = ws[fee_resolved.cell_ref]
+
+    monthly_old = monthly_cell.value
+    fee_old = fee_cell.value
+
+    planned_amount = monthly_resolved.planned_value.value
+    monthly_new = _to_excel_number(planned_amount)
+
+    existing_monthly = _coerce_decimal(monthly_old)
+    monthly_already_set = _decimal_equal(existing_monthly, planned_amount)
+
+    target = monthly_resolved.planned_value.target
+
+    # Always make the monthly column deterministic/idempotent.
+    monthly_cell.value = monthly_new
+
+    monthly_planned = monthly_resolved.planned_value
+    changes.append(
+        ExcelAppliedChange(
+            supplier=target.supplier,
+            location_id=target.location_id,
+            location_name=target.location_name,
+            business_date=target.business_date,
+            workbook_path=monthly_resolved.workbook_path,
+            output_path=output_path,
+            sheet_name=monthly_resolved.sheet_name,
+            cell_ref=monthly_resolved.cell_ref,
+            field_name=monthly_planned.field_name,
+            column_header=monthly_planned.column_header,
+            source=monthly_planned.source,
+            mode=monthly_planned.mode,
+            old_value=monthly_old,
+            new_value=monthly_new,
+            status="written",
+        )
+    )
+
+    fee_planned = fee_resolved.planned_value
+
+    if _is_formula_value(fee_old):
+        if _formula_references_cell(fee_old, monthly_resolved.cell_ref):
+            fee_new = fee_old
+            status = "skipped_formula_already_references_monthly_charge"
+        else:
+            fee_new = _append_cell_to_formula(str(fee_old), monthly_resolved.cell_ref)
+            fee_cell.value = fee_new
+            status = "written"
+
+        changes.append(
+            ExcelAppliedChange(
+                supplier=target.supplier,
+                location_id=target.location_id,
+                location_name=target.location_name,
+                business_date=target.business_date,
+                workbook_path=fee_resolved.workbook_path,
+                output_path=output_path,
+                sheet_name=fee_resolved.sheet_name,
+                cell_ref=fee_resolved.cell_ref,
+                field_name=fee_planned.field_name,
+                column_header=fee_planned.column_header,
+                source=fee_planned.source,
+                mode=fee_planned.mode,
+                old_value=fee_old,
+                new_value=fee_new,
+                status=status,
+            )
+        )
+
+        return changes
+
+    existing_fee = _coerce_decimal(fee_old)
+
+    if existing_fee is None:
+        warning = (
+            f"Cannot add monthly charge to non-numeric/non-formula CC Fee cell: "
+            f"workbook={output_path.name}, sheet={fee_resolved.sheet_name}, "
+            f"date={target.business_date}, location={target.location_id}, "
+            f"cell={fee_resolved.cell_ref}, value={fee_old!r}"
+        )
+        warnings.append(warning)
+
+        changes.append(
+            ExcelAppliedChange(
+                supplier=target.supplier,
+                location_id=target.location_id,
+                location_name=target.location_name,
+                business_date=target.business_date,
+                workbook_path=fee_resolved.workbook_path,
+                output_path=output_path,
+                sheet_name=fee_resolved.sheet_name,
+                cell_ref=fee_resolved.cell_ref,
+                field_name=fee_planned.field_name,
+                column_header=fee_planned.column_header,
+                source=fee_planned.source,
+                mode=fee_planned.mode,
+                old_value=fee_old,
+                new_value=fee_old,
+                status="skipped_non_numeric_fee",
+            )
+        )
+
+        return changes
+
+    # Numeric fallback:
+    # If monthly column already had this exact amount, assume previous run already
+    # added it to CC Fee. Do not double-add.
+    if monthly_already_set:
+        fee_new = fee_old
+        status = "skipped_already_applied"
+    else:
+        fee_new = _to_excel_number(existing_fee + planned_amount)
+        fee_cell.value = fee_new
+        status = "written"
+
+    changes.append(
+        ExcelAppliedChange(
+            supplier=target.supplier,
+            location_id=target.location_id,
+            location_name=target.location_name,
+            business_date=target.business_date,
+            workbook_path=fee_resolved.workbook_path,
+            output_path=output_path,
+            sheet_name=fee_resolved.sheet_name,
+            cell_ref=fee_resolved.cell_ref,
+            field_name=fee_planned.field_name,
+            column_header=fee_planned.column_header,
+            source=fee_planned.source,
+            mode=fee_planned.mode,
+            old_value=fee_old,
+            new_value=fee_new,
+            status=status,
+        )
+    )
+
+    return changes
+
+
+def _apply_valero_pay_plus_group(
+    *,
+    wb,
+    output_path: Path,
+    group_values: list[ExcelResolvedValue],
+    warnings: list[str],
+) -> list[ExcelAppliedChange]:
+    changes: list[ExcelAppliedChange] = []
+
+    by_field = {
+        resolved.planned_value.field_name: resolved
+        for resolved in group_values
+    }
+
+    gross_resolved = by_field.get("gross_amt")
+    net_resolved = by_field.get("net_amt")
+    pay_plus_resolved = by_field.get("valero_pay_plus")
+
+    if gross_resolved is None or net_resolved is None or pay_plus_resolved is None:
+        warning = (
+            f"Incomplete Valero Pay+ group in workbook={output_path.name}: "
+            f"fields={sorted(by_field)}"
+        )
+        warnings.append(warning)
+        return changes
+
+    ws = wb[gross_resolved.sheet_name]
+
+    gross_cell = ws[gross_resolved.cell_ref]
+    net_cell = ws[net_resolved.cell_ref]
+    pay_plus_cell = ws[pay_plus_resolved.cell_ref]
+
+    gross_old = gross_cell.value
+    net_old = net_cell.value
+    pay_plus_old = pay_plus_cell.value
+
+    planned_amount = pay_plus_resolved.planned_value.value
+    target = gross_resolved.planned_value.target
+
+    existing_pay_plus = _coerce_decimal(pay_plus_old)
+
+    already_applied = _decimal_equal(existing_pay_plus, planned_amount)
+    has_different_existing_pay_plus = (
+        existing_pay_plus is not None
+        and not _is_effectively_zero(existing_pay_plus)
+        and not already_applied
+    )
+
+    if already_applied:
+        pay_plus_cell.value = _to_excel_number(planned_amount)
+
+        for resolved in [gross_resolved, net_resolved, pay_plus_resolved]:
+            planned = resolved.planned_value
+            cell = ws[resolved.cell_ref]
+
+            changes.append(
+                ExcelAppliedChange(
+                    supplier=target.supplier,
+                    location_id=target.location_id,
+                    location_name=target.location_name,
+                    business_date=target.business_date,
+                    workbook_path=resolved.workbook_path,
+                    output_path=output_path,
+                    sheet_name=resolved.sheet_name,
+                    cell_ref=resolved.cell_ref,
+                    field_name=planned.field_name,
+                    column_header=planned.column_header,
+                    source=planned.source,
+                    mode=planned.mode,
+                    old_value=cell.value,
+                    new_value=cell.value,
+                    status="skipped_already_applied",
+                )
+            )
+
+        return changes
+
+    if has_different_existing_pay_plus:
+        warning = (
+            f"Existing Valero Pay+ value differs from planned value. "
+            f"Skipping Pay+ add to avoid double-counting/corruption: "
+            f"workbook={output_path.name}, sheet={gross_resolved.sheet_name}, "
+            f"date={target.business_date}, location={target.location_id}, "
+            f"existing_pay_plus={existing_pay_plus}, planned_pay_plus={planned_amount}"
+        )
+        warnings.append(warning)
+
+        for resolved in [gross_resolved, net_resolved, pay_plus_resolved]:
+            planned = resolved.planned_value
+            cell = ws[resolved.cell_ref]
+
+            changes.append(
+                ExcelAppliedChange(
+                    supplier=target.supplier,
+                    location_id=target.location_id,
+                    location_name=target.location_name,
+                    business_date=target.business_date,
+                    workbook_path=resolved.workbook_path,
+                    output_path=output_path,
+                    sheet_name=resolved.sheet_name,
+                    cell_ref=resolved.cell_ref,
+                    field_name=planned.field_name,
+                    column_header=planned.column_header,
+                    source=planned.source,
+                    mode=planned.mode,
+                    old_value=cell.value,
+                    new_value=cell.value,
+                    status="skipped_existing_pay_plus_mismatch",
+                )
+            )
+
+        return changes
+
+    gross_existing = _coerce_decimal(gross_old)
+    net_existing = _coerce_decimal(net_old)
+
+    if gross_existing is None or net_existing is None:
+        warning = (
+            f"Cannot apply Valero Pay+ because Gross/NET cell is not numeric: "
+            f"workbook={output_path.name}, sheet={gross_resolved.sheet_name}, "
+            f"date={target.business_date}, location={target.location_id}, "
+            f"gross={gross_old!r}, net={net_old!r}"
+        )
+        warnings.append(warning)
+        return changes
+
+    if _is_formula_value(gross_old) or _is_formula_value(net_old):
+        warning = (
+            f"Cannot apply Valero Pay+ over formula Gross/NET cells: "
+            f"workbook={output_path.name}, sheet={gross_resolved.sheet_name}, "
+            f"date={target.business_date}, location={target.location_id}, "
+            f"gross={gross_old!r}, net={net_old!r}"
+        )
+        warnings.append(warning)
+        return changes
+
+    gross_new = _to_excel_number(gross_existing + planned_amount)
+    net_new = _to_excel_number(net_existing + planned_amount)
+    pay_plus_new = _to_excel_number(planned_amount)
+
+    gross_cell.value = gross_new
+    net_cell.value = net_new
+    pay_plus_cell.value = pay_plus_new
+
+    for resolved, old_value, new_value in [
+        (gross_resolved, gross_old, gross_new),
+        (net_resolved, net_old, net_new),
+        (pay_plus_resolved, pay_plus_old, pay_plus_new),
+    ]:
+        planned = resolved.planned_value
+
+        changes.append(
+            ExcelAppliedChange(
+                supplier=target.supplier,
+                location_id=target.location_id,
+                location_name=target.location_name,
+                business_date=target.business_date,
+                workbook_path=resolved.workbook_path,
+                output_path=output_path,
+                sheet_name=resolved.sheet_name,
+                cell_ref=resolved.cell_ref,
+                field_name=planned.field_name,
+                column_header=planned.column_header,
+                source=planned.source,
+                mode=planned.mode,
+                old_value=old_value,
+                new_value=new_value,
+                status="written",
+            )
+        )
+
+    return changes
+
+
+
 def _resolve_existing_workbook_path(expected_path: Path) -> tuple[Path | None, list[str]]:
     warnings: list[str] = []
 
@@ -290,6 +716,42 @@ def _find_date_row(
 
 def _is_formula_value(value: object) -> bool:
     return isinstance(value, str) and value.startswith("=")
+
+def _cell_ref_variants(cell_ref: str) -> set[str]:
+    """
+    Example:
+        H12 -> {"H12", "$H12", "H$12", "$H$12"}
+    """
+    match = re.match(r"^([A-Z]+)(\d+)$", cell_ref.upper())
+
+    if not match:
+        return {cell_ref.upper()}
+
+    col, row = match.groups()
+
+    return {
+        f"{col}{row}",
+        f"${col}{row}",
+        f"{col}${row}",
+        f"${col}${row}",
+    }
+
+
+def _formula_references_cell(formula: object, cell_ref: str) -> bool:
+    if not _is_formula_value(formula):
+        return False
+
+    normalized_formula = str(formula).upper().replace(" ", "")
+
+    return any(
+        variant in normalized_formula
+        for variant in _cell_ref_variants(cell_ref)
+    )
+
+
+def _append_cell_to_formula(formula: str, cell_ref: str) -> str:
+    formula_body = formula[1:] if formula.startswith("=") else formula
+    return f"=({formula_body})+{cell_ref}"
 
 def _build_target_without_opening_workbook(
     *,
@@ -449,16 +911,36 @@ def _append_valero_pay_plus_values(
         business_date=row.date,
     )
 
-    plan.planned_values.append(
-        ExcelPlannedValue(
-            target=target,
-            field_name="valero_pay_plus",
-            column_header=columns.valero_pay_plus,
-            value=row.amount,
-            source="valero_pay_plus_summary",
-            mode="set",
-        )
+    plan.planned_values.extend(
+        [
+            ExcelPlannedValue(
+                target=target,
+                field_name="gross_amt",
+                column_header=columns.gross_amt,
+                value=row.amount,
+                source="valero_pay_plus_summary",
+                mode="add_to_base",
+            ),
+            ExcelPlannedValue(
+                target=target,
+                field_name="net_amt",
+                column_header=columns.net_amt,
+                value=row.amount,
+                source="valero_pay_plus_summary",
+                mode="add_to_base",
+            ),
+            ExcelPlannedValue(
+                target=target,
+                field_name="valero_pay_plus",
+                column_header=columns.valero_pay_plus,
+                value=row.amount,
+                source="valero_pay_plus_summary",
+                mode="set",
+            ),
+        ]
     )
+
+
 
 def _to_excel_number(value: Decimal) -> float:
     return float(value.quantize(Decimal("0.01")))
@@ -603,6 +1085,22 @@ def _apply_set_value(
         old_value=old_value,
         new_value=new_value,
         status="written",
+    )
+
+
+def _pay_plus_group_key(
+    resolved: ExcelResolvedValue,
+) -> tuple[Path, str, int, str, str, date]:
+    planned = resolved.planned_value
+    target = planned.target
+
+    return (
+        resolved.workbook_path,
+        resolved.sheet_name,
+        resolved.row_number,
+        target.supplier,
+        target.location_id,
+        target.business_date,
     )
 
 def _mobile_group_key(resolved: ExcelResolvedValue) -> tuple[Path, str, int, str, str, date]:
@@ -841,16 +1339,21 @@ def apply_excel_write_plan(
             continue
 
         simple_set_values: list[ExcelResolvedValue] = []
-        mobile_values_by_group: dict[
-            tuple[Path, str, int, str, str, date],
-            list[ExcelResolvedValue],
-        ] = defaultdict(list)
+        mobile_values_by_group = defaultdict(list)
+        pay_plus_values_by_group = defaultdict(list)
+        monthly_charge_values_by_group = defaultdict(list)
 
         for resolved in workbook_values:
             planned = resolved.planned_value
 
             if planned.source == "mobile_adjustment_summary":
                 mobile_values_by_group[_mobile_group_key(resolved)].append(resolved)
+            elif planned.source == "valero_pay_plus_summary":
+                pay_plus_values_by_group[_pay_plus_group_key(resolved)].append(resolved)
+            elif planned.source == "valero_monthly_charge_summary":
+                monthly_charge_values_by_group[
+                    _monthly_charge_group_key(resolved)
+                ].append(resolved)
             else:
                 simple_set_values.append(resolved)
 
@@ -866,6 +1369,42 @@ def apply_excel_write_plan(
 
         for group_values in mobile_values_by_group.values():
             changes = _apply_mobile_adjustment_group(
+                wb=wb,
+                output_path=output_path,
+                group_values=group_values,
+                warnings=apply_result.warnings,
+            )
+            apply_result.changes.extend(changes)
+
+        for group_values in monthly_charge_values_by_group.values():
+            changes = _apply_valero_monthly_charge_group(
+                wb=wb,
+                output_path=output_path,
+                group_values=group_values,
+                warnings=apply_result.warnings,
+            )
+            apply_result.changes.extend(changes)
+
+        for group_values in mobile_values_by_group.values():
+            changes = _apply_mobile_adjustment_group(
+                wb=wb,
+                output_path=output_path,
+                group_values=group_values,
+                warnings=apply_result.warnings,
+            )
+            apply_result.changes.extend(changes)
+
+        for group_values in pay_plus_values_by_group.values():
+            changes = _apply_valero_pay_plus_group(
+                wb=wb,
+                output_path=output_path,
+                group_values=group_values,
+                warnings=apply_result.warnings,
+            )
+            apply_result.changes.extend(changes)
+
+        for group_values in monthly_charge_values_by_group.values():
+            changes = _apply_valero_monthly_charge_group(
                 wb=wb,
                 output_path=output_path,
                 group_values=group_values,
@@ -1005,6 +1544,18 @@ def build_excel_write_plan(
                 workbook_root=workbook_root,
                 row=row,
             )
+
+        monthly_charge_rows = getattr(report, "valero_monthly_charges", [])
+        monthly_charge_summary_rows = _summarize_valero_monthly_charges(
+            monthly_charge_rows
+        )
+
+        for row in monthly_charge_summary_rows:
+            _append_valero_monthly_charge_values(
+                plan=plan,
+                workbook_root=workbook_root,
+                row=row,
+            )
     else:
         if report.mobile_adjustments:
             plan.warnings.append(
@@ -1017,6 +1568,14 @@ def build_excel_write_plan(
         if valero_pay_plus_rows:
             plan.warnings.append(
                 f"Ignoring {len(valero_pay_plus_rows)} Valero Pay+ rows "
+                f"for non-Valero supplier={supplier}."
+            )
+
+        monthly_charge_rows = getattr(report, "valero_monthly_charges", [])
+
+        if monthly_charge_rows:
+            plan.warnings.append(
+                f"Ignoring {len(monthly_charge_rows)} Valero monthly charge rows "
                 f"for non-Valero supplier={supplier}."
             )
 

@@ -37,6 +37,7 @@ class ExcelColumnHeaders:
     gross_amt: str = "Gross AMT"
     net_amt: str = "NET AMT"
     fees: str = "CC Fee"
+    monthly_valero_charges: str = "Monthly Val chgs in Fees"
     mobile_pay: str = "MOBILE PAY ADDED TO GROSS/NET"
     valero_pay_plus: str = "VALERO PAY +"
 
@@ -50,6 +51,7 @@ class ValeroMobileAdjustmentPolicy:
 
     # Do not write CC Fee. Excel formula handles it.
     mobile_column_value: str = "net_amt"
+
 
 @dataclass(frozen=True)
 class ExcelWriterPolicy:
