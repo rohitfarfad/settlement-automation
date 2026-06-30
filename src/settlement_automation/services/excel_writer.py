@@ -164,6 +164,33 @@ class ExcelApplyResult:
         return sum(1 for change in self.changes if change.status.startswith("skipped"))
 
 
+
+def _get_primary_daily_total_dates(report: ParsedReport) -> set[date]:
+    """
+    For normal supplier reports, the latest daily total date in the report
+    is the current full-day settlement date.
+
+    Older daily_total rows in the same report are late/backdated adjustments
+    and should be added to the existing workbook value, not replace it.
+
+    Valero is handled separately because it already separates mobile/pay+/monthly
+    adjustment buckets and can have multi-day business dates in parser logic.
+    """
+    if not report.daily_totals:
+        return set()
+
+    supplier = normalize_supplier(report.supplier)
+
+    if supplier == "VALERO":
+        return {row.date for row in report.daily_totals}
+
+    latest_date = max(row.date for row in report.daily_totals)
+    return {latest_date}
+
+
+
+
+
 def _is_excel_temp_file(path: Path) -> bool:
     return path.name.startswith("~$")
 
@@ -789,6 +816,8 @@ def _append_daily_total_values(
     plan: ExcelWritePlan,
     workbook_root: Path,
     row: DailySettlementTotal,
+    mode: str = "set",
+    source: str = "daily_total",
 ) -> None:
     columns = EXCEL_MAPPING.columns
 
@@ -801,7 +830,7 @@ def _append_daily_total_values(
         gross_amt=row.gross_amt,
         net_amt=row.net_amt,
         parsed_fees=row.fees,
-        source="daily_total",
+        source=source,
     )
 
     target = _build_target_without_opening_workbook(
@@ -812,8 +841,6 @@ def _append_daily_total_values(
         business_date=row.date,
     )
 
-    # Do not write CC Fee.
-    # The workbook formula calculates it automatically.
     plan.planned_values.extend(
         [
             ExcelPlannedValue(
@@ -821,16 +848,16 @@ def _append_daily_total_values(
                 field_name="gross_amt",
                 column_header=columns.gross_amt,
                 value=row.gross_amt,
-                source="daily_total",
-                mode="set",
+                source=source,
+                mode=mode,
             ),
             ExcelPlannedValue(
                 target=target,
                 field_name="net_amt",
                 column_header=columns.net_amt,
                 value=row.net_amt,
-                source="daily_total",
-                mode="set",
+                source=source,
+                mode=mode,
             ),
         ]
     )
@@ -1025,6 +1052,168 @@ def _copy_workbooks_to_output(
         output_paths[workbook_path] = output_path
 
     return output_paths
+
+AUTOMATION_LOG_SHEET_NAME = "_SETTLEMENT_AUTOMATION_LOG"
+
+
+def _get_or_create_automation_log_sheet(wb):
+    if AUTOMATION_LOG_SHEET_NAME in wb.sheetnames:
+        ws = wb[AUTOMATION_LOG_SHEET_NAME]
+    else:
+        ws = wb.create_sheet(AUTOMATION_LOG_SHEET_NAME)
+        ws.append(
+            [
+                "operation_id",
+                "supplier",
+                "location_id",
+                "business_date",
+                "field_name",
+                "source",
+                "amount",
+            ]
+        )
+        ws.sheet_state = "hidden"
+
+    return ws
+
+
+def _build_operation_id(resolved: ExcelResolvedValue) -> str:
+    planned = resolved.planned_value
+    target = planned.target
+
+    return "|".join(
+        [
+            target.supplier,
+            target.location_id,
+            target.business_date.isoformat(),
+            planned.field_name,
+            planned.source,
+            str(planned.value),
+        ]
+    )
+
+
+def _operation_already_logged(wb, operation_id: str) -> bool:
+    if AUTOMATION_LOG_SHEET_NAME not in wb.sheetnames:
+        return False
+
+    ws = wb[AUTOMATION_LOG_SHEET_NAME]
+
+    for row in ws.iter_rows(min_row=2, max_col=1, values_only=True):
+        if row and row[0] == operation_id:
+            return True
+
+    return False
+
+
+def _log_operation(wb, resolved: ExcelResolvedValue) -> None:
+    planned = resolved.planned_value
+    target = planned.target
+    ws = _get_or_create_automation_log_sheet(wb)
+
+    ws.append(
+        [
+            _build_operation_id(resolved),
+            target.supplier,
+            target.location_id,
+            target.business_date.isoformat(),
+            planned.field_name,
+            planned.source,
+            str(planned.value),
+        ]
+    )
+
+
+def _apply_backdated_daily_total(
+    *,
+    wb,
+    output_path: Path,
+    resolved: ExcelResolvedValue,
+    warnings: list[str],
+) -> ExcelAppliedChange:
+    planned = resolved.planned_value
+    target = planned.target
+    ws = wb[resolved.sheet_name]
+    cell = ws[resolved.cell_ref]
+    old_value = cell.value
+
+    operation_id = _build_operation_id(resolved)
+
+    if _operation_already_logged(wb, operation_id):
+        return ExcelAppliedChange(
+            supplier=target.supplier,
+            location_id=target.location_id,
+            location_name=target.location_name,
+            business_date=target.business_date,
+            workbook_path=resolved.workbook_path,
+            output_path=output_path,
+            sheet_name=resolved.sheet_name,
+            cell_ref=resolved.cell_ref,
+            field_name=planned.field_name,
+            column_header=planned.column_header,
+            source=planned.source,
+            mode=planned.mode,
+            old_value=old_value,
+            new_value=old_value,
+            status="skipped_already_logged",
+        )
+
+    existing_value = _coerce_decimal(old_value)
+
+    if existing_value is None:
+        # If the older row is blank, use the adjustment amount as the value.
+        # This can happen if reports are processed out of chronological order.
+        new_value = _to_excel_number(planned.value)
+    else:
+        new_value = _to_excel_number(existing_value + planned.value)
+
+    if _is_formula_value(old_value):
+        warning = (
+            f"Cannot apply backdated daily total over formula cell: "
+            f"workbook={output_path.name}, sheet={resolved.sheet_name}, "
+            f"date={target.business_date}, location={target.location_id}, "
+            f"cell={resolved.cell_ref}, value={old_value!r}"
+        )
+        warnings.append(warning)
+
+        return ExcelAppliedChange(
+            supplier=target.supplier,
+            location_id=target.location_id,
+            location_name=target.location_name,
+            business_date=target.business_date,
+            workbook_path=resolved.workbook_path,
+            output_path=output_path,
+            sheet_name=resolved.sheet_name,
+            cell_ref=resolved.cell_ref,
+            field_name=planned.field_name,
+            column_header=planned.column_header,
+            source=planned.source,
+            mode=planned.mode,
+            old_value=old_value,
+            new_value=old_value,
+            status="skipped_formula",
+        )
+
+    cell.value = new_value
+    _log_operation(wb, resolved)
+
+    return ExcelAppliedChange(
+        supplier=target.supplier,
+        location_id=target.location_id,
+        location_name=target.location_name,
+        business_date=target.business_date,
+        workbook_path=resolved.workbook_path,
+        output_path=output_path,
+        sheet_name=resolved.sheet_name,
+        cell_ref=resolved.cell_ref,
+        field_name=planned.field_name,
+        column_header=planned.column_header,
+        source=planned.source,
+        mode=planned.mode,
+        old_value=old_value,
+        new_value=new_value,
+        status="written",
+    )
 
 
 def _apply_set_value(
@@ -1339,6 +1528,7 @@ def apply_excel_write_plan(
             continue
 
         simple_set_values: list[ExcelResolvedValue] = []
+        backdated_daily_values: list[ExcelResolvedValue] = []
         mobile_values_by_group = defaultdict(list)
         pay_plus_values_by_group = defaultdict(list)
         monthly_charge_values_by_group = defaultdict(list)
@@ -1346,7 +1536,9 @@ def apply_excel_write_plan(
         for resolved in workbook_values:
             planned = resolved.planned_value
 
-            if planned.source == "mobile_adjustment_summary":
+            if planned.source == "backdated_daily_total":
+                backdated_daily_values.append(resolved)
+            elif planned.source == "mobile_adjustment_summary":
                 mobile_values_by_group[_mobile_group_key(resolved)].append(resolved)
             elif planned.source == "valero_pay_plus_summary":
                 pay_plus_values_by_group[_pay_plus_group_key(resolved)].append(resolved)
@@ -1367,6 +1559,15 @@ def apply_excel_write_plan(
             )
             apply_result.changes.append(change)
 
+        for resolved in backdated_daily_values:
+            change = _apply_backdated_daily_total(
+                wb=wb,
+                output_path=output_path,
+                resolved=resolved,
+                warnings=apply_result.warnings,
+            )
+            apply_result.changes.append(change)
+
         for group_values in mobile_values_by_group.values():
             changes = _apply_mobile_adjustment_group(
                 wb=wb,
@@ -1378,15 +1579,6 @@ def apply_excel_write_plan(
 
         for group_values in monthly_charge_values_by_group.values():
             changes = _apply_valero_monthly_charge_group(
-                wb=wb,
-                output_path=output_path,
-                group_values=group_values,
-                warnings=apply_result.warnings,
-            )
-            apply_result.changes.extend(changes)
-
-        for group_values in mobile_values_by_group.values():
-            changes = _apply_mobile_adjustment_group(
                 wb=wb,
                 output_path=output_path,
                 group_values=group_values,
@@ -1516,12 +1708,25 @@ def build_excel_write_plan(
         report_date=report.report_date,
     )
 
+    primary_daily_dates = _get_primary_daily_total_dates(report)
+
     for row in report.daily_totals:
-        _append_daily_total_values(
-            plan=plan,
-            workbook_root=workbook_root,
-            row=row,
-        )
+        if row.date in primary_daily_dates:
+            _append_daily_total_values(
+                plan=plan,
+                workbook_root=workbook_root,
+                row=row,
+                mode="set",
+                source="daily_total",
+            )
+        else:
+            _append_daily_total_values(
+                plan=plan,
+                workbook_root=workbook_root,
+                row=row,
+                mode="add_to_base",
+                source="backdated_daily_total",
+            )
 
     if supplier == "VALERO":
         mobile_summary_rows = summarize_mobile_adjustments(report.mobile_adjustments)

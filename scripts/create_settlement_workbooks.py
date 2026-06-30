@@ -60,7 +60,13 @@ MONTH_ABBR = [
 ]
 
 
-SETTLEMENT_COLUMNS = [
+from dataclasses import dataclass
+from typing import Mapping
+
+from config.locations import CITGO_LOCATIONS, VALERO_LOCATIONS, SUNOCO_LOCATIONS
+
+
+VALERO_COLUMNS = [
     "DATE",
     "STORE AMT",
     "DIFF",
@@ -76,12 +82,83 @@ SETTLEMENT_COLUMNS = [
 ]
 
 
+SUNOCO_COLUMNS = [
+    "DATE",
+    "STORE AMT",
+    "DIFF",
+    "GROSS AMT",
+    "NET AMT",
+    "CC FEE",
+    "DATE OF VALERO CREDIT",
+    "MONTHLY VAL CHGS IN FEES",
+    "FUELMAN",
+    "MOBILE PAY ADDED TO GROSS/NET",
+    "VALERO PAY +",
+    "GIFT CARDS",
+]
+
+
+CITGO_COLUMNS = [
+    "DATE",
+    "STORE AMT",
+    "DIFF",
+    "GROSS AMT",
+    "NET AMT",
+    "CC FEE",
+    "DATE OF VALERO CREDIT",
+    "MONTHLY CITGO CHGS IN FEES",
+    "MOBILE PAY",
+    "MOBILE PAY DISC",
+    "FUEL DISC",
+    "CHARGEBACK DED ON DRAFT",
+    "LOYALTY FEE",
+]
+
+
+@dataclass(frozen=True)
+class SupplierWorkbookConfig:
+    supplier: str
+    locations: Mapping[str, str]
+    columns: list[str]
+
+
+SUPPLIER_WORKBOOK_CONFIGS: dict[str, SupplierWorkbookConfig] = {
+    "CITGO": SupplierWorkbookConfig(
+        supplier="CITGO",
+        locations=CITGO_LOCATIONS,
+        columns=CITGO_COLUMNS,
+    ),
+    "VALERO": SupplierWorkbookConfig(
+        supplier="VALERO",
+        locations=VALERO_LOCATIONS,
+        columns=VALERO_COLUMNS,
+    ),
+    "SUNOCO": SupplierWorkbookConfig(
+        supplier="SUNOCO",
+        locations=SUNOCO_LOCATIONS,
+        columns=SUNOCO_COLUMNS,
+    ),
+}
+
+
 @dataclass(frozen=True)
 class SettlementWorkbookTarget:
     supplier: str
     location_id: str
     location_name: str
+    columns: list[str]
 
+
+WORKBOOK_TARGETS: list[SettlementWorkbookTarget] = [
+    SettlementWorkbookTarget(
+        supplier=config.supplier,
+        location_id=location_id,
+        location_name=location_name,
+        columns=config.columns,
+    )
+    for config in SUPPLIER_WORKBOOK_CONFIGS.values()
+    for location_id, location_name in config.locations.items()
+]
 
 # Keep this mapping aligned with config/excel_mapping.py and config/locations.py.
 # The filename uses location_name, not location_id.
@@ -92,16 +169,6 @@ LOCATION_MAPS = {
     "SUNOCO": SUNOCO_LOCATIONS,
 }
 
-
-WORKBOOK_TARGETS: list[SettlementWorkbookTarget] = [
-    SettlementWorkbookTarget(
-        supplier=supplier,
-        location_id=location_id,
-        location_name=location_name,
-    )
-    for supplier, locations in LOCATION_MAPS.items()
-    for location_id, location_name in locations.items()
-]
 
 
 def normalize_for_filename(value: str) -> str:
@@ -121,26 +188,28 @@ def build_workbook_filename(year: int, location_name: str, supplier: str) -> str
     location_name = normalize_for_filename(location_name)
     supplier = normalize_for_filename(supplier)
 
-    # Avoid names like:
-    #   2026 CC FIVE CORNERS VALERO VALERO.xlsx
-    #
-    # If location already ends with supplier name, do not append supplier again.
     if location_name.endswith(supplier):
         return f"{year} CC {location_name}.xlsx"
 
     return f"{year} CC {location_name} {supplier}.xlsx"
-
 def build_sheet_name(year: int, month: int) -> str:
     return f"{MONTH_ABBR[month - 1]} {year}"
 
 
-def style_month_sheet(ws, year: int, month: int, supplier: str, location_name: str) -> None:
+def style_month_sheet(
+    ws,
+    year: int,
+    month: int,
+    supplier: str,
+    location_name: str,
+    columns: list[str],
+) -> None:
     title_fill = PatternFill("solid", fgColor="D9EAF7")
     header_fill = PatternFill("solid", fgColor="BDD7EE")
     thin = Side(style="thin", color="B7B7B7")
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    max_col = len(SETTLEMENT_COLUMNS)
+    max_col = len(columns)
     last_col_letter = get_column_letter(max_col)
 
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_col)
@@ -149,7 +218,7 @@ def style_month_sheet(ws, year: int, month: int, supplier: str, location_name: s
     ws["A1"].fill = title_fill
     ws["A1"].alignment = Alignment(horizontal="center")
 
-    for col_idx, header in enumerate(SETTLEMENT_COLUMNS, start=1):
+    for col_idx, header in enumerate(columns, start=1):
         cell = ws.cell(row=2, column=col_idx)
         cell.value = header
         cell.font = Font(bold=True)
@@ -159,64 +228,79 @@ def style_month_sheet(ws, year: int, month: int, supplier: str, location_name: s
 
     days_in_month = calendar.monthrange(year, month)[1]
 
+    date_col = columns.index("DATE") + 1
+    store_amt_col = columns.index("STORE AMT") + 1
+    diff_col = columns.index("DIFF") + 1
+    gross_col = columns.index("GROSS AMT") + 1
+    net_col = columns.index("NET AMT") + 1
+    cc_fee_col = columns.index("CC FEE") + 1
+
     for day in range(1, days_in_month + 1):
         row = day + 2
         current_date = date(year, month, day)
 
-        ws.cell(row=row, column=1).value = current_date
-        ws.cell(row=row, column=1).number_format = "m/d/yyyy"
+        ws.cell(row=row, column=date_col).value = current_date
+        ws.cell(row=row, column=date_col).number_format = "m/d/yyyy"
+
+        store_letter = get_column_letter(store_amt_col)
+        gross_letter = get_column_letter(gross_col)
+        net_letter = get_column_letter(net_col)
 
         # DIFF = STORE AMT - GROSS AMT
-        ws.cell(row=row, column=3).value = f'=IF(OR(B{row}="",D{row}=""),"",ROUND(B{row}-D{row},2))'
+        ws.cell(row=row, column=diff_col).value = (
+            f'=IF(OR({store_letter}{row}="",{gross_letter}{row}=""),"",'
+            f'ROUND({store_letter}{row}-{gross_letter}{row},2))'
+        )
 
         # CC FEE = GROSS AMT - NET AMT
-        # The Excel writer should not overwrite this column; it should only validate it.
-        ws.cell(row=row, column=6).value = f'=IF(OR(D{row}="",E{row}=""),"",ROUND(D{row}-E{row},2))'
+        ws.cell(row=row, column=cc_fee_col).value = (
+            f'=IF(OR({gross_letter}{row}="",{net_letter}{row}=""),"",'
+            f'ROUND({gross_letter}{row}-{net_letter}{row},2))'
+        )
 
         for col_idx in range(1, max_col + 1):
             cell = ws.cell(row=row, column=col_idx)
             cell.border = border
             cell.alignment = Alignment(horizontal="center", vertical="center")
 
-            if col_idx in {2, 3, 4, 5, 6, 8, 9, 10, 11, 12}:
+            if columns[col_idx - 1] != "DATE":
                 cell.number_format = '#,##0.00'
 
     total_row = days_in_month + 4
     ws.cell(row=total_row, column=1).value = "MONTH TOTAL"
     ws.cell(row=total_row, column=1).font = Font(bold=True)
 
-    for col_idx in [2, 3, 4, 5, 6, 8, 9, 10, 11, 12]:
+    for col_idx, header in enumerate(columns, start=1):
+        if header == "DATE":
+            continue
+
         col_letter = get_column_letter(col_idx)
-        ws.cell(row=total_row, column=col_idx).value = f"=SUM({col_letter}3:{col_letter}{days_in_month + 2})"
+        ws.cell(row=total_row, column=col_idx).value = (
+            f"=SUM({col_letter}3:{col_letter}{days_in_month + 2})"
+        )
         ws.cell(row=total_row, column=col_idx).font = Font(bold=True)
         ws.cell(row=total_row, column=col_idx).number_format = '#,##0.00'
-
-    for col_idx in range(1, max_col + 1):
         ws.cell(row=total_row, column=col_idx).border = border
 
     ws.freeze_panes = "A3"
     ws.auto_filter.ref = f"A2:{last_col_letter}{days_in_month + 2}"
 
-    widths = {
-        "A": 13,
-        "B": 13,
-        "C": 11,
-        "D": 13,
-        "E": 13,
-        "F": 11,
-        "G": 22,
-        "H": 24,
-        "I": 12,
-        "J": 28,
-        "K": 14,
-        "L": 13,
-    }
+    for col_idx, header in enumerate(columns, start=1):
+        col_letter = get_column_letter(col_idx)
 
-    for col_letter, width in widths.items():
+        if header == "DATE":
+            width = 13
+        elif header in {"DATE OF VALERO CREDIT"}:
+            width = 22
+        elif len(header) >= 20:
+            width = 26
+        else:
+            width = 14
+
         ws.column_dimensions[col_letter].width = width
 
     ws.row_dimensions[1].height = 24
-    ws.row_dimensions[2].height = 36
+    ws.row_dimensions[2].height = 40
 
 
 def create_settlement_workbook(
@@ -224,10 +308,10 @@ def create_settlement_workbook(
     year: int,
     supplier: str,
     location_name: str,
+    columns: list[str],
 ) -> None:
     wb = Workbook()
 
-    # Remove default sheet.
     default_ws = wb.active
     wb.remove(default_ws)
 
@@ -239,6 +323,7 @@ def create_settlement_workbook(
             month=month,
             supplier=supplier,
             location_name=location_name,
+            columns=columns,
         )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -341,6 +426,7 @@ def main() -> None:
             year=args.year,
             supplier=target.supplier,
             location_name=target.location_name,
+            columns=target.columns,
         )
         print(f"[CREATE] {output_path}")
         created += 1
