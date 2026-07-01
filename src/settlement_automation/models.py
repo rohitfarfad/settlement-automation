@@ -45,6 +45,16 @@ class ValeroMonthlyCharge:
     amount: Decimal
     description: str
 
+@dataclass(frozen=True)
+class UnclassifiedAdjustment:
+    supplier: str
+    location_id: str | None
+    location_name: str | None
+    report_date: date
+    amount: Decimal | None
+    description: str
+    raw_line: str
+
 
 @dataclass
 class ParsedReport:
@@ -54,3 +64,4 @@ class ParsedReport:
     mobile_adjustments: list[MobileAdjustment]
     valero_pay_plus_adjustments: list[ValeroPayPlusAdjustment] = field(default_factory=list)
     valero_monthly_charges: list[ValeroMonthlyCharge] = field(default_factory=list)
+    unclassified_adjustments: list[UnclassifiedAdjustment] = field(default_factory=list)

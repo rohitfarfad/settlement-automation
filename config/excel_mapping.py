@@ -165,17 +165,35 @@ def normalize_excel_text(value: object) -> str:
     return text.strip()
 
 
-def strip_supplier_from_location_name(location_name: str, supplier: str) -> str:
+def normalize_workbook_location_name(value: object) -> str:
     """
-    Converts portal/config location names into likely workbook-location names.
+    Normalize location names for workbook filenames while preserving useful
+    business punctuation like apostrophes.
 
     Examples:
-        "Five Corners Valero" -> "FIVE CORNERS"
-        "CENTRAL AVE SUNOCO" -> "CENTRAL AVE"
-        "HAVERSTRAW" -> "HAVERSTRAW"
+        "Wappinger's Falls Valero" -> "WAPPINGER'S FALLS"
+        "Colonie Central Ave Valero" -> "COLONIE CENTRAL AVE"
+        "Walker Valley Valero" -> "WALKER VALLEY"
+
+    This is intentionally different from normalize_excel_text(), which removes
+    punctuation and is better suited for fuzzy/header matching.
+    """
+    if value is None:
+        return ""
+
+    text = str(value).strip().upper()
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def strip_supplier_from_location_name(location_name: str, supplier: str) -> str:
+    """
+    Converts configured office location names into workbook-location names.
+
+    This should be used for workbook filenames, so it preserves apostrophes.
     """
     supplier = normalize_supplier(supplier)
-    text = normalize_excel_text(location_name)
+    text = normalize_workbook_location_name(location_name)
 
     supplier_tokens = {
         "CITGO": {"CITGO"},
@@ -192,19 +210,31 @@ def get_excel_location_name(
     location_id: str,
     location_name: str | None = None,
 ) -> str:
+    """
+    Resolve workbook location name.
+
+    Important:
+        The office workbook naming should come from config.locations by
+        location_id, not from the parser/report location name.
+
+    Priority:
+        1. Explicit Excel override
+        2. config.locations mapping by supplier + location_id
+        3. Parser/report location_name as final fallback only
+    """
     supplier = normalize_supplier(supplier)
     location_id = str(location_id)
 
     override = LOCATION_EXCEL_NAME_OVERRIDES.get((supplier, location_id))
     if override:
-        return normalize_excel_text(override)
-
-    if location_name:
-        return strip_supplier_from_location_name(location_name, supplier)
+        return strip_supplier_from_location_name(override, supplier)
 
     known_location_name = LOCATION_DICTIONARIES.get(supplier, {}).get(location_id)
     if known_location_name:
         return strip_supplier_from_location_name(known_location_name, supplier)
+
+    if location_name:
+        return strip_supplier_from_location_name(location_name, supplier)
 
     raise ValueError(
         f"No Excel location name mapping for supplier={supplier}, "
