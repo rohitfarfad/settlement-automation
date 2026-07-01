@@ -1,34 +1,3 @@
-#!/usr/bin/env python3
-
-"""
-Create blank settlement Excel workbooks.
-
-Naming convention:
-    {YEAR} CC {LOCATION_NAME} {SUPPLIER}.xlsx
-
-Example:
-    2026 CC HAVERSTRAW VALERO.xlsx
-    2026 CC MONTECELLO VALERO.xlsx
-
-Workbook structure:
-    One workbook per supplier/location.
-    12 monthly sheets:
-        JAN 2026, FEB 2026, ..., DEC 2026
-
-Each monthly sheet has:
-    DATE
-    STORE AMT
-    DIFF
-    GROSS AMT
-    NET AMT
-    CC FEE
-    DATE OF VALERO CREDIT
-    MONTHLY VAL CHGS IN FEES
-    FUELMAN
-    MOBILE PAY ADDED TO GROSS/NET
-    VALERO PAY +
-    GIFT CARDS
-"""
 from __future__ import annotations
 from _path_setup import PROJECT_ROOT  # noqa: F401
 import argparse
@@ -37,12 +6,20 @@ import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from dataclasses import dataclass
+from typing import Mapping
+
+
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
-from config.locations import CITGO_LOCATIONS, VALERO_LOCATIONS, SUNOCO_LOCATIONS
-
+from config.locations import (
+    CITGO_LOCATIONS,
+    VALERO_LOCATIONS,
+    SUNOCO_DEALER_LOCATIONS,
+    SUNOCO_WHOLESALER_LOCATIONS,
+)
 
 MONTH_ABBR = [
     "JAN",
@@ -82,19 +59,28 @@ VALERO_COLUMNS = [
 ]
 
 
-SUNOCO_COLUMNS = [
+SUNOCO_DEALER_COLUMNS = [
     "DATE",
     "STORE AMT",
     "DIFF",
     "GROSS AMT",
     "NET AMT",
     "CC FEE",
-    "DATE OF VALERO CREDIT",
-    "MONTHLY VAL CHGS IN FEES",
-    "FUELMAN",
-    "MOBILE PAY ADDED TO GROSS/NET",
-    "VALERO PAY +",
-    "GIFT CARDS",
+    "DATE OF SUNOCO CREDIT",
+    "SUNOCO MONTHLY CHGS",
+    "GIFT CARD",
+]
+
+
+SUNOCO_WHOLESALER_COLUMNS = [
+    "DATE",
+    "GROSS AMT",
+    "NET AMT",
+    "DATE OF SUNOCO CREDIT",
+    "CC FEE",
+    "MONTHLY BILLING",
+    "GIFT CARD DEDUCTED FROM GROSS/NET",
+    "DATE INV APPLIED",
 ]
 
 
@@ -115,28 +101,61 @@ CITGO_COLUMNS = [
 ]
 
 
+
 @dataclass(frozen=True)
 class SupplierWorkbookConfig:
     supplier: str
+    workbook_type: str
     locations: Mapping[str, str]
     columns: list[str]
+
+    # Optional formula behavior.
+    diff_formula: str | None = None
+    cc_fee_formula: str | None = None
+
+    # Columns that should be treated as dates and should not be summed.
+    date_columns: tuple[str, ...] = ("DATE",)
 
 
 SUPPLIER_WORKBOOK_CONFIGS: dict[str, SupplierWorkbookConfig] = {
     "CITGO": SupplierWorkbookConfig(
         supplier="CITGO",
+        workbook_type="CITGO",
         locations=CITGO_LOCATIONS,
         columns=CITGO_COLUMNS,
+        diff_formula="gross_minus_store",
+        cc_fee_formula="gross_minus_net",
+        date_columns=("DATE", "DATE OF VALERO CREDIT"),
     ),
+
     "VALERO": SupplierWorkbookConfig(
         supplier="VALERO",
+        workbook_type="VALERO",
         locations=VALERO_LOCATIONS,
         columns=VALERO_COLUMNS,
+        diff_formula="store_minus_gross",
+        cc_fee_formula="gross_minus_net",
+        date_columns=("DATE", "DATE OF VALERO CREDIT"),
     ),
-    "SUNOCO": SupplierWorkbookConfig(
+
+    "SUNOCO_DEALER": SupplierWorkbookConfig(
         supplier="SUNOCO",
-        locations=SUNOCO_LOCATIONS,
-        columns=SUNOCO_COLUMNS,
+        workbook_type="SUNOCO_DEALER",
+        locations=SUNOCO_DEALER_LOCATIONS,
+        columns=SUNOCO_DEALER_COLUMNS,
+        diff_formula="gross_minus_store",
+        cc_fee_formula="net_minus_gross",
+        date_columns=("DATE", "DATE OF SUNOCO CREDIT"),
+    ),
+
+    "SUNOCO_WHOLESALER": SupplierWorkbookConfig(
+        supplier="SUNOCO",
+        workbook_type="SUNOCO_WHOLESALER",
+        locations=SUNOCO_WHOLESALER_LOCATIONS,
+        columns=SUNOCO_WHOLESALER_COLUMNS,
+        diff_formula=None,
+        cc_fee_formula="net_minus_gross",
+        date_columns=("DATE", "DATE OF SUNOCO CREDIT", "DATE INV APPLIED"),
     ),
 }
 
@@ -144,22 +163,28 @@ SUPPLIER_WORKBOOK_CONFIGS: dict[str, SupplierWorkbookConfig] = {
 @dataclass(frozen=True)
 class SettlementWorkbookTarget:
     supplier: str
+    workbook_type: str
     location_id: str
     location_name: str
     columns: list[str]
-
+    diff_formula: str | None
+    cc_fee_formula: str | None
+    date_columns: tuple[str, ...]
 
 WORKBOOK_TARGETS: list[SettlementWorkbookTarget] = [
     SettlementWorkbookTarget(
         supplier=config.supplier,
+        workbook_type=config.workbook_type,
         location_id=location_id,
         location_name=location_name,
         columns=config.columns,
+        diff_formula=config.diff_formula,
+        cc_fee_formula=config.cc_fee_formula,
+        date_columns=config.date_columns,
     )
     for config in SUPPLIER_WORKBOOK_CONFIGS.values()
     for location_id, location_name in config.locations.items()
 ]
-
 # Keep this mapping aligned with config/excel_mapping.py and config/locations.py.
 # The filename uses location_name, not location_id.
 
@@ -201,8 +226,12 @@ def style_month_sheet(
     year: int,
     month: int,
     supplier: str,
+    workbook_type: str,
     location_name: str,
     columns: list[str],
+    diff_formula: str | None,
+    cc_fee_formula: str | None,
+    date_columns: tuple[str, ...],
 ) -> None:
     title_fill = PatternFill("solid", fgColor="D9EAF7")
     header_fill = PatternFill("solid", fgColor="BDD7EE")
@@ -213,7 +242,11 @@ def style_month_sheet(
     last_col_letter = get_column_letter(max_col)
 
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_col)
-    ws["A1"] = f"{supplier.upper()} SETTLEMENT - {location_name.upper()} - {build_sheet_name(year, month)}"
+    ws["A1"] = (
+        f"{supplier.upper()} SETTLEMENT - "
+        f"{location_name.upper()} - "
+        f"{build_sheet_name(year, month)}"
+    )
     ws["A1"].font = Font(bold=True, size=14)
     ws["A1"].fill = title_fill
     ws["A1"].alignment = Alignment(horizontal="center")
@@ -226,44 +259,93 @@ def style_month_sheet(
         cell.border = border
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
-    days_in_month = calendar.monthrange(year, month)[1]
+    def col_index(header: str) -> int | None:
+        if header not in columns:
+            return None
+        return columns.index(header) + 1
 
-    date_col = columns.index("DATE") + 1
-    store_amt_col = columns.index("STORE AMT") + 1
-    diff_col = columns.index("DIFF") + 1
-    gross_col = columns.index("GROSS AMT") + 1
-    net_col = columns.index("NET AMT") + 1
-    cc_fee_col = columns.index("CC FEE") + 1
+    date_col = col_index("DATE")
+    store_amt_col = col_index("STORE AMT")
+    diff_col = col_index("DIFF")
+    gross_col = col_index("GROSS AMT")
+    net_col = col_index("NET AMT")
+    cc_fee_col = col_index("CC FEE")
+
+    days_in_month = calendar.monthrange(year, month)[1]
 
     for day in range(1, days_in_month + 1):
         row = day + 2
         current_date = date(year, month, day)
 
-        ws.cell(row=row, column=date_col).value = current_date
-        ws.cell(row=row, column=date_col).number_format = "m/d/yyyy"
+        if date_col is not None:
+            ws.cell(row=row, column=date_col).value = current_date
+            ws.cell(row=row, column=date_col).number_format = "m/d/yyyy"
 
-        store_letter = get_column_letter(store_amt_col)
-        gross_letter = get_column_letter(gross_col)
-        net_letter = get_column_letter(net_col)
+        # DIFF formula.
+        # Dealer SUNOCO:
+        #   DIFF = GROSS AMT - STORE AMT
+        #
+        # Valero:
+        #   DIFF = STORE AMT - GROSS AMT
+        #
+        # Wholesaler SUNOCO:
+        #   no DIFF column, so this section is skipped.
+        if (
+            diff_formula is not None
+            and diff_col is not None
+            and store_amt_col is not None
+            and gross_col is not None
+        ):
+            store_letter = get_column_letter(store_amt_col)
+            gross_letter = get_column_letter(gross_col)
 
-        # DIFF = STORE AMT - GROSS AMT
-        ws.cell(row=row, column=diff_col).value = (
-            f'=IF(OR({store_letter}{row}="",{gross_letter}{row}=""),"",'
-            f'ROUND({store_letter}{row}-{gross_letter}{row},2))'
-        )
+            if diff_formula == "gross_minus_store":
+                diff_expr = f"{gross_letter}{row}-{store_letter}{row}"
+            elif diff_formula == "store_minus_gross":
+                diff_expr = f"{store_letter}{row}-{gross_letter}{row}"
+            else:
+                raise ValueError(f"Unsupported diff formula: {diff_formula}")
 
-        # CC FEE = GROSS AMT - NET AMT
-        ws.cell(row=row, column=cc_fee_col).value = (
-            f'=IF(OR({gross_letter}{row}="",{net_letter}{row}=""),"",'
-            f'ROUND({gross_letter}{row}-{net_letter}{row},2))'
-        )
+            ws.cell(row=row, column=diff_col).value = (
+                f'=IF(OR({store_letter}{row}="",{gross_letter}{row}=""),"",'
+                f'ROUND({diff_expr},2))'
+            )
 
-        for col_idx in range(1, max_col + 1):
+        # CC FEE formula.
+        # SUNOCO:
+        #   CC FEE = NET AMT - GROSS AMT
+        #
+        # Valero/CITGO:
+        #   CC FEE = GROSS AMT - NET AMT
+        if (
+            cc_fee_formula is not None
+            and cc_fee_col is not None
+            and gross_col is not None
+            and net_col is not None
+        ):
+            gross_letter = get_column_letter(gross_col)
+            net_letter = get_column_letter(net_col)
+
+            if cc_fee_formula == "net_minus_gross":
+                cc_fee_expr = f"{net_letter}{row}-{gross_letter}{row}"
+            elif cc_fee_formula == "gross_minus_net":
+                cc_fee_expr = f"{gross_letter}{row}-{net_letter}{row}"
+            else:
+                raise ValueError(f"Unsupported CC fee formula: {cc_fee_formula}")
+
+            ws.cell(row=row, column=cc_fee_col).value = (
+                f'=IF(OR({gross_letter}{row}="",{net_letter}{row}=""),"",'
+                f'ROUND({cc_fee_expr},2))'
+            )
+
+        for col_idx, header in enumerate(columns, start=1):
             cell = ws.cell(row=row, column=col_idx)
             cell.border = border
             cell.alignment = Alignment(horizontal="center", vertical="center")
 
-            if columns[col_idx - 1] != "DATE":
+            if header in date_columns:
+                cell.number_format = "m/d/yyyy"
+            else:
                 cell.number_format = '#,##0.00'
 
     total_row = days_in_month + 4
@@ -271,16 +353,16 @@ def style_month_sheet(
     ws.cell(row=total_row, column=1).font = Font(bold=True)
 
     for col_idx, header in enumerate(columns, start=1):
-        if header == "DATE":
+        cell = ws.cell(row=total_row, column=col_idx)
+        cell.border = border
+
+        if header in date_columns:
             continue
 
         col_letter = get_column_letter(col_idx)
-        ws.cell(row=total_row, column=col_idx).value = (
-            f"=SUM({col_letter}3:{col_letter}{days_in_month + 2})"
-        )
-        ws.cell(row=total_row, column=col_idx).font = Font(bold=True)
-        ws.cell(row=total_row, column=col_idx).number_format = '#,##0.00'
-        ws.cell(row=total_row, column=col_idx).border = border
+        cell.value = f"=SUM({col_letter}3:{col_letter}{days_in_month + 2})"
+        cell.font = Font(bold=True)
+        cell.number_format = '#,##0.00'
 
     ws.freeze_panes = "A3"
     ws.auto_filter.ref = f"A2:{last_col_letter}{days_in_month + 2}"
@@ -288,10 +370,10 @@ def style_month_sheet(
     for col_idx, header in enumerate(columns, start=1):
         col_letter = get_column_letter(col_idx)
 
-        if header == "DATE":
-            width = 13
-        elif header in {"DATE OF VALERO CREDIT"}:
-            width = 22
+        if header in date_columns:
+            width = 18
+        elif len(header) >= 28:
+            width = 34
         elif len(header) >= 20:
             width = 26
         else:
@@ -300,15 +382,19 @@ def style_month_sheet(
         ws.column_dimensions[col_letter].width = width
 
     ws.row_dimensions[1].height = 24
-    ws.row_dimensions[2].height = 40
+    ws.row_dimensions[2].height = 42
 
 
 def create_settlement_workbook(
     output_path: Path,
     year: int,
     supplier: str,
+    workbook_type: str,
     location_name: str,
     columns: list[str],
+    diff_formula: str | None,
+    cc_fee_formula: str | None,
+    date_columns: tuple[str, ...],
 ) -> None:
     wb = Workbook()
 
@@ -322,12 +408,17 @@ def create_settlement_workbook(
             year=year,
             month=month,
             supplier=supplier,
+            workbook_type=workbook_type,
             location_name=location_name,
             columns=columns,
+            diff_formula=diff_formula,
+            cc_fee_formula=cc_fee_formula,
+            date_columns=date_columns,
         )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(output_path)
+
 
 
 def filter_targets(
@@ -425,8 +516,12 @@ def main() -> None:
             output_path=output_path,
             year=args.year,
             supplier=target.supplier,
+            workbook_type=target.workbook_type,
             location_name=target.location_name,
             columns=target.columns,
+            diff_formula=target.diff_formula,
+            cc_fee_formula=target.cc_fee_formula,
+            date_columns=target.date_columns,
         )
         print(f"[CREATE] {output_path}")
         created += 1
