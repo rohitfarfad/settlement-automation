@@ -49,6 +49,21 @@ class AppSettings:
     download_timeout_seconds: int
     max_retries: int
 
+    notification_email_enabled: bool
+    notification_email_mode: str
+    notification_email_provider: str
+    notification_output_dir: Path
+
+    notification_email_to: str
+    notification_email_cc: str
+    notification_email_bcc: str
+    notification_email_test_to: str
+
+    graph_tenant_id: str
+    graph_client_id: str
+    graph_client_secret: str
+    graph_sender_email: str
+
 
 def get_settings() -> AppSettings:
     output_dir = PROJECT_ROOT / "output"
@@ -61,19 +76,31 @@ def get_settings() -> AppSettings:
         output_dir=output_dir,
         log_dir=output_dir / "logs",
         trace_dir=output_dir / "traces",
-        excel_workbook_root=_get_path(
-            "EXCEL_WORKBOOK_ROOT",
-            PROJECT_ROOT / "data" / "workbooks",
-        ),
-        excel_output_dir=_get_path(
-            "EXCEL_OUTPUT_DIR",
-            output_dir / "excel",
-        ),
-        excel_audit_dir=_get_path(
-            "EXCEL_AUDIT_DIR",
-            output_dir / "excel_audit",
-        ),
         headless_browser=_get_bool("HEADLESS_BROWSER", True),
         download_timeout_seconds=_get_int("DOWNLOAD_TIMEOUT_SECONDS", 60),
         max_retries=_get_int("MAX_RETRIES", 3),
+
+        notification_email_enabled=_get_bool(
+            "NOTIFICATION_EMAIL_ENABLED",
+            False,
+        ),
+        notification_email_mode=os.getenv(
+            "NOTIFICATION_EMAIL_MODE",
+            "off",
+        ).strip().lower(),
+        notification_email_provider=os.getenv(
+            "NOTIFICATION_EMAIL_PROVIDER",
+            "graph",
+        ).strip().lower(),
+        notification_output_dir=output_dir / "notifications",
+
+        notification_email_to=os.getenv("NOTIFICATION_EMAIL_TO", "").strip(),
+        notification_email_cc=os.getenv("NOTIFICATION_EMAIL_CC", "").strip(),
+        notification_email_bcc=os.getenv("NOTIFICATION_EMAIL_BCC", "").strip(),
+        notification_email_test_to=os.getenv("NOTIFICATION_EMAIL_TEST_TO", "").strip(),
+
+        graph_tenant_id=os.getenv("GRAPH_TENANT_ID", "").strip(),
+        graph_client_id=os.getenv("GRAPH_CLIENT_ID", "").strip(),
+        graph_client_secret=os.getenv("GRAPH_CLIENT_SECRET", "").strip(),
+        graph_sender_email=os.getenv("GRAPH_SENDER_EMAIL", "").strip(),
     )

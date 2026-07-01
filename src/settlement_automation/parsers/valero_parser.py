@@ -7,6 +7,7 @@ from settlement_automation.models import (
     DailySettlementTotal,
     MobileAdjustment,
     ParsedReport,
+    UnclassifiedAdjustment,
     ValeroPayPlusAdjustment,
     ValeroMonthlyCharge,
 )
@@ -42,6 +43,10 @@ PAYPLUS_RE = re.compile(
 MONTHLY_CHARGE_RE = re.compile(
     r"^\s*(\d+)\s+MONTHLY\s+(.+?)\s+BILLING\s+([\d,]+\.\d{2}[+-])\s*$",
     re.IGNORECASE,
+)
+
+UNCLASSIFIED_ADJUSTMENT_RE = re.compile(
+    r"^\s*(\d+)\s+(.+?)\s+([\d,]+\.\d{2}[+-])\s*$"
 )
 
 def is_valero_mobile_code(card_code: str) -> bool:
@@ -125,6 +130,12 @@ def parse_valero_charge_amount(value: str):
     """
     return abs(parse_money(value))
 
+def parse_unclassified_adjustment_amount(value: str):
+    try:
+        return parse_money(value)
+    except Exception:
+        return None
+
 def parse_valero_report(file_path: str) -> ParsedReport:
     text = Path(file_path).read_text(encoding="utf-8", errors="ignore")
     lines = text.splitlines()
@@ -151,6 +162,7 @@ def parse_valero_report(file_path: str) -> ParsedReport:
     mobile_adjustments = []
     valero_pay_plus_adjustments = []
     valero_monthly_charges = []
+    unclassified_adjustments = []
 
     current_location_id = None
     current_location_name = None
@@ -207,6 +219,25 @@ def parse_valero_report(file_path: str) -> ParsedReport:
                 )
             )
 
+            continue
+
+        unclassified = UNCLASSIFIED_ADJUSTMENT_RE.match(line)
+
+        if unclassified:
+            location_id, description, amount = unclassified.groups()
+            location_id = str(location_id)
+
+            unclassified_adjustments.append(
+                UnclassifiedAdjustment(
+                    supplier="VALERO",
+                    location_id=location_id,
+                    location_name=locations_by_id.get(location_id, "UNKNOWN"),
+                    report_date=report_date,
+                    amount=parse_unclassified_adjustment_amount(amount),
+                    description=description.strip(),
+                    raw_line=line.rstrip(),
+                )
+            )
             continue
 
         if current_location_id is None:
@@ -270,6 +301,14 @@ def parse_valero_report(file_path: str) -> ParsedReport:
     valero_monthly_charges.sort(
         key=lambda row: (row.date, row.location_id, row.description)
     )
+    unclassified_adjustments.sort(
+        key=lambda row: (
+            row.report_date,
+            row.location_id or "",
+            row.description,
+            row.raw_line,
+        )
+    )
 
     return ParsedReport(
         supplier="VALERO",
@@ -278,4 +317,5 @@ def parse_valero_report(file_path: str) -> ParsedReport:
         mobile_adjustments=mobile_adjustments,
         valero_pay_plus_adjustments=valero_pay_plus_adjustments,
         valero_monthly_charges=valero_monthly_charges,
+        unclassified_adjustments=unclassified_adjustments,
     )
