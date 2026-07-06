@@ -1,11 +1,11 @@
-Subject: [WARNING] Credit Cards Daily Settlement Report - Report Date 2026-07-03
+Subject: [OK] Credit Cards Daily Settlement Report - Report Date 2026-07-03
 
 Prestige Settlement Daily Report
 ========================================
 Report date: 2026-07-03
-Run date: 2026-07-05
-Started at: 2026-07-05 21:03:37
-Finished at: 2026-07-05 21:03:37
+Run date: 2026-07-06
+Started at: 2026-07-06 12:10:46
+Finished at: 2026-07-06 12:11:28
 
 Run summary
 ----------------------------------------
@@ -15,12 +15,17 @@ Backdated mobile adjustment rows: 18
 Valero Pay+ rows: 34
 Valero monthly charges: 50
 Unclassified adjustments: 0
-Warnings: 44
+Warnings: 0
 Errors: 0
 
 Fetch results
 ----------------------------------------
-- No fetch results available.
+- valero / dtn: success
+  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-03.txt
+- citgo / dtn: success
+  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/citgo/2026/07/citgo_2026-07-03.txt
+- sunoco / sunoco: success
+  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/sunoco/2026/07/sunoco_2026-07-03.txt
 
 Data parsed for sheet entry
 ----------------------------------------
@@ -153,101 +158,12 @@ Excel write summary
 ----------------------------------------
 Written cells: 0
 Skipped cells: 0
-Excel warnings: 44
-- VALERO 2026-07-03: written=0, skipped=0, dry_run=True, write_originals=False
-  warning: Workbook not found: data/workbooks/2026 CC HIGHGATE VALERO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC BERKSHIRE JOLLEY VALERO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC MONTICELLO VALERO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC HIGHGATE VALERO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BERKSHIRE JOLLEY VALERO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC MONTICELLO VALERO.xlsx
-- CITGO 2026-07-03: written=0, skipped=0, dry_run=True, write_originals=False
-  warning: Workbook not found: data/workbooks/2026 CC HAVERSTRAW CITGO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC ELLENVILLE CITGO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC FREEDOM PLAINS CITGO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC WESTERLO CITGO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC ERIE BLVD CITGO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC UPPER GLEN QUEENSBURY CITGO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC HAVERSTRAW CITGO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ELLENVILLE CITGO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC FREEDOM PLAINS CITGO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC WESTERLO CITGO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ERIE BLVD CITGO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC UPPER GLEN QUEENSBURY CITGO.xlsx
-- SUNOCO 2026-07-04: written=0, skipped=0, dry_run=True, write_originals=False
-  warning: Workbook not found: data/workbooks/2026 CC 128 WASHINGTON MART SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC 84 QUICK STOP SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC CENTRAL AVE SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC NEW SCOTLAND SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC GLENMONT SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC STEWART SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC VAILS GATE SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC ROCK HILL SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC BALLSTON SPA SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC ROUTE 302 SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC DOLSONTOWN ROAD SUNOCO.xlsx
-  warning: Workbook not found: data/workbooks/2026 CC AVIATION PRESTIGE-474 SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC 128 WASHINGTON MART SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC 84 QUICK STOP SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC CENTRAL AVE SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC NEW SCOTLAND SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC GLENMONT SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC STEWART SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC VAILS GATE SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ROCK HILL SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BALLSTON SPA SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ROUTE 302 SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC DOLSONTOWN ROAD SUNOCO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC AVIATION PRESTIGE-474 SUNOCO.xlsx
+Excel warnings: 0
+- No Excel write results available.
 
 Warnings
 ----------------------------------------
-- Workbook not found: data/workbooks/2026 CC HIGHGATE VALERO.xlsx
-- Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
-- Workbook not found: data/workbooks/2026 CC BERKSHIRE JOLLEY VALERO.xlsx
-- Workbook not found: data/workbooks/2026 CC MONTICELLO VALERO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC HIGHGATE VALERO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BERKSHIRE JOLLEY VALERO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC MONTICELLO VALERO.xlsx
-- Workbook not found: data/workbooks/2026 CC HAVERSTRAW CITGO.xlsx
-- Workbook not found: data/workbooks/2026 CC ELLENVILLE CITGO.xlsx
-- Workbook not found: data/workbooks/2026 CC FREEDOM PLAINS CITGO.xlsx
-- Workbook not found: data/workbooks/2026 CC WESTERLO CITGO.xlsx
-- Workbook not found: data/workbooks/2026 CC ERIE BLVD CITGO.xlsx
-- Workbook not found: data/workbooks/2026 CC UPPER GLEN QUEENSBURY CITGO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC HAVERSTRAW CITGO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ELLENVILLE CITGO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC FREEDOM PLAINS CITGO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC WESTERLO CITGO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ERIE BLVD CITGO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC UPPER GLEN QUEENSBURY CITGO.xlsx
-- Workbook not found: data/workbooks/2026 CC 128 WASHINGTON MART SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC 84 QUICK STOP SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC CENTRAL AVE SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC NEW SCOTLAND SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC GLENMONT SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC STEWART SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC VAILS GATE SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC ROCK HILL SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC BALLSTON SPA SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC ROUTE 302 SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC DOLSONTOWN ROAD SUNOCO.xlsx
-- Workbook not found: data/workbooks/2026 CC AVIATION PRESTIGE-474 SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC 128 WASHINGTON MART SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC 84 QUICK STOP SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC CENTRAL AVE SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC NEW SCOTLAND SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC GLENMONT SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC STEWART SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC VAILS GATE SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ROCK HILL SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BALLSTON SPA SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ROUTE 302 SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC DOLSONTOWN ROAD SUNOCO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC AVIATION PRESTIGE-474 SUNOCO.xlsx
+- No warnings.
 
 Errors
 ----------------------------------------

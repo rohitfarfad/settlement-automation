@@ -1,23 +1,26 @@
-from datetime import date, timedelta
+from datetime import date
 
 
-def get_sunoco_portal_request_date(business_date: date) -> date:
+def get_sunoco_portal_request_date(requested_report_date: date) -> date:
     """
-    Sunoco portal reports are searched by settlement date.
+    Return the Sunoco report date to request from the portal/API.
 
-    Parser already handles:
-        JSON settlementDate -> business_date = settlementDate - 1 day
+    Important:
+    The parser already converts Sunoco settlementDate/reportDate into the
+    business date by subtracting one day.
 
-    This helper is only for choosing the date to search in the portal.
+    Therefore, the fetcher should request exactly the date supplied by the
+    caller. The caller's date is treated as the Sunoco report/settlement date,
+    not the final Excel business date.
     """
-    return business_date + timedelta(days=1)
+    return requested_report_date
 
 
-def get_sunoco_settlement_date_for_business_date(business_date: date) -> date:
+def get_sunoco_settlement_date_for_business_date(requested_report_date: date) -> date:
     """
     Backward-compatible alias.
 
-    Older Sunoco connector skeleton imported this name.
-    Keep this so old code does not break.
+    Older code treated the input as business_date and added one day.
+    New behavior treats the input as requested report date directly.
     """
-    return get_sunoco_portal_request_date(business_date)
+    return get_sunoco_portal_request_date(requested_report_date)

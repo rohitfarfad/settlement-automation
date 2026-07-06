@@ -1,0 +1,166 @@
+Subject: [ERROR] Credit Cards Daily Settlement Report - Report Date 2026-07-06
+
+Prestige Settlement Daily Report
+========================================
+Report date: 2026-07-06
+Run date: 2026-07-06
+Started at: 2026-07-06 12:57:23
+Finished at: 2026-07-06 12:57:59
+
+Run summary
+----------------------------------------
+Suppliers parsed: VALERO
+Daily totals: 72
+Backdated mobile adjustment rows: 12
+Valero Pay+ rows: 271
+Valero monthly charges: 0
+Unclassified adjustments: 0
+Warnings: 0
+Errors: 2
+
+Fetch results
+----------------------------------------
+- valero / dtn: success
+  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-06.txt
+- citgo / dtn: failed
+  error: No DTN rows found for supplier=citgo, business_date=2026-07-06
+- sunoco / sunoco: failed
+  error: Browser automation failed for supplier=sunoco, portal=sunoco: Sunoco JSON response is missing expected markers: ['totalSalesAmount', 'totalDealerFeeAmount', 'settlementDate', 'totalAdjustedNetAmount']
+
+Data parsed for sheet entry
+----------------------------------------
+VALERO
+- Daily totals:
+  2026-07-03 | Five Corners Valero (10688) | Gross $4,744.23 | Fees $92.33 | Net $4,651.90
+  2026-07-03 | Route 44 Valero (11347) | Gross $14,554.51 | Fees $256.89 | Net $14,297.62
+  2026-07-03 | Brewster Valero (19505) | Gross $13,353.51 | Fees $269.16 | Net $13,084.35
+  2026-07-03 | Wappinger's Falls Valero (19513) | Gross $17,895.58 | Fees $319.88 | Net $17,575.70
+  2026-07-03 | Route 7 Valero (22312) | Gross $8,016.76 | Fees $150.87 | Net $7,865.89
+  2026-07-03 | Saugerties Valero (23473) | Gross $6,725.86 | Fees $137.70 | Net $6,588.16
+  2026-07-03 | Elmira Valero (23810) | Gross $10,636.47 | Fees $189.17 | Net $10,447.30
+  2026-07-03 | New Windsor Valero (24026) | Gross $8,990.04 | Fees $148.55 | Net $8,841.49
+  2026-07-03 | Carmel Valero (24640) | Gross $7,084.19 | Fees $151.72 | Net $6,932.47
+  2026-07-03 | Ulster Avenue Valero (25407) | Gross $12,588.02 | Fees $232.82 | Net $12,355.20
+  2026-07-03 | Montgomery Valero (26740) | Gross $18,700.72 | Fees $330.04 | Net $18,370.68
+  2026-07-03 | Alburg Villiage Jolley (28066) | Gross $153.49 | Fees $4.14 | Net $149.35
+  2026-07-03 | Walker Valero (30371) | Gross $8,025.99 | Fees $158.58 | Net $7,867.41
+  2026-07-03 | Cornell St Valero (30408) | Gross $4,171.69 | Fees $80.48 | Net $4,091.21
+  2026-07-03 | Valero Central Ave (30525) | Gross $7,330.47 | Fees $147.21 | Net $7,183.26
+  2026-07-03 | CHAMPLAIN VALERO (30530) | Gross $9,062.17 | Fees $188.93 | Net $8,873.24
+  2026-07-03 | Fort Ann Valero (32966) | Gross $10,567.58 | Fees $206.58 | Net $10,361.00
+  2026-07-03 | Slate Hill Valero (45371) | Gross $6,676.46 | Fees $135.72 | Net $6,540.74
+  2026-07-03 | DELMAR VALERO (53579) | Gross $19,070.78 | Fees $378.71 | Net $18,692.07
+  2026-07-03 | South Plank VALERO (72041) | Gross $16,017.22 | Fees $296.11 | Net $15,721.11
+  2026-07-03 | FISHKILL (76596) | Gross $17,746.55 | Fees $293.00 | Net $17,453.55
+  2026-07-03 | SOUTHFIELDS (76604) | Gross $16,157.33 | Fees $321.32 | Net $15,836.01
+  2026-07-03 | Willsboro Valero (83343) | Gross $13,313.94 | Fees $262.26 | Net $13,051.68
+  2026-07-03 | Prestige Valero (93815) | Gross $19,214.60 | Fees $354.28 | Net $18,860.32
+  2026-07-04 | Five Corners Valero (10688) | Gross $4,776.50 | Fees $87.94 | Net $4,688.56
+  2026-07-04 | Route 44 Valero (11347) | Gross $10,320.85 | Fees $177.62 | Net $10,143.23
+  2026-07-04 | Brewster Valero (19505) | Gross $7,293.95 | Fees $138.37 | Net $7,155.58
+  2026-07-04 | Wappinger's Falls Valero (19513) | Gross $17,688.65 | Fees $301.12 | Net $17,387.53
+  2026-07-04 | Route 7 Valero (22312) | Gross $7,309.62 | Fees $143.04 | Net $7,166.58
+  2026-07-04 | Saugerties Valero (23473) | Gross $6,156.34 | Fees $128.66 | Net $6,027.68
+  2026-07-04 | Elmira Valero (23810) | Gross $7,398.66 | Fees $131.19 | Net $7,267.47
+  2026-07-04 | New Windsor Valero (24026) | Gross $6,237.99 | Fees $109.13 | Net $6,128.86
+  2026-07-04 | Carmel Valero (24640) | Gross $4,219.20 | Fees $91.95 | Net $4,127.25
+  2026-07-04 | Ulster Avenue Valero (25407) | Gross $7,839.50 | Fees $147.09 | Net $7,692.41
+  2026-07-04 | Montgomery Valero (26740) | Gross $15,876.65 | Fees $257.41 | Net $15,619.24
+  2026-07-04 | Alburg Villiage Jolley (28066) | Gross $382.31 | Fees $10.96 | Net $371.35
+  2026-07-04 | Walker Valero (30371) | Gross $5,386.10 | Fees $115.31 | Net $5,270.79
+  2026-07-04 | Cornell St Valero (30408) | Gross $2,546.38 | Fees $48.68 | Net $2,497.70
+  2026-07-04 | Valero Central Ave (30525) | Gross $6,945.24 | Fees $128.92 | Net $6,816.32
+  2026-07-04 | CHAMPLAIN VALERO (30530) | Gross $4,997.95 | Fees $110.70 | Net $4,887.25
+  2026-07-04 | Fort Ann Valero (32966) | Gross $5,857.97 | Fees $113.78 | Net $5,744.19
+  2026-07-04 | Slate Hill Valero (45371) | Gross $5,954.72 | Fees $110.74 | Net $5,843.98
+  2026-07-04 | DELMAR VALERO (53579) | Gross $12,660.96 | Fees $252.11 | Net $12,408.85
+  2026-07-04 | South Plank VALERO (72041) | Gross $11,984.12 | Fees $211.94 | Net $11,772.18
+  2026-07-04 | FISHKILL (76596) | Gross $14,152.30 | Fees $228.53 | Net $13,923.77
+  2026-07-04 | SOUTHFIELDS (76604) | Gross $12,404.64 | Fees $245.43 | Net $12,159.21
+  2026-07-04 | Willsboro Valero (83343) | Gross $11,588.96 | Fees $229.62 | Net $11,359.34
+  2026-07-04 | Prestige Valero (93815) | Gross $15,436.06 | Fees $272.15 | Net $15,163.91
+  2026-07-05 | Five Corners Valero (10688) | Gross $3,629.82 | Fees $70.68 | Net $3,559.14
+  2026-07-05 | Route 44 Valero (11347) | Gross $59.83 | Fees $0.66 | Net $59.17
+  2026-07-05 | Brewster Valero (19505) | Gross $14,589.26 | Fees $269.32 | Net $14,319.94
+  2026-07-05 | Wappinger's Falls Valero (19513) | Gross $17,452.82 | Fees $308.65 | Net $17,144.17
+  2026-07-05 | Route 7 Valero (22312) | Gross $7,083.13 | Fees $134.75 | Net $6,948.38
+  2026-07-05 | Saugerties Valero (23473) | Gross $7,039.81 | Fees $145.04 | Net $6,894.77
+  2026-07-05 | Elmira Valero (23810) | Gross $7,062.36 | Fees $134.65 | Net $6,927.71
+  2026-07-05 | New Windsor Valero (24026) | Gross $7,693.83 | Fees $133.75 | Net $7,560.08
+  2026-07-05 | Carmel Valero (24640) | Gross $6,124.50 | Fees $135.11 | Net $5,989.39
+  2026-07-05 | Ulster Avenue Valero (25407) | Gross $8,697.02 | Fees $159.28 | Net $8,537.74
+  2026-07-05 | Montgomery Valero (26740) | Gross $12,809.90 | Fees $224.85 | Net $12,585.05
+  2026-07-05 | Alburg Villiage Jolley (28066) | Gross $1,337.13 | Fees $31.99 | Net $1,305.14
+  2026-07-05 | Walker Valero (30371) | Gross $3,735.27 | Fees $82.53 | Net $3,652.74
+  2026-07-05 | Cornell St Valero (30408) | Gross $2,767.60 | Fees $57.56 | Net $2,710.04
+  2026-07-05 | Valero Central Ave (30525) | Gross $5,460.13 | Fees $106.63 | Net $5,353.50
+  2026-07-05 | CHAMPLAIN VALERO (30530) | Gross $12,067.66 | Fees $272.90 | Net $11,794.76
+  2026-07-05 | Fort Ann Valero (32966) | Gross $7,558.89 | Fees $149.88 | Net $7,409.01
+  2026-07-05 | Slate Hill Valero (45371) | Gross $5,490.55 | Fees $107.50 | Net $5,383.05
+  2026-07-05 | DELMAR VALERO (53579) | Gross $15,188.99 | Fees $313.62 | Net $14,875.37
+  2026-07-05 | South Plank VALERO (72041) | Gross $11,904.11 | Fees $217.84 | Net $11,686.27
+  2026-07-05 | FISHKILL (76596) | Gross $14,890.10 | Fees $251.44 | Net $14,638.66
+  2026-07-05 | SOUTHFIELDS (76604) | Gross $12,233.61 | Fees $249.37 | Net $11,984.24
+  2026-07-05 | Willsboro Valero (83343) | Gross $12,639.22 | Fees $239.52 | Net $12,399.70
+  2026-07-05 | Prestige Valero (93815) | Gross $15,209.95 | Fees $271.44 | Net $14,938.51
+- Backdated mobile adjustment summary:
+  2026-07-02 | Route 44 Valero (11347) | Gross $63.28 | Fees $0.00 | Net $63.28
+  2026-07-02 | Brewster Valero (19505) | Gross $99.77 | Fees $2.44 | Net $97.33
+  2026-07-02 | Wappinger's Falls Valero (19513) | Gross $199.27 | Fees $0.00 | Net $199.27
+  2026-07-02 | Elmira Valero (23810) | Gross $57.58 | Fees $0.00 | Net $57.58
+  2026-07-02 | New Windsor Valero (24026) | Gross $70.74 | Fees $0.55 | Net $70.19
+  2026-07-02 | Ulster Avenue Valero (25407) | Gross $73.95 | Fees $1.59 | Net $72.36
+  2026-07-02 | Montgomery Valero (26740) | Gross $442.39 | Fees $0.00 | Net $442.39
+  2026-07-02 | South Plank VALERO (72041) | Gross $42.01 | Fees $0.89 | Net $41.12
+  2026-07-02 | FISHKILL (76596) | Gross $113.54 | Fees $0.00 | Net $113.54
+  2026-07-02 | Prestige Valero (93815) | Gross $85.38 | Fees $1.79 | Net $83.59
+  GRAND TOTAL | Gross $1,247.91 | Fees $7.26 | Net $1,240.65
+- Valero Pay+ adjustment summary:
+  2026-07-03 | Route 44 Valero (11347) | Count 2 | Amount $4.15 | Sources VALP
+  2026-07-03 | Wappinger's Falls Valero (19513) | Count 4 | Amount $4.32 | Sources VALP, VPAY
+  2026-07-03 | Elmira Valero (23810) | Count 3 | Amount $3.61 | Sources VALP, VPAY
+  2026-07-03 | New Windsor Valero (24026) | Count 6 | Amount $6.45 | Sources VALP, VPAY
+  2026-07-03 | Ulster Avenue Valero (25407) | Count 6 | Amount $7.59 | Sources VALP, VISA, VPAY
+  2026-07-03 | Montgomery Valero (26740) | Count 9 | Amount $9.77 | Sources VALP, VPAY
+  2026-07-03 | DELMAR VALERO (53579) | Count 2 | Amount $1.44 | Sources VPAY
+  2026-07-03 | South Plank VALERO (72041) | Count 1 | Amount $1.02 | Sources VALP
+  2026-07-03 | FISHKILL (76596) | Count 8 | Amount $7.80 | Sources VALP, VPAY
+  2026-07-03 | Prestige Valero (93815) | Count 5 | Amount $4.91 | Sources VALP, VPAY
+  2026-07-04 | Route 44 Valero (11347) | Count 10 | Amount $19.40 | Sources MC, VALP, VISA
+  2026-07-04 | Wappinger's Falls Valero (19513) | Count 19 | Amount $38.04 | Sources PPAL, VALP, VISA
+  2026-07-04 | Route 7 Valero (22312) | Count 11 | Amount $23.42 | Sources DISC, MC, VISA, VPAY
+  2026-07-04 | Elmira Valero (23810) | Count 8 | Amount $13.07 | Sources VALP, VISA, VPAY
+  2026-07-04 | New Windsor Valero (24026) | Count 19 | Amount $38.01 | Sources AMEX, MC, VALP, VISA, VPAY
+  2026-07-04 | Ulster Avenue Valero (25407) | Count 11 | Amount $19.74 | Sources DISC, VALP, VISA, VPAY
+  2026-07-04 | Montgomery Valero (26740) | Count 42 | Amount $107.33 | Sources MC, VALP, VISA
+  2026-07-04 | Walker Valero (30371) | Count 2 | Amount $8.56 | Sources VALP
+  2026-07-04 | DELMAR VALERO (53579) | Count 4 | Amount $8.15 | Sources VALP, VPAY
+  2026-07-04 | South Plank VALERO (72041) | Count 7 | Amount $12.97 | Sources VALP, VISA, VPAY
+  2026-07-04 | FISHKILL (76596) | Count 38 | Amount $67.56 | Sources AMEX, VALP, VPAY
+  2026-07-04 | SOUTHFIELDS (76604) | Count 3 | Amount $3.79 | Sources VALP
+  2026-07-04 | Prestige Valero (93815) | Count 17 | Amount $33.58 | Sources VALP, VISA, VPAY
+  2026-07-05 | Wappinger's Falls Valero (19513) | Count 6 | Amount $6.07 | Sources VALP, VPAY
+  2026-07-05 | Elmira Valero (23810) | Count 1 | Amount $1.01 | Sources VALP
+  2026-07-05 | New Windsor Valero (24026) | Count 5 | Amount $6.54 | Sources VALP
+  2026-07-05 | Ulster Avenue Valero (25407) | Count 1 | Amount $1.41 | Sources VALP
+  2026-07-05 | Montgomery Valero (26740) | Count 9 | Amount $8.52 | Sources VALP, VPAY
+  2026-07-05 | DELMAR VALERO (53579) | Count 2 | Amount $1.64 | Sources VALP, VPAY
+  2026-07-05 | FISHKILL (76596) | Count 9 | Amount $9.10 | Sources VALP, VPAY
+  2026-07-05 | Willsboro Valero (83343) | Count 1 | Amount $1.49 | Sources VALP
+
+
+Excel write summary
+----------------------------------------
+Written cells: 0
+Skipped cells: 0
+Excel warnings: 0
+- No Excel write results available.
+
+Warnings
+----------------------------------------
+- No warnings.
+
+Errors
+----------------------------------------
+- [fetch] No DTN rows found for supplier=citgo, business_date=2026-07-06 | supplier: CITGO
+- [fetch] Browser automation failed for supplier=sunoco, portal=sunoco: Sunoco JSON response is missing expected markers: ['totalSalesAmount', 'totalDealerFeeAmount', 'settlementDate', 'totalAdjustedNetAmount'] | supplier: SUNOCO

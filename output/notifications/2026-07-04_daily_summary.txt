@@ -1,0 +1,57 @@
+Subject: [OK] Credit Cards Daily Settlement Report - Report Date 2026-07-04
+
+Prestige Settlement Daily Report
+========================================
+Report date: 2026-07-04
+Run date: 2026-07-06
+Started at: 2026-07-06 11:58:24
+Finished at: 2026-07-06 11:58:51
+
+Run summary
+----------------------------------------
+Suppliers parsed: SUNOCO
+Daily totals: 12
+Backdated mobile adjustment rows: 0
+Valero Pay+ rows: 0
+Valero monthly charges: 0
+Unclassified adjustments: 0
+Warnings: 0
+Errors: 0
+
+Fetch results
+----------------------------------------
+- sunoco / sunoco: success
+  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/sunoco/2026/07/sunoco_2026-07-04.txt
+
+Data parsed for sheet entry
+----------------------------------------
+SUNOCO
+- Daily totals:
+  2026-07-04 | 128 WASHINGTON MART (0160544300) | Gross $3,963.86 | Fees $98.10 | Net $3,865.76
+  2026-07-04 | 84 QUICK STOP SUNOCO (0260536800) | Gross $14,951.45 | Fees $311.66 | Net $14,639.79
+  2026-07-04 | CENTRAL AVE SUNOCO (0326461100) | Gross $9,068.36 | Fees $191.02 | Net $8,877.34
+  2026-07-04 | NEW SCOTLAND SUNOCO (0434020400) | Gross $11,611.06 | Fees $250.98 | Net $11,360.08
+  2026-07-04 | GLENMONT SUNOCO (0585555600) | Gross $14,890.19 | Fees $320.10 | Net $14,570.09
+  2026-07-04 | STEWART SUNOCO (0755798600) | Gross $8,373.20 | Fees $178.84 | Net $8,194.36
+  2026-07-04 | VAILS GATE SUNOCO (0853941300) | Gross $4,728.91 | Fees $93.89 | Net $4,635.02
+  2026-07-04 | ROCK HILL SUNOCO (0894029800) | Gross $5,052.64 | Fees $105.46 | Net $4,947.18
+  2026-07-04 | BALLSTON SPA SUNOCO (8000463802) | Gross $9,792.59 | Fees $181.66 | Net $9,610.93
+  2026-07-04 | ROUTE 302 SUNOCO (8002101401) | Gross $6,045.10 | Fees $124.73 | Net $5,920.37
+  2026-07-04 | DOLSONTOWN ROAD SUNOCO (8002266301) | Gross $9,629.41 | Fees $193.34 | Net $9,436.07
+  2026-07-04 | PRESTIGE-474 (8003089201) | Gross $14,238.45 | Fees $308.23 | Net $13,930.22
+
+
+Excel write summary
+----------------------------------------
+Written cells: 0
+Skipped cells: 0
+Excel warnings: 0
+- No Excel write results available.
+
+Warnings
+----------------------------------------
+- No warnings.
+
+Errors
+----------------------------------------
+- No errors.
