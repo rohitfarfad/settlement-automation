@@ -1,0 +1,52 @@
+{
+  "report_date": "2026-07-04",
+  "run_date": "2026-07-06",
+  "started_at": "2026-07-06T15:44:40.370933",
+  "finished_at": "2026-07-06T15:44:46.108777",
+  "status": "error",
+  "counts": {
+    "suppliers_parsed": 0,
+    "daily_totals": 0,
+    "mobile_adjustments": 0,
+    "valero_pay_plus": 0,
+    "valero_monthly_charges": 0,
+    "unclassified_adjustments": 0,
+    "warnings": 0,
+    "errors": 1,
+    "excel_written": 0,
+    "excel_skipped": 0
+  },
+  "fetch_results": [
+    {
+      "supplier_name": "citgo",
+      "portal_name": "dtn",
+      "status": "failed",
+      "succeeded": false,
+      "raw_paths": [],
+      "error_message": "No DTN rows found for supplier=citgo, business_date=2026-07-04"
+    }
+  ],
+  "parsed_reports": [],
+  "excel_results": [],
+  "warnings": [],
+  "anomalies": [],
+  "errors": [
+    {
+      "stage": "fetch",
+      "supplier": "CITGO",
+      "location_id": null,
+      "location_name": null,
+      "message": "No DTN rows found for supplier=citgo, business_date=2026-07-04",
+      "exception_type": null
+    }
+  ],
+  "notification": {
+    "enabled": true,
+    "mode": "test",
+    "provider": "graph",
+    "sent": true,
+    "preview_text_path": "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/output/notifications/2026-07-04_daily_summary.txt",
+    "preview_html_path": "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/output/notifications/2026-07-04_daily_summary.html",
+    "error_message": null
+  }
+}

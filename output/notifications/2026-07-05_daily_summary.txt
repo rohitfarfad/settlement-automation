@@ -1,31 +1,46 @@
-Subject: [ERROR] Credit Cards Daily Settlement Report - Report Date 2026-07-05
+Subject: [OK] Credit Cards Daily Settlement Report - Report Date 2026-07-05
 
 Prestige Settlement Daily Report
 ========================================
 Report date: 2026-07-05
 Run date: 2026-07-06
-Started at: 2026-07-06 15:10:10
-Finished at: 2026-07-06 15:10:17
+Started at: 2026-07-06 15:57:50
+Finished at: 2026-07-06 15:58:02
 
 Run summary
 ----------------------------------------
-Suppliers parsed: -
-Daily totals: 0
+Suppliers parsed: CITGO
+Daily totals: 13
 Backdated mobile adjustment rows: 0
 Valero Pay+ rows: 0
 Valero monthly charges: 0
 Unclassified adjustments: 0
 Warnings: 0
-Errors: 1
+Errors: 0
 
 Fetch results
 ----------------------------------------
-- valero / dtn: failed
-  error: No DTN rows found for supplier=valero, business_date=2026-07-05
+- citgo / dtn: success
+  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/citgo/2026/07/citgo_2026-07-05.txt
 
 Data parsed for sheet entry
 ----------------------------------------
-- No parsed reports available.
+CITGO
+- Daily totals:
+  2026-07-02 | UPPER GLEN QUEENSBURY (15861007) | Gross $72.21 | Fees $0.50 | Net $71.71
+  2026-07-03 | HAVERSTRAW (15861002) | Gross $7,848.75 | Fees $151.37 | Net $7,697.38
+  2026-07-03 | ELLENVILLE (15861003) | Gross $7,202.31 | Fees $162.88 | Net $7,039.43
+  2026-07-03 | FREEDOM PLAINS (15861004) | Gross $10,033.18 | Fees $186.41 | Net $9,846.77
+  2026-07-03 | WESTERLO (15861005) | Gross $2,000.16 | Fees $42.51 | Net $1,957.65
+  2026-07-03 | ERIE BLVD (15861006) | Gross $6,006.06 | Fees $159.79 | Net $5,846.27
+  2026-07-03 | UPPER GLEN QUEENSBURY (15861007) | Gross $13,396.72 | Fees $292.89 | Net $13,103.83
+  2026-07-04 | HAVERSTRAW (15861002) | Gross $6,512.27 | Fees $120.65 | Net $6,391.62
+  2026-07-04 | ELLENVILLE (15861003) | Gross $6,292.15 | Fees $140.82 | Net $6,151.33
+  2026-07-04 | FREEDOM PLAINS (15861004) | Gross $8,348.19 | Fees $159.41 | Net $8,188.78
+  2026-07-04 | WESTERLO (15861005) | Gross $1,736.69 | Fees $33.49 | Net $1,703.20
+  2026-07-04 | ERIE BLVD (15861006) | Gross $6,435.00 | Fees $169.43 | Net $6,265.57
+  2026-07-04 | UPPER GLEN QUEENSBURY (15861007) | Gross $8,683.32 | Fees $179.36 | Net $8,503.96
+
 
 Excel write summary
 ----------------------------------------
@@ -40,4 +55,4 @@ Warnings
 
 Errors
 ----------------------------------------
-- [fetch] No DTN rows found for supplier=valero, business_date=2026-07-05 | supplier: VALERO
+- No errors.

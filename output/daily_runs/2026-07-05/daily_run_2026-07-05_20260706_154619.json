@@ -1,8 +1,8 @@
 {
   "report_date": "2026-07-05",
   "run_date": "2026-07-06",
-  "started_at": "2026-07-06T15:57:50.620480",
-  "finished_at": "2026-07-06T15:58:02.670905",
+  "started_at": "2026-07-06T15:46:19.200412",
+  "finished_at": "2026-07-06T15:46:31.738509",
   "status": "success",
   "counts": {
     "suppliers_parsed": 1,

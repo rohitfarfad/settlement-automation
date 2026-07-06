@@ -1,0 +1,54 @@
+{
+  "report_date": "2026-07-03",
+  "run_date": "2026-07-06",
+  "started_at": "2026-07-06T15:41:59.504876",
+  "finished_at": "2026-07-06T15:42:12.199730",
+  "status": "success",
+  "counts": {
+    "suppliers_parsed": 1,
+    "daily_totals": 23,
+    "mobile_adjustments": 18,
+    "valero_pay_plus": 34,
+    "valero_monthly_charges": 50,
+    "unclassified_adjustments": 0,
+    "warnings": 0,
+    "errors": 0,
+    "excel_written": 0,
+    "excel_skipped": 0
+  },
+  "fetch_results": [
+    {
+      "supplier_name": "valero",
+      "portal_name": "dtn",
+      "status": "success",
+      "succeeded": true,
+      "raw_paths": [
+        "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-03.txt"
+      ],
+      "error_message": null
+    }
+  ],
+  "parsed_reports": [
+    {
+      "supplier": "VALERO",
+      "daily_total_count": 23,
+      "mobile_adjustment_count": 18,
+      "valero_pay_plus_count": 34,
+      "valero_monthly_charge_count": 50,
+      "unclassified_adjustment_count": 0
+    }
+  ],
+  "excel_results": [],
+  "warnings": [],
+  "anomalies": [],
+  "errors": [],
+  "notification": {
+    "enabled": true,
+    "mode": "test",
+    "provider": "graph",
+    "sent": true,
+    "preview_text_path": "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/output/notifications/2026-07-03_daily_summary.txt",
+    "preview_html_path": "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/output/notifications/2026-07-03_daily_summary.html",
+    "error_message": null
+  }
+}
