@@ -479,14 +479,15 @@ def _format_plain_valero_monthly_charges(report: ParsedReport) -> list[str]:
     if not rows:
         return []
 
-    lines = ["- Valero monthly charges:"]
+    lines = ["- Valero monthly charge summary:"]
 
-    for row in rows:
+    for row in _summarize_valero_monthly_charges(rows):
         lines.append(
             "  "
-            f"{row.date} | {row.location_name} ({row.location_id}) | "
-            f"Amount {_format_money(row.amount)} | "
-            f"{row.description}"
+            f"{row['date']} | "
+            f"{row['location_name']} ({row['location_id']}) | "
+            f"Count {row['count']} | "
+            f"Amount {_format_money(row['amount'])}"
         )
 
     return lines
@@ -826,24 +827,30 @@ def _build_html_valero_monthly_charges_table(report: ParsedReport) -> str:
         "<th>Date</th>"
         "<th>Location ID</th>"
         "<th>Location Name</th>"
+        "<th class='amount'>Count</th>"
         "<th class='amount'>Amount</th>"
-        "<th>Description</th>"
         "</tr>"
     ]
 
-    for row in rows_data:
+    for row in _summarize_valero_monthly_charges(rows_data):
         rows.append(
             "<tr>"
-            f"<td class='nowrap'>{escape(str(row.date))}</td>"
-            f"<td class='nowrap'>{escape(str(row.location_id))}</td>"
-            f"<td class='text'>{escape(str(row.location_name))}</td>"
-            f"{_amount_td(row.amount)}"
-            f"<td class='text'>{escape(str(row.description))}</td>"
+            f"<td class='nowrap'>{escape(str(row['date']))}</td>"
+            f"<td class='nowrap'>{escape(str(row['location_id']))}</td>"
+            f"<td class='text'>{escape(str(row['location_name']))}</td>"
+            f"<td class='amount'>{escape(str(row['count']))}</td>"
+            f"{_amount_td(row['amount'])}"
             "</tr>"
         )
 
-    return "\n".join(["<h4>Valero monthly charges</h4>", "<table>", *rows, "</table>"])
-
+    return "\n".join(
+        [
+            "<h4>Valero monthly charge summary</h4>",
+            "<table>",
+            *rows,
+            "</table>",
+        ]
+    )
 
 def _build_html_unclassified_adjustments_table(report: ParsedReport) -> str:
     rows_data = getattr(report, "unclassified_adjustments", []) or []
@@ -1059,6 +1066,30 @@ def _summarize_valero_pay_plus(rows):
         key=lambda item: (item["date"], item["location_id"]),
     )
 
+def _summarize_valero_monthly_charges(rows):
+    summary = {}
+
+    for row in rows:
+        key = (row.date, row.location_id, row.location_name)
+
+        if key not in summary:
+            summary[key] = {
+                "date": row.date,
+                "location_id": row.location_id,
+                "location_name": row.location_name,
+                "count": 0,
+                "amount": Decimal("0"),
+            }
+
+        summary[key]["count"] += 1
+
+        if row.amount is not None:
+            summary[key]["amount"] += row.amount
+
+    return sorted(
+        summary.values(),
+        key=lambda item: (item["date"], item["location_id"]),
+    )
 
 def _html_styles() -> str:
     return """

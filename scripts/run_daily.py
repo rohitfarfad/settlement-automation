@@ -12,6 +12,10 @@ from settlement_automation.ingestion.supplier_selection import parse_supplier_se
 from settlement_automation.services.daily_pipeline import (
     run_daily_fetch_parse_write_notify,
 )
+from config.settings import get_settings
+from settlement_automation.services.daily_run_artifacts import write_daily_run_artifact
+from settlement_automation.services.run_lock import RunLock
+
 SUCCESS_EXIT_CODE = 0
 HANDLED_FAILURE_EXIT_CODE = 1
 CATASTROPHIC_FAILURE_EXIT_CODE = 2
@@ -181,14 +185,21 @@ def main() -> int:
 
         # Step 1 intentionally uses the existing parse/write/notify service.
         # Step 2 will replace this call with run_daily_fetch_parse_write_notify().
-        result = run_daily_fetch_parse_write_notify(
-            report_date=report_date,
-            suppliers=args.suppliers,
-            write_excel=args.write_excel,
-            excel_dry_run=args.excel_dry_run,
-            write_originals=args.write_originals,
-            notify=args.notify,
-        )
+        settings = get_settings()
+        lock_path = settings.output_dir / "locks" / "daily_pipeline.lock"
+
+        with RunLock(lock_path):
+            result = run_daily_fetch_parse_write_notify(
+                report_date=report_date,
+                suppliers=args.suppliers,
+                write_excel=args.write_excel,
+                excel_dry_run=args.excel_dry_run,
+                write_originals=args.write_originals,
+                notify=args.notify,
+            )
+
+        artifact_path = write_daily_run_artifact(result)
+        print(f"Run artifact          : {artifact_path}")
 
         print_result_summary(result)
 
@@ -200,14 +211,41 @@ def main() -> int:
 
         return SUCCESS_EXIT_CODE
 
+
+    except RuntimeError as exc:
+
+        message = str(exc)
+
+        if "Another daily pipeline run is already in progress" in message:
+            print("")
+
+            print("DAILY PIPELINE ALREADY RUNNING")
+
+            print("=" * 80)
+
+            print(message)
+
+            return HANDLED_FAILURE_EXIT_CODE
+
+        raise
+
+
     except Exception as exc:
+
         print("")
+
         print("CATASTROPHIC DAILY PIPELINE FAILURE")
+
         print("=" * 80)
+
         print(f"Exception type        : {type(exc).__name__}")
+
         print(f"Message               : {exc}")
+
         print("")
+
         traceback.print_exc()
+
         return CATASTROPHIC_FAILURE_EXIT_CODE
 
 

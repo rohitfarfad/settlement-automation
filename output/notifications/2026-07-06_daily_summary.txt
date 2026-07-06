@@ -4,8 +4,8 @@ Prestige Settlement Daily Report
 ========================================
 Report date: 2026-07-06
 Run date: 2026-07-06
-Started at: 2026-07-06 12:57:23
-Finished at: 2026-07-06 12:57:59
+Started at: 2026-07-06 14:13:20
+Finished at: 2026-07-06 14:13:56
 
 Run summary
 ----------------------------------------
@@ -15,15 +15,15 @@ Backdated mobile adjustment rows: 12
 Valero Pay+ rows: 271
 Valero monthly charges: 0
 Unclassified adjustments: 0
-Warnings: 0
+Warnings: 2
 Errors: 2
 
 Fetch results
 ----------------------------------------
-- valero / dtn: success
-  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-06.txt
 - citgo / dtn: failed
   error: No DTN rows found for supplier=citgo, business_date=2026-07-06
+- valero / dtn: success
+  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-06.txt
 - sunoco / sunoco: failed
   error: Browser automation failed for supplier=sunoco, portal=sunoco: Sunoco JSON response is missing expected markers: ['totalSalesAmount', 'totalDealerFeeAmount', 'settlementDate', 'totalAdjustedNetAmount']
 
@@ -153,12 +153,15 @@ Excel write summary
 ----------------------------------------
 Written cells: 0
 Skipped cells: 0
-Excel warnings: 0
-- No Excel write results available.
+Excel warnings: 2
+- VALERO 2026-07-06: written=0, skipped=0, dry_run=True, write_originals=False
+  warning: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
 
 Warnings
 ----------------------------------------
-- No warnings.
+- Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
 
 Errors
 ----------------------------------------

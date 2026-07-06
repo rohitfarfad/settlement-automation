@@ -1,11 +1,11 @@
-Subject: [OK] Credit Cards Daily Settlement Report - Report Date 2026-07-04
+Subject: [ERROR] Credit Cards Daily Settlement Report - Report Date 2026-07-04
 
 Prestige Settlement Daily Report
 ========================================
 Report date: 2026-07-04
 Run date: 2026-07-06
-Started at: 2026-07-06 11:58:24
-Finished at: 2026-07-06 11:58:51
+Started at: 2026-07-06 14:12:01
+Finished at: 2026-07-06 14:12:25
 
 Run summary
 ----------------------------------------
@@ -16,10 +16,14 @@ Valero Pay+ rows: 0
 Valero monthly charges: 0
 Unclassified adjustments: 0
 Warnings: 0
-Errors: 0
+Errors: 2
 
 Fetch results
 ----------------------------------------
+- citgo / dtn: failed
+  error: No DTN rows found for supplier=citgo, business_date=2026-07-04
+- valero / dtn: failed
+  error: No DTN rows found for supplier=valero, business_date=2026-07-04
 - sunoco / sunoco: success
   raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/sunoco/2026/07/sunoco_2026-07-04.txt
 
@@ -27,18 +31,18 @@ Data parsed for sheet entry
 ----------------------------------------
 SUNOCO
 - Daily totals:
-  2026-07-04 | 128 WASHINGTON MART (0160544300) | Gross $3,963.86 | Fees $98.10 | Net $3,865.76
-  2026-07-04 | 84 QUICK STOP SUNOCO (0260536800) | Gross $14,951.45 | Fees $311.66 | Net $14,639.79
-  2026-07-04 | CENTRAL AVE SUNOCO (0326461100) | Gross $9,068.36 | Fees $191.02 | Net $8,877.34
-  2026-07-04 | NEW SCOTLAND SUNOCO (0434020400) | Gross $11,611.06 | Fees $250.98 | Net $11,360.08
-  2026-07-04 | GLENMONT SUNOCO (0585555600) | Gross $14,890.19 | Fees $320.10 | Net $14,570.09
-  2026-07-04 | STEWART SUNOCO (0755798600) | Gross $8,373.20 | Fees $178.84 | Net $8,194.36
-  2026-07-04 | VAILS GATE SUNOCO (0853941300) | Gross $4,728.91 | Fees $93.89 | Net $4,635.02
-  2026-07-04 | ROCK HILL SUNOCO (0894029800) | Gross $5,052.64 | Fees $105.46 | Net $4,947.18
-  2026-07-04 | BALLSTON SPA SUNOCO (8000463802) | Gross $9,792.59 | Fees $181.66 | Net $9,610.93
-  2026-07-04 | ROUTE 302 SUNOCO (8002101401) | Gross $6,045.10 | Fees $124.73 | Net $5,920.37
-  2026-07-04 | DOLSONTOWN ROAD SUNOCO (8002266301) | Gross $9,629.41 | Fees $193.34 | Net $9,436.07
-  2026-07-04 | PRESTIGE-474 (8003089201) | Gross $14,238.45 | Fees $308.23 | Net $13,930.22
+  2026-07-03 | 128 WASHINGTON MART (0160544300) | Gross $5,131.98 | Fees $124.31 | Net $5,007.67
+  2026-07-03 | 84 QUICK STOP SUNOCO (0260536800) | Gross $18,750.14 | Fees $395.17 | Net $18,354.97
+  2026-07-03 | CENTRAL AVE SUNOCO (0326461100) | Gross $12,334.07 | Fees $259.83 | Net $12,074.24
+  2026-07-03 | NEW SCOTLAND SUNOCO (0434020400) | Gross $12,693.86 | Fees $277.04 | Net $12,416.82
+  2026-07-03 | GLENMONT SUNOCO (0585555600) | Gross $18,229.93 | Fees $383.30 | Net $17,846.63
+  2026-07-03 | STEWART SUNOCO (0755798600) | Gross $12,311.02 | Fees $297.71 | Net $12,013.31
+  2026-07-03 | VAILS GATE SUNOCO (0853941300) | Gross $6,778.01 | Fees $126.80 | Net $6,651.21
+  2026-07-03 | ROCK HILL SUNOCO (0894029800) | Gross $8,173.55 | Fees $175.10 | Net $7,998.45
+  2026-07-03 | BALLSTON SPA SUNOCO (8000463802) | Gross $16,012.02 | Fees $292.72 | Net $15,719.30
+  2026-07-03 | ROUTE 302 SUNOCO (8002101401) | Gross $7,496.70 | Fees $146.59 | Net $7,350.11
+  2026-07-03 | DOLSONTOWN ROAD SUNOCO (8002266301) | Gross $10,333.83 | Fees $216.83 | Net $10,117.00
+  2026-07-03 | PRESTIGE-474 (8003089201) | Gross $20,282.50 | Fees $437.28 | Net $19,845.22
 
 
 Excel write summary
@@ -46,7 +50,7 @@ Excel write summary
 Written cells: 0
 Skipped cells: 0
 Excel warnings: 0
-- No Excel write results available.
+- SUNOCO 2026-07-04: written=0, skipped=0, dry_run=True, write_originals=False
 
 Warnings
 ----------------------------------------
@@ -54,4 +58,5 @@ Warnings
 
 Errors
 ----------------------------------------
-- No errors.
+- [fetch] No DTN rows found for supplier=citgo, business_date=2026-07-04 | supplier: CITGO
+- [fetch] No DTN rows found for supplier=valero, business_date=2026-07-04 | supplier: VALERO

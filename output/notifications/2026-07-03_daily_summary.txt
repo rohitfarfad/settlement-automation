@@ -4,13 +4,13 @@ Prestige Settlement Daily Report
 ========================================
 Report date: 2026-07-03
 Run date: 2026-07-06
-Started at: 2026-07-06 12:10:46
-Finished at: 2026-07-06 12:11:28
+Started at: 2026-07-06 15:24:11
+Finished at: 2026-07-06 15:24:24
 
 Run summary
 ----------------------------------------
-Suppliers parsed: CITGO, SUNOCO, VALERO
-Daily totals: 41
+Suppliers parsed: VALERO
+Daily totals: 23
 Backdated mobile adjustment rows: 18
 Valero Pay+ rows: 34
 Valero monthly charges: 50
@@ -22,10 +22,6 @@ Fetch results
 ----------------------------------------
 - valero / dtn: success
   raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-03.txt
-- citgo / dtn: success
-  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/citgo/2026/07/citgo_2026-07-03.txt
-- sunoco / sunoco: success
-  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/sunoco/2026/07/sunoco_2026-07-03.txt
 
 Data parsed for sheet entry
 ----------------------------------------
@@ -77,81 +73,34 @@ VALERO
   2026-07-02 | DELMAR VALERO (53579) | Count 1 | Amount $1.80 | Sources VALP
   2026-07-02 | FISHKILL (76596) | Count 5 | Amount $3.70 | Sources VALP, VPAY
   2026-07-02 | Prestige Valero (93815) | Count 1 | Amount $1.16 | Sources VALP
-- Valero monthly charges:
-  2026-07-02 | Highgate Valero (10312) | Amount $164.30 | MONTHLY GILBARCO PSO BILLING
-  2026-07-02 | Highgate Valero (10312) | Amount $159.00 | MONTHLY TNSLINKMNSP48 1X24 BILLING
-  2026-07-02 | Five Corners Valero (10688) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Five Corners Valero (10688) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Route 44 Valero (11347) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Brewster Valero (19505) | Amount $113.79 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Brewster Valero (19505) | Amount $113.79 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Wappinger's Falls Valero (19513) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Wappinger's Falls Valero (19513) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Route 7 Valero (22312) | Amount $162.00 | MONTHLY TNSLINKMNSP48 1X24 BILLING
-  2026-07-02 | Route 7 Valero (22312) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Saugerties Valero (23473) | Amount $113.40 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Saugerties Valero (23473) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Elmira Valero (23810) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Elmira Valero (23810) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | New Windsor Valero (24026) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | New Windsor Valero (24026) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Carmel Valero (24640) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Carmel Valero (24640) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Ulster Avenue Valero (25407) | Amount $162.00 | MONTHLY TNSLINKMNSP48 1X24 BILLING
-  2026-07-02 | Ulster Avenue Valero (25407) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Montgomery Valero (26740) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Alburg Villiage Jolley (28066) | Amount $164.30 | MONTHLY GILBARCO PSO BILLING
-  2026-07-02 | Alburg Villiage Jolley (28066) | Amount $111.30 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Walker Valero (30371) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Walker Valero (30371) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Cornell St Valero (30408) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Cornell St Valero (30408) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Valero Central Ave (30525) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Valero Central Ave (30525) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | CHAMPLAIN VALERO (30530) | Amount $113.40 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | CHAMPLAIN VALERO (30530) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Fort Ann Valero (32966) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Fort Ann Valero (32966) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Berkshire Jolley (45264) | Amount $164.30 | MONTHLY GILBARCO PSO BILLING
-  2026-07-02 | Berkshire Jolley (45264) | Amount $111.30 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Slate Hill Valero (45371) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Slate Hill Valero (45371) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Monticello Valero (46391) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | DELMAR VALERO (53579) | Amount $113.40 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | DELMAR VALERO (53579) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | South Plank VALERO (72041) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | South Plank VALERO (72041) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | FISHKILL (76596) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | FISHKILL (76596) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | SOUTHFIELDS (76604) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Willsboro Valero (83343) | Amount $162.00 | MONTHLY TNSLINKMNSP48 1X24 BILLING
-  2026-07-02 | Willsboro Valero (83343) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
-  2026-07-02 | Prestige Valero (93815) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
-  2026-07-02 | Prestige Valero (93815) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
-
-CITGO
-- Daily totals:
-  2026-07-02 | HAVERSTRAW (15861002) | Gross $6,946.60 | Fees $133.45 | Net $6,813.15
-  2026-07-02 | ELLENVILLE (15861003) | Gross $7,402.90 | Fees $162.36 | Net $7,240.54
-  2026-07-02 | FREEDOM PLAINS (15861004) | Gross $13,835.61 | Fees $262.85 | Net $13,572.76
-  2026-07-02 | WESTERLO (15861005) | Gross $1,199.45 | Fees $25.75 | Net $1,173.70
-  2026-07-02 | ERIE BLVD (15861006) | Gross $8,207.34 | Fees $209.07 | Net $7,998.27
-  2026-07-02 | UPPER GLEN QUEENSBURY (15861007) | Gross $10,890.26 | Fees $230.70 | Net $10,659.56
-
-SUNOCO
-- Daily totals:
-  2026-07-03 | 128 WASHINGTON MART (0160544300) | Gross $5,131.98 | Fees $124.31 | Net $5,007.67
-  2026-07-03 | 84 QUICK STOP SUNOCO (0260536800) | Gross $18,750.14 | Fees $395.17 | Net $18,354.97
-  2026-07-03 | CENTRAL AVE SUNOCO (0326461100) | Gross $12,334.07 | Fees $259.83 | Net $12,074.24
-  2026-07-03 | NEW SCOTLAND SUNOCO (0434020400) | Gross $12,693.86 | Fees $277.04 | Net $12,416.82
-  2026-07-03 | GLENMONT SUNOCO (0585555600) | Gross $18,229.93 | Fees $383.30 | Net $17,846.63
-  2026-07-03 | STEWART SUNOCO (0755798600) | Gross $12,311.02 | Fees $297.71 | Net $12,013.31
-  2026-07-03 | VAILS GATE SUNOCO (0853941300) | Gross $6,778.01 | Fees $126.80 | Net $6,651.21
-  2026-07-03 | ROCK HILL SUNOCO (0894029800) | Gross $8,173.55 | Fees $175.10 | Net $7,998.45
-  2026-07-03 | BALLSTON SPA SUNOCO (8000463802) | Gross $16,012.02 | Fees $292.72 | Net $15,719.30
-  2026-07-03 | ROUTE 302 SUNOCO (8002101401) | Gross $7,496.70 | Fees $146.59 | Net $7,350.11
-  2026-07-03 | DOLSONTOWN ROAD SUNOCO (8002266301) | Gross $10,333.83 | Fees $216.83 | Net $10,117.00
-  2026-07-03 | PRESTIGE-474 (8003089201) | Gross $20,282.50 | Fees $437.28 | Net $19,845.22
+- Valero monthly charge summary:
+  2026-07-02 | Highgate Valero (10312) | Count 2 | Amount $323.30
+  2026-07-02 | Five Corners Valero (10688) | Count 2 | Amount $227.06
+  2026-07-02 | Route 44 Valero (11347) | Count 1 | Amount $113.53
+  2026-07-02 | Brewster Valero (19505) | Count 2 | Amount $227.58
+  2026-07-02 | Wappinger's Falls Valero (19513) | Count 2 | Amount $227.06
+  2026-07-02 | Route 7 Valero (22312) | Count 2 | Amount $275.40
+  2026-07-02 | Saugerties Valero (23473) | Count 2 | Amount $226.80
+  2026-07-02 | Elmira Valero (23810) | Count 2 | Amount $218.40
+  2026-07-02 | New Windsor Valero (24026) | Count 2 | Amount $227.06
+  2026-07-02 | Carmel Valero (24640) | Count 2 | Amount $218.40
+  2026-07-02 | Ulster Avenue Valero (25407) | Count 2 | Amount $275.40
+  2026-07-02 | Montgomery Valero (26740) | Count 1 | Amount $113.53
+  2026-07-02 | Alburg Villiage Jolley (28066) | Count 2 | Amount $275.60
+  2026-07-02 | Walker Valero (30371) | Count 2 | Amount $218.40
+  2026-07-02 | Cornell St Valero (30408) | Count 2 | Amount $218.40
+  2026-07-02 | Valero Central Ave (30525) | Count 2 | Amount $218.40
+  2026-07-02 | CHAMPLAIN VALERO (30530) | Count 2 | Amount $226.80
+  2026-07-02 | Fort Ann Valero (32966) | Count 2 | Amount $218.40
+  2026-07-02 | Berkshire Jolley (45264) | Count 2 | Amount $275.60
+  2026-07-02 | Slate Hill Valero (45371) | Count 2 | Amount $218.40
+  2026-07-02 | Monticello Valero (46391) | Count 1 | Amount $109.20
+  2026-07-02 | DELMAR VALERO (53579) | Count 2 | Amount $226.80
+  2026-07-02 | South Plank VALERO (72041) | Count 2 | Amount $227.06
+  2026-07-02 | FISHKILL (76596) | Count 2 | Amount $227.06
+  2026-07-02 | SOUTHFIELDS (76604) | Count 1 | Amount $113.53
+  2026-07-02 | Willsboro Valero (83343) | Count 2 | Amount $275.40
+  2026-07-02 | Prestige Valero (93815) | Count 2 | Amount $227.06
 
 
 Excel write summary

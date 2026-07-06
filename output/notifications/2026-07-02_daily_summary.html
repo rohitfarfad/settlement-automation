@@ -155,10 +155,10 @@ li {
 <h2>Run details</h2>
 <table class='summary-table'>
 <tr><th>Report date</th><td>2026-07-02</td></tr>
-<tr><th>Run date</th><td>2026-07-05</td></tr>
-<tr><th>Started at</th><td>2026-07-05 20:58:27</td></tr>
-<tr><th>Finished at</th><td>2026-07-05 20:58:28</td></tr>
-<tr><th>Status</th><td><span class='notice-warning'>Warnings found</span></td></tr>
+<tr><th>Run date</th><td>2026-07-06</td></tr>
+<tr><th>Started at</th><td>2026-07-06 14:09:16</td></tr>
+<tr><th>Finished at</th><td>2026-07-06 14:09:58</td></tr>
+<tr><th>Status</th><td><span class='notice-ok'>Success</span></td></tr>
 </table>
 </div>
 <div class='card'>
@@ -170,16 +170,34 @@ li {
 <tr><th>Valero Pay+ rows</th><td>49</td></tr>
 <tr><th>Valero monthly charges</th><td>0</td></tr>
 <tr><th>Unclassified adjustments</th><td>0</td></tr>
-<tr><th>Warnings</th><td>36</td></tr>
+<tr><th>Warnings</th><td>0</td></tr>
 <tr><th>Errors</th><td>0</td></tr>
 </table>
 </div>
 <div class='card'>
 <h2>Fetch results</h2>
-<p>No fetch results available.</p>
+<table>
+<tr><th>Supplier</th><th>Portal</th><th>Status</th><th>Raw files</th><th>Error</th></tr>
+<tr><td class='nowrap'>citgo</td><td class='nowrap'>dtn</td><td class='nowrap'>success</td><td class='text'>/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/citgo/2026/07/citgo_2026-07-02.txt</td><td class='text'></td></tr>
+<tr><td class='nowrap'>valero</td><td class='nowrap'>dtn</td><td class='nowrap'>success</td><td class='text'>/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-02.txt</td><td class='text'></td></tr>
+<tr><td class='nowrap'>sunoco</td><td class='nowrap'>sunoco</td><td class='nowrap'>success</td><td class='text'>/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/sunoco/2026/07/sunoco_2026-07-02.txt</td><td class='text'></td></tr>
+</table>
 </div>
 <div class='card'>
 <h2>Data parsed for sheet entry</h2>
+<h3>CITGO</h3>
+<h4>Daily totals</h4>
+<table>
+<tr><th>Date</th><th>Location ID</th><th>Location Name</th><th class='amount'>Gross</th><th class='amount'>Fees</th><th class='amount'>Net</th></tr>
+<tr><td class='nowrap'>2026-06-30</td><td class='nowrap'>15861002</td><td class='text'>HAVERSTRAW</td><td class='amount'>$225.96</td><td class='amount'>$7.34</td><td class='amount'>$218.62</td></tr>
+<tr><td class='nowrap'>2026-06-30</td><td class='nowrap'>15861005</td><td class='text'>WESTERLO</td><td class='amount'>$865.73</td><td class='amount'>$19.13</td><td class='amount'>$846.60</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861002</td><td class='text'>HAVERSTRAW</td><td class='amount'>$7,651.45</td><td class='amount'>$140.89</td><td class='amount'>$7,510.56</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861003</td><td class='text'>ELLENVILLE</td><td class='amount'>$7,218.98</td><td class='amount'>$159.82</td><td class='amount'>$7,059.16</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861004</td><td class='text'>FREEDOM PLAINS</td><td class='amount'>$8,182.02</td><td class='amount'>$157.55</td><td class='amount'>$8,024.47</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861005</td><td class='text'>WESTERLO</td><td class='amount'>$1,734.69</td><td class='amount'>$42.28</td><td class='amount'>$1,692.41</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861006</td><td class='text'>ERIE BLVD</td><td class='amount'>$8,449.00</td><td class='amount'>$208.72</td><td class='amount'>$8,240.28</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861007</td><td class='text'>UPPER GLEN QUEENSBURY</td><td class='amount'>$11,123.19</td><td class='amount'>$231.65</td><td class='amount'>$10,891.54</td></tr>
+</table>
 <h3>VALERO</h3>
 <h4>Daily totals</h4>
 <table>
@@ -238,85 +256,37 @@ li {
 <tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>76596</td><td class='text'>FISHKILL</td><td class='amount'>6</td><td class='amount'>$5.94</td><td class='nowrap'>VALP</td></tr>
 <tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>93815</td><td class='text'>Prestige Valero</td><td class='amount'>6</td><td class='amount'>$6.04</td><td class='nowrap'>VALP, VISA, VPAY</td></tr>
 </table>
-<h3>CITGO</h3>
-<h4>Daily totals</h4>
-<table>
-<tr><th>Date</th><th>Location ID</th><th>Location Name</th><th class='amount'>Gross</th><th class='amount'>Fees</th><th class='amount'>Net</th></tr>
-<tr><td class='nowrap'>2026-06-30</td><td class='nowrap'>15861002</td><td class='text'>HAVERSTRAW</td><td class='amount'>$225.96</td><td class='amount'>$7.34</td><td class='amount'>$218.62</td></tr>
-<tr><td class='nowrap'>2026-06-30</td><td class='nowrap'>15861005</td><td class='text'>WESTERLO</td><td class='amount'>$865.73</td><td class='amount'>$19.13</td><td class='amount'>$846.60</td></tr>
-<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861002</td><td class='text'>HAVERSTRAW</td><td class='amount'>$7,651.45</td><td class='amount'>$140.89</td><td class='amount'>$7,510.56</td></tr>
-<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861003</td><td class='text'>ELLENVILLE</td><td class='amount'>$7,218.98</td><td class='amount'>$159.82</td><td class='amount'>$7,059.16</td></tr>
-<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861004</td><td class='text'>FREEDOM PLAINS</td><td class='amount'>$8,182.02</td><td class='amount'>$157.55</td><td class='amount'>$8,024.47</td></tr>
-<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861005</td><td class='text'>WESTERLO</td><td class='amount'>$1,734.69</td><td class='amount'>$42.28</td><td class='amount'>$1,692.41</td></tr>
-<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861006</td><td class='text'>ERIE BLVD</td><td class='amount'>$8,449.00</td><td class='amount'>$208.72</td><td class='amount'>$8,240.28</td></tr>
-<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>15861007</td><td class='text'>UPPER GLEN QUEENSBURY</td><td class='amount'>$11,123.19</td><td class='amount'>$231.65</td><td class='amount'>$10,891.54</td></tr>
-</table>
 <h3>SUNOCO</h3>
 <h4>Daily totals</h4>
 <table>
 <tr><th>Date</th><th>Location ID</th><th>Location Name</th><th class='amount'>Gross</th><th class='amount'>Fees</th><th class='amount'>Net</th></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0160544300</td><td class='text'>128 WASHINGTON MART</td><td class='amount'>$5,744.49</td><td class='amount'>$141.15</td><td class='amount'>$5,603.34</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0260536800</td><td class='text'>84 QUICK STOP SUNOCO</td><td class='amount'>$20,745.92</td><td class='amount'>$452.17</td><td class='amount'>$20,293.75</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0326461100</td><td class='text'>CENTRAL AVE SUNOCO</td><td class='amount'>$12,754.51</td><td class='amount'>$262.83</td><td class='amount'>$12,491.68</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0434020400</td><td class='text'>NEW SCOTLAND SUNOCO</td><td class='amount'>$12,385.57</td><td class='amount'>$272.69</td><td class='amount'>$12,112.88</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0585555600</td><td class='text'>GLENMONT SUNOCO</td><td class='amount'>$19,828.27</td><td class='amount'>$404.56</td><td class='amount'>$19,423.71</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0755798600</td><td class='text'>STEWART SUNOCO</td><td class='amount'>$14,796.55</td><td class='amount'>$347.37</td><td class='amount'>$14,449.18</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0853941300</td><td class='text'>VAILS GATE SUNOCO</td><td class='amount'>$8,271.48</td><td class='amount'>$146.34</td><td class='amount'>$8,125.14</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0894029800</td><td class='text'>ROCK HILL SUNOCO</td><td class='amount'>$9,303.94</td><td class='amount'>$200.01</td><td class='amount'>$9,103.93</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>8000463802</td><td class='text'>BALLSTON SPA SUNOCO</td><td class='amount'>$19,645.25</td><td class='amount'>$363.18</td><td class='amount'>$19,282.07</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>8002101401</td><td class='text'>ROUTE 302 SUNOCO</td><td class='amount'>$8,601.16</td><td class='amount'>$170.86</td><td class='amount'>$8,430.30</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>8002266301</td><td class='text'>DOLSONTOWN ROAD SUNOCO</td><td class='amount'>$10,786.64</td><td class='amount'>$232.91</td><td class='amount'>$10,553.73</td></tr>
-<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>8003089201</td><td class='text'>PRESTIGE-474</td><td class='amount'>$17,786.77</td><td class='amount'>$387.17</td><td class='amount'>$17,399.60</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>0160544300</td><td class='text'>128 WASHINGTON MART</td><td class='amount'>$5,859.82</td><td class='amount'>$143.50</td><td class='amount'>$5,716.32</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>0260536800</td><td class='text'>84 QUICK STOP SUNOCO</td><td class='amount'>$26,171.24</td><td class='amount'>$567.57</td><td class='amount'>$25,603.67</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>0326461100</td><td class='text'>CENTRAL AVE SUNOCO</td><td class='amount'>$12,953.77</td><td class='amount'>$264.60</td><td class='amount'>$12,689.17</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>0434020400</td><td class='text'>NEW SCOTLAND SUNOCO</td><td class='amount'>$11,882.97</td><td class='amount'>$258.38</td><td class='amount'>$11,624.59</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>0585555600</td><td class='text'>GLENMONT SUNOCO</td><td class='amount'>$17,371.98</td><td class='amount'>$364.31</td><td class='amount'>$17,007.67</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>0755798600</td><td class='text'>STEWART SUNOCO</td><td class='amount'>$13,789.69</td><td class='amount'>$339.38</td><td class='amount'>$13,450.31</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>0853941300</td><td class='text'>VAILS GATE SUNOCO</td><td class='amount'>$6,989.87</td><td class='amount'>$127.30</td><td class='amount'>$6,862.57</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>0894029800</td><td class='text'>ROCK HILL SUNOCO</td><td class='amount'>$9,889.85</td><td class='amount'>$220.58</td><td class='amount'>$9,669.27</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>8000463802</td><td class='text'>BALLSTON SPA SUNOCO</td><td class='amount'>$17,741.15</td><td class='amount'>$321.62</td><td class='amount'>$17,419.53</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>8002101401</td><td class='text'>ROUTE 302 SUNOCO</td><td class='amount'>$7,334.19</td><td class='amount'>$143.22</td><td class='amount'>$7,190.97</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>8002266301</td><td class='text'>DOLSONTOWN ROAD SUNOCO</td><td class='amount'>$10,242.05</td><td class='amount'>$224.78</td><td class='amount'>$10,017.27</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>8003089201</td><td class='text'>PRESTIGE-474</td><td class='amount'>$16,674.12</td><td class='amount'>$362.31</td><td class='amount'>$16,311.81</td></tr>
 </table>
 </div>
 <div class='card'>
 <h2>Excel write summary</h2>
 <table>
 <tr><th>Supplier</th><th>Report date</th><th class='amount'>Written</th><th class='amount'>Skipped</th><th>Dry run</th><th>Write originals</th></tr>
-<tr><td class='nowrap'>VALERO</td><td class='nowrap'>2026-07-02</td><td class='amount'>0</td><td class='amount'>0</td><td class='nowrap'>True</td><td class='nowrap'>False</td></tr>
 <tr><td class='nowrap'>CITGO</td><td class='nowrap'>2026-07-02</td><td class='amount'>0</td><td class='amount'>0</td><td class='nowrap'>True</td><td class='nowrap'>False</td></tr>
-<tr><td class='nowrap'>SUNOCO</td><td class='nowrap'>2026-07-03</td><td class='amount'>0</td><td class='amount'>0</td><td class='nowrap'>True</td><td class='nowrap'>False</td></tr>
+<tr><td class='nowrap'>VALERO</td><td class='nowrap'>2026-07-02</td><td class='amount'>0</td><td class='amount'>0</td><td class='nowrap'>True</td><td class='nowrap'>False</td></tr>
+<tr><td class='nowrap'>SUNOCO</td><td class='nowrap'>2026-07-02</td><td class='amount'>0</td><td class='amount'>0</td><td class='nowrap'>True</td><td class='nowrap'>False</td></tr>
 </table>
 </div>
 <div class='card'>
 <h2>Warnings</h2>
 <ul>
-<li>Workbook not found: data/workbooks/2026 CC HAVERSTRAW CITGO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC WESTERLO CITGO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC ELLENVILLE CITGO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC FREEDOM PLAINS CITGO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC ERIE BLVD CITGO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC UPPER GLEN QUEENSBURY CITGO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC HAVERSTRAW CITGO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC WESTERLO CITGO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ELLENVILLE CITGO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC FREEDOM PLAINS CITGO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ERIE BLVD CITGO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC UPPER GLEN QUEENSBURY CITGO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC 128 WASHINGTON MART SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC 84 QUICK STOP SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC CENTRAL AVE SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC NEW SCOTLAND SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC GLENMONT SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC STEWART SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC VAILS GATE SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC ROCK HILL SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC BALLSTON SPA SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC ROUTE 302 SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC DOLSONTOWN ROAD SUNOCO.xlsx</li>
-<li>Workbook not found: data/workbooks/2026 CC AVIATION PRESTIGE-474 SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC 128 WASHINGTON MART SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC 84 QUICK STOP SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC CENTRAL AVE SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC NEW SCOTLAND SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC GLENMONT SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC STEWART SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC VAILS GATE SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ROCK HILL SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BALLSTON SPA SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ROUTE 302 SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC DOLSONTOWN ROAD SUNOCO.xlsx</li>
-<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC AVIATION PRESTIGE-474 SUNOCO.xlsx</li>
+<li>No warnings.</li>
 </ul>
 </div>
 <div class='card'>

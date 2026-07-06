@@ -156,8 +156,8 @@ li {
 <table class='summary-table'>
 <tr><th>Report date</th><td>2026-07-06</td></tr>
 <tr><th>Run date</th><td>2026-07-06</td></tr>
-<tr><th>Started at</th><td>2026-07-06 12:57:23</td></tr>
-<tr><th>Finished at</th><td>2026-07-06 12:57:59</td></tr>
+<tr><th>Started at</th><td>2026-07-06 14:13:20</td></tr>
+<tr><th>Finished at</th><td>2026-07-06 14:13:56</td></tr>
 <tr><th>Status</th><td><span class='notice-error'>Errors found</span></td></tr>
 </table>
 </div>
@@ -170,7 +170,7 @@ li {
 <tr><th>Valero Pay+ rows</th><td>271</td></tr>
 <tr><th>Valero monthly charges</th><td>0</td></tr>
 <tr><th>Unclassified adjustments</th><td>0</td></tr>
-<tr><th>Warnings</th><td>0</td></tr>
+<tr><th>Warnings</th><td>2</td></tr>
 <tr><th>Errors</th><td>2</td></tr>
 </table>
 </div>
@@ -178,8 +178,8 @@ li {
 <h2>Fetch results</h2>
 <table>
 <tr><th>Supplier</th><th>Portal</th><th>Status</th><th>Raw files</th><th>Error</th></tr>
-<tr><td class='nowrap'>valero</td><td class='nowrap'>dtn</td><td class='nowrap'>success</td><td class='text'>/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-06.txt</td><td class='text'></td></tr>
 <tr><td class='nowrap'>citgo</td><td class='nowrap'>dtn</td><td class='nowrap'>failed</td><td class='text'>-</td><td class='text'>No DTN rows found for supplier=citgo, business_date=2026-07-06</td></tr>
+<tr><td class='nowrap'>valero</td><td class='nowrap'>dtn</td><td class='nowrap'>success</td><td class='text'>/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-06.txt</td><td class='text'></td></tr>
 <tr><td class='nowrap'>sunoco</td><td class='nowrap'>sunoco</td><td class='nowrap'>failed</td><td class='text'>-</td><td class='text'>Browser automation failed for supplier=sunoco, portal=sunoco: Sunoco JSON response is missing expected markers: [&#x27;totalSalesAmount&#x27;, &#x27;totalDealerFeeAmount&#x27;, &#x27;settlementDate&#x27;, &#x27;totalAdjustedNetAmount&#x27;]</td></tr>
 </table>
 </div>
@@ -317,13 +317,14 @@ li {
 <h2>Excel write summary</h2>
 <table>
 <tr><th>Supplier</th><th>Report date</th><th class='amount'>Written</th><th class='amount'>Skipped</th><th>Dry run</th><th>Write originals</th></tr>
-<tr><td colspan='6'>No Excel write results available.</td></tr>
+<tr><td class='nowrap'>VALERO</td><td class='nowrap'>2026-07-06</td><td class='amount'>0</td><td class='amount'>0</td><td class='nowrap'>True</td><td class='nowrap'>False</td></tr>
 </table>
 </div>
 <div class='card'>
 <h2>Warnings</h2>
 <ul>
-<li>No warnings.</li>
+<li>Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx</li>
+<li>Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx</li>
 </ul>
 </div>
 <div class='card'>

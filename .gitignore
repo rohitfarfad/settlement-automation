@@ -99,6 +99,10 @@ output/audit/**
 !output/audit/
 !output/audit/.gitkeep
 
+output/notifications/**
+!output/notifications/
+
+
 output/diagnostics/**
 !output/diagnostics/
 !output/diagnostics/**/
