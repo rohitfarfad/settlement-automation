@@ -45,8 +45,20 @@ MONTHLY_CHARGE_RE = re.compile(
     re.IGNORECASE,
 )
 
+ADJUSTMENTS_SECTION_RE = re.compile(r"^\s*ADJUSTMENTS\s*$", re.IGNORECASE)
+
+TOTAL_ADJUSTMENTS_RE = re.compile(
+    r"^\s*TOTAL\s+ADJUSTMENTS\b",
+    re.IGNORECASE,
+)
+
+ADJUSTMENT_HEADER_RE = re.compile(
+    r"^\s*DEALER\s+DESCRIPTION\s+ADJUSTMENT\s+AMT\s*$",
+    re.IGNORECASE,
+)
+
 UNCLASSIFIED_ADJUSTMENT_RE = re.compile(
-    r"^\s*(\d+)\s+(.+?)\s+([\d,]+\.\d{2}[+-])\s*$"
+    r"^\s*(\d{5})\s+(.+?)\s+([\d,]+\.\d{2}[+-])\s*$"
 )
 
 def is_valero_mobile_code(card_code: str) -> bool:
@@ -169,10 +181,83 @@ def parse_valero_report(file_path: str) -> ParsedReport:
     current_detail_date = None
 
     locations_by_id = {}
-
+    in_adjustments_section = False
     for line in lines:
-        dealer = DEALER_RE.match(line)
+        if ADJUSTMENTS_SECTION_RE.match(line):
+            in_adjustments_section = True
+            continue
 
+        if in_adjustments_section:
+            if TOTAL_ADJUSTMENTS_RE.match(line):
+                in_adjustments_section = False
+                continue
+
+            if not line.strip() or ADJUSTMENT_HEADER_RE.match(line):
+                continue
+
+            payplus = PAYPLUS_RE.match(line)
+            if payplus:
+                location_id, source_code, month, day, amount = payplus.groups()
+
+                if is_valero_payplus_code(source_code):
+                    txn_date = parse_valero_mmdd(f"{month}{day}", report_date)
+
+                    valero_pay_plus_adjustments.append(
+                        ValeroPayPlusAdjustment(
+                            supplier="VALERO",
+                            location_id=str(location_id),
+                            location_name=locations_by_id.get(
+                                str(location_id),
+                                "UNKNOWN",
+                            ),
+                            date=txn_date,
+                            amount=parse_money(amount),
+                            source_code=source_code,
+                        )
+                    )
+
+                continue
+
+            monthly_charge = MONTHLY_CHARGE_RE.match(line)
+            if monthly_charge:
+                location_id, description, amount = monthly_charge.groups()
+                location_id = str(location_id)
+
+                valero_monthly_charges.append(
+                    ValeroMonthlyCharge(
+                        supplier="VALERO",
+                        location_id=location_id,
+                        location_name=locations_by_id.get(location_id, "UNKNOWN"),
+                        date=monthly_charge_date,
+                        amount=parse_valero_charge_amount(amount),
+                        description=f"MONTHLY {description.strip()} BILLING",
+                    )
+                )
+
+                continue
+
+            unclassified = UNCLASSIFIED_ADJUSTMENT_RE.match(line)
+            if unclassified:
+                location_id, description, amount = unclassified.groups()
+                location_id = str(location_id)
+
+                unclassified_adjustments.append(
+                    UnclassifiedAdjustment(
+                        supplier="VALERO",
+                        location_id=location_id,
+                        location_name=locations_by_id.get(location_id, "UNKNOWN"),
+                        report_date=report_date,
+                        amount=parse_unclassified_adjustment_amount(amount),
+                        description=description.strip(),
+                        raw_line=line.rstrip(),
+                    )
+                )
+
+                continue
+
+            continue
+
+        dealer = DEALER_RE.match(line)
         if dealer:
             current_location_id = dealer.group(1)
             current_location_name = dealer.group(2).strip()
@@ -202,43 +287,6 @@ def parse_valero_report(file_path: str) -> ParsedReport:
 
             continue
 
-        monthly_charge = MONTHLY_CHARGE_RE.match(line)
-
-        if monthly_charge:
-            location_id, description, amount = monthly_charge.groups()
-            location_id = str(location_id)
-
-            valero_monthly_charges.append(
-                ValeroMonthlyCharge(
-                    supplier="VALERO",
-                    location_id=location_id,
-                    location_name=locations_by_id.get(location_id, "UNKNOWN"),
-                    date=monthly_charge_date,
-                    amount=parse_valero_charge_amount(amount),
-                    description=f"MONTHLY {description.strip()} BILLING",
-                )
-            )
-
-            continue
-
-        unclassified = UNCLASSIFIED_ADJUSTMENT_RE.match(line)
-
-        if unclassified:
-            location_id, description, amount = unclassified.groups()
-            location_id = str(location_id)
-
-            unclassified_adjustments.append(
-                UnclassifiedAdjustment(
-                    supplier="VALERO",
-                    location_id=location_id,
-                    location_name=locations_by_id.get(location_id, "UNKNOWN"),
-                    report_date=report_date,
-                    amount=parse_unclassified_adjustment_amount(amount),
-                    description=description.strip(),
-                    raw_line=line.rstrip(),
-                )
-            )
-            continue
 
         if current_location_id is None:
             continue

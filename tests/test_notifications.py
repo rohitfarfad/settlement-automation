@@ -237,8 +237,11 @@ def test_handle_daily_notification_test_mode_generates_preview_but_does_not_send
     assert result.preview_text_path is not None
     assert result.preview_html_path is not None
     assert result.error_message is not None
-    assert "not implemented yet" in result.error_message
-
+    assert "Missing Microsoft Graph config values" in result.error_message
+    assert "GRAPH_TENANT_ID" in result.error_message
+    assert "GRAPH_CLIENT_ID" in result.error_message
+    assert "GRAPH_CLIENT_SECRET" in result.error_message
+    assert "GRAPH_SENDER_EMAIL" in result.error_message
 from settlement_automation.services.notifications import (
     NotificationConfig,
     handle_daily_notification,

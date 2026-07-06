@@ -1,23 +1,26 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from html import escape
-from typing import Any
+from pathlib import Path
+from typing import Any, Literal
 
 from settlement_automation.models import ParsedReport
 from settlement_automation.services.daily_run_summary import DailyRunSummary
-
-from pathlib import Path
-from typing import Literal
+from settlement_automation.services.email_models import DailyEmailContent
 from settlement_automation.services.email_senders import (
     EmailRecipients,
     GraphEmailConfig,
     GraphEmailSender,
     parse_recipient_list,
 )
-from settlement_automation.services.email_models import DailyEmailContent
+from settlement_automation.services.reconciliation import (
+    get_mobile_adjustment_grand_total,
+    summarize_mobile_adjustments,
+)
+
 
 NotificationMode = Literal["off", "dry_run", "test", "live"]
 NotificationProvider = Literal["graph", "smtp"]
@@ -52,6 +55,7 @@ class NotificationConfig:
     def should_send(self) -> bool:
         return self.enabled and self.mode in {"test", "live"}
 
+
 @dataclass(frozen=True)
 class NotificationResult:
     enabled: bool
@@ -61,6 +65,7 @@ class NotificationResult:
     preview_text_path: Path | None = None
     preview_html_path: Path | None = None
     error_message: str | None = None
+
 
 def build_daily_email(summary: DailyRunSummary) -> DailyEmailContent:
     subject = _build_subject(summary)
@@ -111,6 +116,7 @@ def load_notification_config() -> NotificationConfig:
         graph_sender_email=settings.graph_sender_email,
     )
 
+
 def build_email_recipients(config: NotificationConfig) -> EmailRecipients:
     if config.mode == "test":
         return EmailRecipients(
@@ -125,6 +131,11 @@ def build_email_recipients(config: NotificationConfig) -> EmailRecipients:
         bcc=parse_recipient_list(config.email_bcc),
     )
 
+
+def _summary_report_date(summary: DailyRunSummary):
+    return getattr(summary, "report_date", getattr(summary, "business_date"))
+
+
 def _build_subject(summary: DailyRunSummary) -> str:
     status = "OK"
 
@@ -134,8 +145,8 @@ def _build_subject(summary: DailyRunSummary) -> str:
         status = "WARNING"
 
     return (
-        f"[{status}] Prestige Settlement Daily Report "
-        f"- Business Date {summary.business_date.isoformat()}"
+        f"[{status}] Credit Cards Daily Settlement Report "
+        f"- Report Date {_summary_report_date(summary).isoformat()}"
     )
 
 
@@ -144,7 +155,7 @@ def _build_plain_text(summary: DailyRunSummary) -> str:
 
     lines.append("Prestige Settlement Daily Report")
     lines.append("=" * 40)
-    lines.append(f"Business date: {summary.business_date.isoformat()}")
+    lines.append(f"Report date: {_summary_report_date(summary).isoformat()}")
     lines.append(f"Run date: {summary.run_date.isoformat()}")
     lines.append(f"Started at: {_format_datetime(summary.started_at)}")
 
@@ -169,27 +180,52 @@ def _build_plain_text(summary: DailyRunSummary) -> str:
 
 def _build_html(summary: DailyRunSummary) -> str:
     status_label = "Success"
+    status_class = "notice-ok"
 
     if summary.has_errors:
         status_label = "Errors found"
+        status_class = "notice-error"
     elif summary.has_warnings:
         status_label = "Warnings found"
+        status_class = "notice-warning"
+
+    report_date = _summary_report_date(summary)
 
     sections = [
-        f"<h1>Prestige Settlement Daily Report</h1>",
-        "<table>",
-        _html_row("Business date", summary.business_date.isoformat()),
+        "<!doctype html>",
+        "<html>",
+        "<head>",
+        "<meta charset='utf-8'>",
+        _html_styles(),
+        "</head>",
+        "<body>",
+        "<div class='container'>",
+        "<div class='header-card'>",
+        "<h1>Credit Cards Daily Settlement Report</h1>",
+        f"<div class='subtitle'>Report date {escape(report_date.isoformat())}</div>",
+        "</div>",
+        "<div class='card'>",
+        "<h2>Run details</h2>",
+        "<table class='summary-table'>",
+        _html_row("Report date", report_date.isoformat()),
         _html_row("Run date", summary.run_date.isoformat()),
         _html_row("Started at", _format_datetime(summary.started_at)),
-        _html_row("Finished at", _format_datetime(summary.finished_at) if summary.finished_at else "-"),
-        _html_row("Status", status_label),
+        _html_row(
+            "Finished at",
+            _format_datetime(summary.finished_at) if summary.finished_at else "-",
+        ),
+        _html_row("Status", f"<span class='{status_class}'>{escape(status_label)}</span>", escape_value=False),
         "</table>",
+        "</div>",
         _build_html_status_section(summary),
         _build_html_fetch_section(summary),
         _build_html_parsed_data_section(summary),
         _build_html_excel_section(summary),
         _build_html_warning_section(summary),
         _build_html_error_section(summary),
+        "</div>",
+        "</body>",
+        "</html>",
     ]
 
     return "\n".join(sections)
@@ -201,8 +237,8 @@ def _build_plain_status_section(summary: DailyRunSummary) -> list[str]:
         "-" * 40,
         f"Suppliers parsed: {', '.join(summary.supplier_names) if summary.supplier_names else '-'}",
         f"Daily totals: {summary.daily_total_count}",
-        f"Mobile adjustments: {summary.mobile_adjustment_count}",
-        f"Valero Pay+ adjustments: {summary.valero_pay_plus_count}",
+        f"Backdated mobile adjustment rows: {summary.mobile_adjustment_count}",
+        f"Valero Pay+ rows: {summary.valero_pay_plus_count}",
         f"Valero monthly charges: {summary.valero_monthly_charge_count}",
         f"Unclassified adjustments: {summary.unclassified_adjustment_count}",
         f"Warnings: {summary.warning_count}",
@@ -251,8 +287,8 @@ def _build_plain_parsed_data_section(summary: DailyRunSummary) -> list[str]:
     for report in summary.parsed_reports:
         lines.append(f"{report.supplier}")
         lines.extend(_format_plain_daily_totals(report))
-        lines.extend(_format_plain_mobile_adjustments(report))
-        lines.extend(_format_plain_valero_pay_plus(report))
+        lines.extend(_format_plain_mobile_adjustment_summary(report))
+        lines.extend(_format_plain_valero_pay_plus_summary(report))
         lines.extend(_format_plain_valero_monthly_charges(report))
         lines.extend(_format_plain_unclassified_adjustments(report))
         lines.append("")
@@ -381,39 +417,57 @@ def _format_plain_daily_totals(report: ParsedReport) -> list[str]:
     return lines
 
 
-def _format_plain_mobile_adjustments(report: ParsedReport) -> list[str]:
-    if not report.mobile_adjustments:
+def _format_plain_mobile_adjustment_summary(report: ParsedReport) -> list[str]:
+    rows = getattr(report, "mobile_adjustments", []) or []
+
+    if not rows:
         return []
 
-    lines = ["- Mobile adjustments:"]
+    lines = ["- Backdated mobile adjustment summary:"]
 
-    for row in report.mobile_adjustments:
+    summary_rows = summarize_mobile_adjustments(rows)
+
+    for row in sorted(summary_rows, key=lambda item: (item.date, item.location_id)):
         lines.append(
             "  "
-            f"{row.date} | {row.location_name} ({row.location_id}) | "
+            f"{row.date} | "
+            f"{row.location_name} ({row.location_id}) | "
             f"Gross {_format_money(row.gross_amt)} | "
             f"Fees {_format_money(row.fees)} | "
             f"Net {_format_money(row.net_amt)}"
-            f"{_format_optional_detail('source', row.source_code)}"
         )
+
+    gross, fees, net = get_mobile_adjustment_grand_total(rows)
+
+    lines.append(
+        "  "
+        f"GRAND TOTAL | "
+        f"Gross {_format_money(gross)} | "
+        f"Fees {_format_money(fees)} | "
+        f"Net {_format_money(net)}"
+    )
 
     return lines
 
 
-def _format_plain_valero_pay_plus(report: ParsedReport) -> list[str]:
+def _format_plain_valero_pay_plus_summary(report: ParsedReport) -> list[str]:
     rows = getattr(report, "valero_pay_plus_adjustments", []) or []
 
     if not rows:
         return []
 
-    lines = ["- Valero Pay+ adjustments:"]
+    lines = ["- Valero Pay+ adjustment summary:"]
 
-    for row in rows:
+    for row in _summarize_valero_pay_plus(rows):
+        sources = ", ".join(sorted(row["sources"]))
+
         lines.append(
             "  "
-            f"{row.date} | {row.location_name} ({row.location_id}) | "
-            f"Amount {_format_money(row.amount)}"
-            f"{_format_optional_detail('source', row.source_code)}"
+            f"{row['date']} | "
+            f"{row['location_name']} ({row['location_id']}) | "
+            f"Count {row['count']} | "
+            f"Amount {_format_money(row['amount'])} | "
+            f"Sources {sources}"
         )
 
     return lines
@@ -460,24 +514,33 @@ def _format_plain_unclassified_adjustments(report: ParsedReport) -> list[str]:
 def _build_html_status_section(summary: DailyRunSummary) -> str:
     return "\n".join(
         [
+            "<div class='card'>",
             "<h2>Run summary</h2>",
-            "<table>",
+            "<table class='summary-table'>",
             _html_row("Suppliers parsed", ", ".join(summary.supplier_names) if summary.supplier_names else "-"),
             _html_row("Daily totals", summary.daily_total_count),
-            _html_row("Mobile adjustments", summary.mobile_adjustment_count),
-            _html_row("Valero Pay+ adjustments", summary.valero_pay_plus_count),
+            _html_row("Backdated mobile adjustment rows", summary.mobile_adjustment_count),
+            _html_row("Valero Pay+ rows", summary.valero_pay_plus_count),
             _html_row("Valero monthly charges", summary.valero_monthly_charge_count),
             _html_row("Unclassified adjustments", summary.unclassified_adjustment_count),
             _html_row("Warnings", summary.warning_count),
             _html_row("Errors", summary.error_count),
             "</table>",
+            "</div>",
         ]
     )
 
 
 def _build_html_fetch_section(summary: DailyRunSummary) -> str:
     if not summary.fetch_results:
-        return "<h2>Fetch results</h2><p>No fetch results available.</p>"
+        return "\n".join(
+            [
+                "<div class='card'>",
+                "<h2>Fetch results</h2>",
+                "<p>No fetch results available.</p>",
+                "</div>",
+            ]
+        )
 
     rows = []
 
@@ -487,38 +550,52 @@ def _build_html_fetch_section(summary: DailyRunSummary) -> str:
 
         rows.append(
             "<tr>"
-            f"<td>{escape(str(getattr(result, 'supplier_name', '-')))}</td>"
-            f"<td>{escape(str(getattr(result, 'portal_name', '-')))}</td>"
-            f"<td>{escape(str(getattr(result, 'status', '-')))}</td>"
-            f"<td>{raw_paths_text}</td>"
-            f"<td>{escape(str(getattr(result, 'error_message', '') or ''))}</td>"
+            f"<td class='nowrap'>{escape(str(getattr(result, 'supplier_name', '-')))}</td>"
+            f"<td class='nowrap'>{escape(str(getattr(result, 'portal_name', '-')))}</td>"
+            f"<td class='nowrap'>{escape(str(getattr(result, 'status', '-')))}</td>"
+            f"<td class='text'>{raw_paths_text}</td>"
+            f"<td class='text'>{escape(str(getattr(result, 'error_message', '') or ''))}</td>"
             "</tr>"
         )
 
     return "\n".join(
         [
+            "<div class='card'>",
             "<h2>Fetch results</h2>",
             "<table>",
             "<tr><th>Supplier</th><th>Portal</th><th>Status</th><th>Raw files</th><th>Error</th></tr>",
             *rows,
             "</table>",
+            "</div>",
         ]
     )
 
 
 def _build_html_parsed_data_section(summary: DailyRunSummary) -> str:
     if not summary.parsed_reports:
-        return "<h2>Data parsed for sheet entry</h2><p>No parsed reports available.</p>"
+        return "\n".join(
+            [
+                "<div class='card'>",
+                "<h2>Data parsed for sheet entry</h2>",
+                "<p>No parsed reports available.</p>",
+                "</div>",
+            ]
+        )
 
-    parts = ["<h2>Data parsed for sheet entry</h2>"]
+    parts = [
+        "<div class='card'>",
+        "<h2>Data parsed for sheet entry</h2>",
+    ]
 
     for report in summary.parsed_reports:
         parts.append(f"<h3>{escape(report.supplier)}</h3>")
         parts.append(_build_html_daily_totals_table(report))
-        parts.append(_build_html_mobile_adjustments_table(report))
-        parts.append(_build_html_valero_pay_plus_table(report))
+        parts.append(_build_html_mobile_adjustment_summary_table(report))
+        parts.append(_build_html_valero_pay_plus_summary_table(report))
         parts.append(_build_html_valero_monthly_charges_table(report))
         parts.append(_build_html_unclassified_adjustments_table(report))
+
+    parts.append("</div>")
 
     return "\n".join(part for part in parts if part)
 
@@ -531,12 +608,12 @@ def _build_html_excel_section(summary: DailyRunSummary) -> str:
 
         rows.append(
             "<tr>"
-            f"<td>{escape(str(getattr(plan, 'report_supplier', '-')))}</td>"
-            f"<td>{escape(str(getattr(plan, 'report_date', '-')))}</td>"
-            f"<td>{escape(str(getattr(result, 'written_count', 0)))}</td>"
-            f"<td>{escape(str(getattr(result, 'skipped_count', 0)))}</td>"
-            f"<td>{escape(str(getattr(result, 'dry_run', '-')))}</td>"
-            f"<td>{escape(str(getattr(result, 'write_originals', '-')))}</td>"
+            f"<td class='nowrap'>{escape(str(getattr(plan, 'report_supplier', '-')))}</td>"
+            f"<td class='nowrap'>{escape(str(getattr(plan, 'report_date', '-')))}</td>"
+            f"<td class='amount'>{escape(str(getattr(result, 'written_count', 0)))}</td>"
+            f"<td class='amount'>{escape(str(getattr(result, 'skipped_count', 0)))}</td>"
+            f"<td class='nowrap'>{escape(str(getattr(result, 'dry_run', '-')))}</td>"
+            f"<td class='nowrap'>{escape(str(getattr(result, 'write_originals', '-')))}</td>"
             "</tr>"
         )
 
@@ -545,11 +622,13 @@ def _build_html_excel_section(summary: DailyRunSummary) -> str:
 
     return "\n".join(
         [
+            "<div class='card'>",
             "<h2>Excel write summary</h2>",
             "<table>",
-            "<tr><th>Supplier</th><th>Report date</th><th>Written</th><th>Skipped</th><th>Dry run</th><th>Write originals</th></tr>",
+            "<tr><th>Supplier</th><th>Report date</th><th class='amount'>Written</th><th class='amount'>Skipped</th><th>Dry run</th><th>Write originals</th></tr>",
             *rows,
             "</table>",
+            "</div>",
         ]
     )
 
@@ -573,7 +652,16 @@ def _build_html_warning_section(summary: DailyRunSummary) -> str:
     if not items:
         items.append("<li>No warnings.</li>")
 
-    return "\n".join(["<h2>Warnings</h2>", "<ul>", *items, "</ul>"])
+    return "\n".join(
+        [
+            "<div class='card'>",
+            "<h2>Warnings</h2>",
+            "<ul>",
+            *items,
+            "</ul>",
+            "</div>",
+        ]
+    )
 
 
 def _build_html_error_section(summary: DailyRunSummary) -> str:
@@ -591,7 +679,16 @@ def _build_html_error_section(summary: DailyRunSummary) -> str:
     if not items:
         items.append("<li>No errors.</li>")
 
-    return "\n".join(["<h2>Errors</h2>", "<ul>", *items, "</ul>"])
+    return "\n".join(
+        [
+            "<div class='card'>",
+            "<h2>Errors</h2>",
+            "<ul>",
+            *items,
+            "</ul>",
+            "</div>",
+        ]
+    )
 
 
 def _build_html_daily_totals_table(report: ParsedReport) -> str:
@@ -599,67 +696,123 @@ def _build_html_daily_totals_table(report: ParsedReport) -> str:
         return "<p>Daily totals: none</p>"
 
     rows = [
-        "<tr><th>Date</th><th>Location</th><th>Gross</th><th>Fees</th><th>Net</th></tr>"
+        "<tr>"
+        "<th>Date</th>"
+        "<th>Location ID</th>"
+        "<th>Location Name</th>"
+        "<th class='amount'>Gross</th>"
+        "<th class='amount'>Fees</th>"
+        "<th class='amount'>Net</th>"
+        "</tr>"
     ]
 
     for row in report.daily_totals:
         rows.append(
             "<tr>"
-            f"<td>{escape(str(row.date))}</td>"
-            f"<td>{escape(row.location_name)} ({escape(row.location_id)})</td>"
-            f"<td>{escape(_format_money(row.gross_amt))}</td>"
-            f"<td>{escape(_format_money(row.fees))}</td>"
-            f"<td>{escape(_format_money(row.net_amt))}</td>"
+            f"<td class='nowrap'>{escape(str(row.date))}</td>"
+            f"<td class='nowrap'>{escape(str(row.location_id))}</td>"
+            f"<td class='text'>{escape(str(row.location_name))}</td>"
+            f"{_amount_td(row.gross_amt)}"
+            f"{_amount_td(row.fees)}"
+            f"{_amount_td(row.net_amt)}"
             "</tr>"
         )
 
     return "\n".join(["<h4>Daily totals</h4>", "<table>", *rows, "</table>"])
 
 
-def _build_html_mobile_adjustments_table(report: ParsedReport) -> str:
-    if not report.mobile_adjustments:
+def _build_html_mobile_adjustment_summary_table(report: ParsedReport) -> str:
+    rows_data = getattr(report, "mobile_adjustments", []) or []
+
+    if not rows_data:
         return ""
 
     rows = [
-        "<tr><th>Date</th><th>Location</th><th>Gross</th><th>Fees</th><th>Net</th><th>Source</th></tr>"
+        "<tr>"
+        "<th>Date</th>"
+        "<th>Location ID</th>"
+        "<th>Location Name</th>"
+        "<th class='amount'>Gross</th>"
+        "<th class='amount'>Fees</th>"
+        "<th class='amount'>Net</th>"
+        "</tr>"
     ]
 
-    for row in report.mobile_adjustments:
+    for row in sorted(
+        summarize_mobile_adjustments(rows_data),
+        key=lambda item: (item.date, item.location_id),
+    ):
         rows.append(
             "<tr>"
-            f"<td>{escape(str(row.date))}</td>"
-            f"<td>{escape(row.location_name)} ({escape(row.location_id)})</td>"
-            f"<td>{escape(_format_money(row.gross_amt))}</td>"
-            f"<td>{escape(_format_money(row.fees))}</td>"
-            f"<td>{escape(_format_money(row.net_amt))}</td>"
-            f"<td>{escape(str(row.source_code or ''))}</td>"
+            f"<td class='nowrap'>{escape(str(row.date))}</td>"
+            f"<td class='nowrap'>{escape(str(row.location_id))}</td>"
+            f"<td class='text'>{escape(str(row.location_name))}</td>"
+            f"{_amount_td(row.gross_amt)}"
+            f"{_amount_td(row.fees)}"
+            f"{_amount_td(row.net_amt)}"
             "</tr>"
         )
 
-    return "\n".join(["<h4>Mobile adjustments</h4>", "<table>", *rows, "</table>"])
+    gross, fees, net = get_mobile_adjustment_grand_total(rows_data)
+
+    rows.append(
+        "<tr class='total-row'>"
+        "<th colspan='3'>GRAND TOTAL</th>"
+        f"<th class='amount'>{escape(_format_money(gross))}</th>"
+        f"<th class='amount'>{escape(_format_money(fees))}</th>"
+        f"<th class='amount'>{escape(_format_money(net))}</th>"
+        "</tr>"
+    )
+
+    return "\n".join(
+        [
+            "<h4>Backdated mobile adjustment summary</h4>",
+            "<table>",
+            *rows,
+            "</table>",
+        ]
+    )
 
 
-def _build_html_valero_pay_plus_table(report: ParsedReport) -> str:
+def _build_html_valero_pay_plus_summary_table(report: ParsedReport) -> str:
     rows_data = getattr(report, "valero_pay_plus_adjustments", []) or []
 
     if not rows_data:
         return ""
 
     rows = [
-        "<tr><th>Date</th><th>Location</th><th>Amount</th><th>Source</th></tr>"
+        "<tr>"
+        "<th>Date</th>"
+        "<th>Location ID</th>"
+        "<th>Location Name</th>"
+        "<th class='amount'>Count</th>"
+        "<th class='amount'>Amount</th>"
+        "<th>Sources</th>"
+        "</tr>"
     ]
 
-    for row in rows_data:
+    for row in _summarize_valero_pay_plus(rows_data):
+        sources = ", ".join(sorted(row["sources"]))
+
         rows.append(
             "<tr>"
-            f"<td>{escape(str(row.date))}</td>"
-            f"<td>{escape(row.location_name)} ({escape(row.location_id)})</td>"
-            f"<td>{escape(_format_money(row.amount))}</td>"
-            f"<td>{escape(str(row.source_code or ''))}</td>"
+            f"<td class='nowrap'>{escape(str(row['date']))}</td>"
+            f"<td class='nowrap'>{escape(str(row['location_id']))}</td>"
+            f"<td class='text'>{escape(str(row['location_name']))}</td>"
+            f"<td class='amount'>{escape(str(row['count']))}</td>"
+            f"{_amount_td(row['amount'])}"
+            f"<td class='nowrap'>{escape(sources)}</td>"
             "</tr>"
         )
 
-    return "\n".join(["<h4>Valero Pay+</h4>", "<table>", *rows, "</table>"])
+    return "\n".join(
+        [
+            "<h4>Valero Pay+ adjustment summary</h4>",
+            "<table>",
+            *rows,
+            "</table>",
+        ]
+    )
 
 
 def _build_html_valero_monthly_charges_table(report: ParsedReport) -> str:
@@ -669,16 +822,23 @@ def _build_html_valero_monthly_charges_table(report: ParsedReport) -> str:
         return ""
 
     rows = [
-        "<tr><th>Date</th><th>Location</th><th>Amount</th><th>Description</th></tr>"
+        "<tr>"
+        "<th>Date</th>"
+        "<th>Location ID</th>"
+        "<th>Location Name</th>"
+        "<th class='amount'>Amount</th>"
+        "<th>Description</th>"
+        "</tr>"
     ]
 
     for row in rows_data:
         rows.append(
             "<tr>"
-            f"<td>{escape(str(row.date))}</td>"
-            f"<td>{escape(row.location_name)} ({escape(row.location_id)})</td>"
-            f"<td>{escape(_format_money(row.amount))}</td>"
-            f"<td>{escape(row.description)}</td>"
+            f"<td class='nowrap'>{escape(str(row.date))}</td>"
+            f"<td class='nowrap'>{escape(str(row.location_id))}</td>"
+            f"<td class='text'>{escape(str(row.location_name))}</td>"
+            f"{_amount_td(row.amount)}"
+            f"<td class='text'>{escape(str(row.description))}</td>"
             "</tr>"
         )
 
@@ -692,36 +852,54 @@ def _build_html_unclassified_adjustments_table(report: ParsedReport) -> str:
         return ""
 
     rows = [
-        "<tr><th>Report date</th><th>Location</th><th>Amount</th><th>Description</th><th>Raw line</th></tr>"
+        "<tr>"
+        "<th>Report date</th>"
+        "<th>Location ID</th>"
+        "<th>Location Name</th>"
+        "<th class='amount'>Amount</th>"
+        "<th>Description</th>"
+        "<th>Raw line</th>"
+        "</tr>"
     ]
 
     for row in rows_data:
-        amount = _format_money(row.amount) if row.amount is not None else "-"
         rows.append(
             "<tr>"
-            f"<td>{escape(str(row.report_date))}</td>"
-            f"<td>{escape(str(row.location_name))} ({escape(str(row.location_id))})</td>"
-            f"<td>{escape(amount)}</td>"
-            f"<td>{escape(row.description)}</td>"
-            f"<td>{escape(row.raw_line)}</td>"
+            f"<td class='nowrap'>{escape(str(row.report_date))}</td>"
+            f"<td class='nowrap'>{escape(str(row.location_id))}</td>"
+            f"<td class='text'>{escape(str(row.location_name))}</td>"
+            f"{_amount_td(row.amount)}"
+            f"<td class='text'>{escape(str(row.description))}</td>"
+            f"<td class='text raw-line'>{escape(str(row.raw_line))}</td>"
             "</tr>"
         )
 
     return "\n".join(["<h4>Unclassified adjustments</h4>", "<table>", *rows, "</table>"])
 
 
-def _html_row(label: str, value: Any) -> str:
+def _html_row(label: str, value: Any, *, escape_value: bool = True) -> str:
+    value_text = escape(str(value)) if escape_value else str(value)
+
     return (
         "<tr>"
         f"<th>{escape(str(label))}</th>"
-        f"<td>{escape(str(value))}</td>"
+        f"<td>{value_text}</td>"
         "</tr>"
     )
+
+
+def _amount_td(value: Decimal | None) -> str:
+    return f"<td class='amount'>{escape(_format_money(value))}</td>"
 
 
 def _format_money(value: Decimal | None) -> str:
     if value is None:
         return "-"
+
+    value = Decimal(value)
+
+    if value < 0:
+        return f"-${abs(value):,.2f}"
 
     return f"${value:,.2f}"
 
@@ -755,8 +933,7 @@ def write_daily_email_preview(
 ) -> tuple[Path, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    base_name = f"{summary.business_date.isoformat()}_daily_summary"
-
+    base_name = f"{_summary_report_date(summary).isoformat()}_daily_summary"
     text_path = output_dir / f"{base_name}.txt"
     html_path = output_dir / f"{base_name}.html"
 
@@ -842,3 +1019,187 @@ def handle_daily_notification(
             preview_html_path=preview_html_path,
             error_message=send_result.error_message,
         )
+
+    return NotificationResult(
+        enabled=True,
+        mode=config.mode,
+        provider=config.provider,
+        sent=False,
+        preview_text_path=preview_text_path,
+        preview_html_path=preview_html_path,
+    )
+
+
+def _summarize_valero_pay_plus(rows):
+    summary = {}
+
+    for row in rows:
+        key = (row.date, row.location_id, row.location_name)
+
+        if key not in summary:
+            summary[key] = {
+                "date": row.date,
+                "location_id": row.location_id,
+                "location_name": row.location_name,
+                "count": 0,
+                "amount": Decimal("0"),
+                "sources": set(),
+            }
+
+        summary[key]["count"] += 1
+
+        if row.amount is not None:
+            summary[key]["amount"] += row.amount
+
+        if row.source_code:
+            summary[key]["sources"].add(row.source_code)
+
+    return sorted(
+        summary.values(),
+        key=lambda item: (item["date"], item["location_id"]),
+    )
+
+
+def _html_styles() -> str:
+    return """
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    background: #f5f7fb;
+    color: #1f2937;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.header-card {
+    background: #0f172a;
+    color: #ffffff;
+    border-radius: 10px;
+    padding: 22px 24px;
+    margin-bottom: 18px;
+}
+
+.header-card h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.subtitle {
+    margin-top: 6px;
+    color: #cbd5e1;
+    font-size: 14px;
+}
+
+.card {
+    background: #ffffff;
+    border: 1px solid #d8dee9;
+    border-radius: 10px;
+    padding: 18px;
+    margin: 16px 0;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+h2 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    color: #111827;
+}
+
+h3 {
+    margin: 20px 0 10px 0;
+    font-size: 16px;
+    color: #1f2937;
+}
+
+h4 {
+    margin: 18px 0 8px 0;
+    font-size: 14px;
+    color: #374151;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 18px 0;
+    background: #ffffff;
+}
+
+th {
+    background: #eef2f7;
+    color: #111827;
+    font-weight: 700;
+    text-align: left;
+    border: 1px solid #cfd8e3;
+    padding: 9px 11px;
+    white-space: nowrap;
+}
+
+td {
+    border: 1px solid #d8dee9;
+    padding: 8px 11px;
+    vertical-align: top;
+}
+
+tr:nth-child(even) td {
+    background: #fafbfc;
+}
+
+tr.total-row th {
+    background: #e5e7eb;
+    border: 1px solid #cfd8e3;
+}
+
+td.amount,
+th.amount {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+td.nowrap {
+    white-space: nowrap;
+}
+
+td.text {
+    white-space: normal;
+}
+
+td.raw-line {
+    font-family: Consolas, Menlo, Monaco, monospace;
+    font-size: 12px;
+}
+
+ul {
+    margin-top: 8px;
+    padding-left: 22px;
+}
+
+li {
+    margin-bottom: 6px;
+}
+
+.notice-ok {
+    color: #166534;
+    font-weight: 700;
+}
+
+.notice-warning {
+    color: #92400e;
+    font-weight: 700;
+}
+
+.notice-error {
+    color: #991b1b;
+    font-weight: 700;
+}
+</style>
+"""

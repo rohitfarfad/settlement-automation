@@ -64,3 +64,42 @@ SUB 0617 1 100.00+ 0.00+ 2.00+ 98.00+
 
     assert len(report.valero_pay_plus_adjustments) == 1
     assert len(report.unclassified_adjustments) == 0
+
+
+def test_valero_unclassified_adjustments_only_from_adjustments_section(tmp_path):
+    report_text = """
+VALERO
+MSR/DTN:  07/01/26
+
+DEALER CREDITS
+DATE   IO/CARD/TRX     COUNT        GROSS       DISC        FEE           NET
+
+DEALER 11347 Route 44 Valero
+
+  0629 CRND VPVS PUR       2        85.76+      1.59-      0.22-        83.95+
+       SUB  CRIND          2        85.76+      1.59-      0.22-        83.95+
+
+       SUB  0629           2        85.76+      1.59-      0.22-        83.95+
+
+  0630 POS  VISA PUR       1       100.00+      1.00-      2.00-        97.00+
+       SUB  POS            1       100.00+      1.00-      2.00-        97.00+
+
+       SUB  0630           1       100.00+      1.00-      2.00-        97.00+
+
+TOTAL  11347               3       185.76+      2.59-      2.22-       180.95+
+
+  ADJUSTMENTS
+    DEALER DESCRIPTION                                          ADJUSTMENT AMT
+    11347  CRND VALP VP+ Fuel Offer 06-30                                1.99+
+    TOTAL  ADJUSTMENTS                                                   1.99+
+"""
+
+    path = tmp_path / "valero.txt"
+    path.write_text(report_text, encoding="utf-8")
+
+    report = parse_valero_report(str(path))
+
+    assert len(report.daily_totals) == 1
+    assert len(report.mobile_adjustments) == 1
+    assert len(report.valero_pay_plus_adjustments) == 1
+    assert len(report.unclassified_adjustments) == 0

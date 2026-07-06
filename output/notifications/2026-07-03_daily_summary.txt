@@ -1,0 +1,254 @@
+Subject: [WARNING] Credit Cards Daily Settlement Report - Report Date 2026-07-03
+
+Prestige Settlement Daily Report
+========================================
+Report date: 2026-07-03
+Run date: 2026-07-05
+Started at: 2026-07-05 21:03:37
+Finished at: 2026-07-05 21:03:37
+
+Run summary
+----------------------------------------
+Suppliers parsed: CITGO, SUNOCO, VALERO
+Daily totals: 41
+Backdated mobile adjustment rows: 18
+Valero Pay+ rows: 34
+Valero monthly charges: 50
+Unclassified adjustments: 0
+Warnings: 44
+Errors: 0
+
+Fetch results
+----------------------------------------
+- No fetch results available.
+
+Data parsed for sheet entry
+----------------------------------------
+VALERO
+- Daily totals:
+  2026-07-02 | Five Corners Valero (10688) | Gross $5,893.68 | Fees $111.87 | Net $5,781.81
+  2026-07-02 | Route 44 Valero (11347) | Gross $14,232.98 | Fees $260.14 | Net $13,972.84
+  2026-07-02 | Brewster Valero (19505) | Gross $13,050.19 | Fees $263.92 | Net $12,786.27
+  2026-07-02 | Wappinger's Falls Valero (19513) | Gross $22,049.99 | Fees $390.20 | Net $21,659.79
+  2026-07-02 | Route 7 Valero (22312) | Gross $8,148.00 | Fees $153.87 | Net $7,994.13
+  2026-07-02 | Saugerties Valero (23473) | Gross $6,225.85 | Fees $125.97 | Net $6,099.88
+  2026-07-02 | Elmira Valero (23810) | Gross $12,099.26 | Fees $220.02 | Net $11,879.24
+  2026-07-02 | New Windsor Valero (24026) | Gross $8,748.46 | Fees $146.78 | Net $8,601.68
+  2026-07-02 | Carmel Valero (24640) | Gross $8,181.60 | Fees $176.11 | Net $8,005.49
+  2026-07-02 | Ulster Avenue Valero (25407) | Gross $13,704.72 | Fees $264.53 | Net $13,440.19
+  2026-07-02 | Montgomery Valero (26740) | Gross $24,796.96 | Fees $454.26 | Net $24,342.70
+  2026-07-02 | Walker Valero (30371) | Gross $9,023.19 | Fees $182.70 | Net $8,840.49
+  2026-07-02 | Cornell St Valero (30408) | Gross $5,935.39 | Fees $118.64 | Net $5,816.75
+  2026-07-02 | Valero Central Ave (30525) | Gross $8,787.37 | Fees $170.56 | Net $8,616.81
+  2026-07-02 | CHAMPLAIN VALERO (30530) | Gross $7,669.99 | Fees $170.36 | Net $7,499.63
+  2026-07-02 | Fort Ann Valero (32966) | Gross $12,519.01 | Fees $231.20 | Net $12,287.81
+  2026-07-02 | Slate Hill Valero (45371) | Gross $9,247.91 | Fees $178.43 | Net $9,069.48
+  2026-07-02 | DELMAR VALERO (53579) | Gross $19,675.38 | Fees $382.05 | Net $19,293.33
+  2026-07-02 | South Plank VALERO (72041) | Gross $17,288.61 | Fees $324.49 | Net $16,964.12
+  2026-07-02 | FISHKILL (76596) | Gross $19,919.62 | Fees $341.63 | Net $19,577.99
+  2026-07-02 | SOUTHFIELDS (76604) | Gross $15,626.76 | Fees $328.20 | Net $15,298.56
+  2026-07-02 | Willsboro Valero (83343) | Gross $11,758.22 | Fees $226.92 | Net $11,531.30
+  2026-07-02 | Prestige Valero (93815) | Gross $23,518.19 | Fees $455.09 | Net $23,063.10
+- Backdated mobile adjustment summary:
+  2026-07-01 | Five Corners Valero (10688) | Gross $50.01 | Fees $0.00 | Net $50.01
+  2026-07-01 | Route 44 Valero (11347) | Gross $47.35 | Fees $1.10 | Net $46.25
+  2026-07-01 | Wappinger's Falls Valero (19513) | Gross $293.45 | Fees $0.00 | Net $293.45
+  2026-07-01 | Route 7 Valero (22312) | Gross $111.66 | Fees $2.29 | Net $109.37
+  2026-07-01 | New Windsor Valero (24026) | Gross $298.01 | Fees $1.04 | Net $296.97
+  2026-07-01 | Ulster Avenue Valero (25407) | Gross $135.10 | Fees $0.77 | Net $134.33
+  2026-07-01 | Montgomery Valero (26740) | Gross $400.14 | Fees $0.99 | Net $399.15
+  2026-07-01 | Walker Valero (30371) | Gross $34.51 | Fees $0.00 | Net $34.51
+  2026-07-01 | South Plank VALERO (72041) | Gross $243.86 | Fees $1.18 | Net $242.68
+  2026-07-01 | FISHKILL (76596) | Gross $306.04 | Fees $1.43 | Net $304.61
+  2026-07-01 | Prestige Valero (93815) | Gross $246.35 | Fees $1.37 | Net $244.98
+  GRAND TOTAL | Gross $2,166.48 | Fees $10.17 | Net $2,156.31
+- Valero Pay+ adjustment summary:
+  2026-07-02 | Wappinger's Falls Valero (19513) | Count 6 | Amount $5.79 | Sources VALP
+  2026-07-02 | Route 7 Valero (22312) | Count 3 | Amount $3.04 | Sources VPAY
+  2026-07-02 | Elmira Valero (23810) | Count 3 | Amount $3.06 | Sources VALP, VPAY
+  2026-07-02 | New Windsor Valero (24026) | Count 3 | Amount $1.83 | Sources VALP
+  2026-07-02 | Ulster Avenue Valero (25407) | Count 1 | Amount $0.54 | Sources VPAY
+  2026-07-02 | Montgomery Valero (26740) | Count 11 | Amount $11.57 | Sources VALP
+  2026-07-02 | DELMAR VALERO (53579) | Count 1 | Amount $1.80 | Sources VALP
+  2026-07-02 | FISHKILL (76596) | Count 5 | Amount $3.70 | Sources VALP, VPAY
+  2026-07-02 | Prestige Valero (93815) | Count 1 | Amount $1.16 | Sources VALP
+- Valero monthly charges:
+  2026-07-02 | Highgate Valero (10312) | Amount $164.30 | MONTHLY GILBARCO PSO BILLING
+  2026-07-02 | Highgate Valero (10312) | Amount $159.00 | MONTHLY TNSLINKMNSP48 1X24 BILLING
+  2026-07-02 | Five Corners Valero (10688) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Five Corners Valero (10688) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Route 44 Valero (11347) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Brewster Valero (19505) | Amount $113.79 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Brewster Valero (19505) | Amount $113.79 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Wappinger's Falls Valero (19513) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Wappinger's Falls Valero (19513) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Route 7 Valero (22312) | Amount $162.00 | MONTHLY TNSLINKMNSP48 1X24 BILLING
+  2026-07-02 | Route 7 Valero (22312) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Saugerties Valero (23473) | Amount $113.40 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Saugerties Valero (23473) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Elmira Valero (23810) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Elmira Valero (23810) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | New Windsor Valero (24026) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | New Windsor Valero (24026) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Carmel Valero (24640) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Carmel Valero (24640) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Ulster Avenue Valero (25407) | Amount $162.00 | MONTHLY TNSLINKMNSP48 1X24 BILLING
+  2026-07-02 | Ulster Avenue Valero (25407) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Montgomery Valero (26740) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Alburg Villiage Jolley (28066) | Amount $164.30 | MONTHLY GILBARCO PSO BILLING
+  2026-07-02 | Alburg Villiage Jolley (28066) | Amount $111.30 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Walker Valero (30371) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Walker Valero (30371) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Cornell St Valero (30408) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Cornell St Valero (30408) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Valero Central Ave (30525) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Valero Central Ave (30525) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | CHAMPLAIN VALERO (30530) | Amount $113.40 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | CHAMPLAIN VALERO (30530) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Fort Ann Valero (32966) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Fort Ann Valero (32966) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Berkshire Jolley (45264) | Amount $164.30 | MONTHLY GILBARCO PSO BILLING
+  2026-07-02 | Berkshire Jolley (45264) | Amount $111.30 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Slate Hill Valero (45371) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Slate Hill Valero (45371) | Amount $109.20 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Monticello Valero (46391) | Amount $109.20 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | DELMAR VALERO (53579) | Amount $113.40 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | DELMAR VALERO (53579) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | South Plank VALERO (72041) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | South Plank VALERO (72041) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | FISHKILL (76596) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | FISHKILL (76596) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | SOUTHFIELDS (76604) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Willsboro Valero (83343) | Amount $162.00 | MONTHLY TNSLINKMNSP48 1X24 BILLING
+  2026-07-02 | Willsboro Valero (83343) | Amount $113.40 | MONTHLY VERIFONE ASM BILLING
+  2026-07-02 | Prestige Valero (93815) | Amount $113.53 | MONTHLY TNSLinkMNSP48 1X24 BILLING
+  2026-07-02 | Prestige Valero (93815) | Amount $113.53 | MONTHLY VERIFONE ASM BILLING
+
+CITGO
+- Daily totals:
+  2026-07-02 | HAVERSTRAW (15861002) | Gross $6,946.60 | Fees $133.45 | Net $6,813.15
+  2026-07-02 | ELLENVILLE (15861003) | Gross $7,402.90 | Fees $162.36 | Net $7,240.54
+  2026-07-02 | FREEDOM PLAINS (15861004) | Gross $13,835.61 | Fees $262.85 | Net $13,572.76
+  2026-07-02 | WESTERLO (15861005) | Gross $1,199.45 | Fees $25.75 | Net $1,173.70
+  2026-07-02 | ERIE BLVD (15861006) | Gross $8,207.34 | Fees $209.07 | Net $7,998.27
+  2026-07-02 | UPPER GLEN QUEENSBURY (15861007) | Gross $10,890.26 | Fees $230.70 | Net $10,659.56
+
+SUNOCO
+- Daily totals:
+  2026-07-03 | 128 WASHINGTON MART (0160544300) | Gross $5,131.98 | Fees $124.31 | Net $5,007.67
+  2026-07-03 | 84 QUICK STOP SUNOCO (0260536800) | Gross $18,750.14 | Fees $395.17 | Net $18,354.97
+  2026-07-03 | CENTRAL AVE SUNOCO (0326461100) | Gross $12,334.07 | Fees $259.83 | Net $12,074.24
+  2026-07-03 | NEW SCOTLAND SUNOCO (0434020400) | Gross $12,693.86 | Fees $277.04 | Net $12,416.82
+  2026-07-03 | GLENMONT SUNOCO (0585555600) | Gross $18,229.93 | Fees $383.30 | Net $17,846.63
+  2026-07-03 | STEWART SUNOCO (0755798600) | Gross $12,311.02 | Fees $297.71 | Net $12,013.31
+  2026-07-03 | VAILS GATE SUNOCO (0853941300) | Gross $6,778.01 | Fees $126.80 | Net $6,651.21
+  2026-07-03 | ROCK HILL SUNOCO (0894029800) | Gross $8,173.55 | Fees $175.10 | Net $7,998.45
+  2026-07-03 | BALLSTON SPA SUNOCO (8000463802) | Gross $16,012.02 | Fees $292.72 | Net $15,719.30
+  2026-07-03 | ROUTE 302 SUNOCO (8002101401) | Gross $7,496.70 | Fees $146.59 | Net $7,350.11
+  2026-07-03 | DOLSONTOWN ROAD SUNOCO (8002266301) | Gross $10,333.83 | Fees $216.83 | Net $10,117.00
+  2026-07-03 | PRESTIGE-474 (8003089201) | Gross $20,282.50 | Fees $437.28 | Net $19,845.22
+
+
+Excel write summary
+----------------------------------------
+Written cells: 0
+Skipped cells: 0
+Excel warnings: 44
+- VALERO 2026-07-03: written=0, skipped=0, dry_run=True, write_originals=False
+  warning: Workbook not found: data/workbooks/2026 CC HIGHGATE VALERO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC BERKSHIRE JOLLEY VALERO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC MONTICELLO VALERO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC HIGHGATE VALERO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BERKSHIRE JOLLEY VALERO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC MONTICELLO VALERO.xlsx
+- CITGO 2026-07-03: written=0, skipped=0, dry_run=True, write_originals=False
+  warning: Workbook not found: data/workbooks/2026 CC HAVERSTRAW CITGO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC ELLENVILLE CITGO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC FREEDOM PLAINS CITGO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC WESTERLO CITGO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC ERIE BLVD CITGO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC UPPER GLEN QUEENSBURY CITGO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC HAVERSTRAW CITGO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ELLENVILLE CITGO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC FREEDOM PLAINS CITGO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC WESTERLO CITGO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ERIE BLVD CITGO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC UPPER GLEN QUEENSBURY CITGO.xlsx
+- SUNOCO 2026-07-04: written=0, skipped=0, dry_run=True, write_originals=False
+  warning: Workbook not found: data/workbooks/2026 CC 128 WASHINGTON MART SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC 84 QUICK STOP SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC CENTRAL AVE SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC NEW SCOTLAND SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC GLENMONT SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC STEWART SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC VAILS GATE SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC ROCK HILL SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC BALLSTON SPA SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC ROUTE 302 SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC DOLSONTOWN ROAD SUNOCO.xlsx
+  warning: Workbook not found: data/workbooks/2026 CC AVIATION PRESTIGE-474 SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC 128 WASHINGTON MART SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC 84 QUICK STOP SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC CENTRAL AVE SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC NEW SCOTLAND SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC GLENMONT SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC STEWART SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC VAILS GATE SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ROCK HILL SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BALLSTON SPA SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ROUTE 302 SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC DOLSONTOWN ROAD SUNOCO.xlsx
+  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC AVIATION PRESTIGE-474 SUNOCO.xlsx
+
+Warnings
+----------------------------------------
+- Workbook not found: data/workbooks/2026 CC HIGHGATE VALERO.xlsx
+- Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
+- Workbook not found: data/workbooks/2026 CC BERKSHIRE JOLLEY VALERO.xlsx
+- Workbook not found: data/workbooks/2026 CC MONTICELLO VALERO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC HIGHGATE VALERO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BERKSHIRE JOLLEY VALERO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC MONTICELLO VALERO.xlsx
+- Workbook not found: data/workbooks/2026 CC HAVERSTRAW CITGO.xlsx
+- Workbook not found: data/workbooks/2026 CC ELLENVILLE CITGO.xlsx
+- Workbook not found: data/workbooks/2026 CC FREEDOM PLAINS CITGO.xlsx
+- Workbook not found: data/workbooks/2026 CC WESTERLO CITGO.xlsx
+- Workbook not found: data/workbooks/2026 CC ERIE BLVD CITGO.xlsx
+- Workbook not found: data/workbooks/2026 CC UPPER GLEN QUEENSBURY CITGO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC HAVERSTRAW CITGO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ELLENVILLE CITGO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC FREEDOM PLAINS CITGO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC WESTERLO CITGO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ERIE BLVD CITGO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC UPPER GLEN QUEENSBURY CITGO.xlsx
+- Workbook not found: data/workbooks/2026 CC 128 WASHINGTON MART SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC 84 QUICK STOP SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC CENTRAL AVE SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC NEW SCOTLAND SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC GLENMONT SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC STEWART SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC VAILS GATE SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC ROCK HILL SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC BALLSTON SPA SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC ROUTE 302 SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC DOLSONTOWN ROAD SUNOCO.xlsx
+- Workbook not found: data/workbooks/2026 CC AVIATION PRESTIGE-474 SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC 128 WASHINGTON MART SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC 84 QUICK STOP SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC CENTRAL AVE SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC NEW SCOTLAND SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC GLENMONT SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC STEWART SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC VAILS GATE SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ROCK HILL SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BALLSTON SPA SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ROUTE 302 SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC DOLSONTOWN ROAD SUNOCO.xlsx
+- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC AVIATION PRESTIGE-474 SUNOCO.xlsx
+
+Errors
+----------------------------------------
+- No errors.

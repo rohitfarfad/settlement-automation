@@ -33,7 +33,7 @@ class RunError:
 
 @dataclass(frozen=True)
 class DailyRunSummary:
-    business_date: date
+    report_date: date
     run_date: date
     started_at: datetime
     finished_at: datetime | None = None
@@ -46,6 +46,12 @@ class DailyRunSummary:
     anomalies: list[AnomalyIssue] = field(default_factory=list)
     errors: list[RunError] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+
+    @property
+    def business_date(self) -> date:
+        # Temporary compatibility alias.
+        # New code should use report_date.
+        return self.report_date
 
     @property
     def has_errors(self) -> bool:
@@ -120,7 +126,8 @@ class DailyRunSummary:
 
 def build_daily_run_summary(
     *,
-    business_date: date,
+    report_date: date | None = None,
+    business_date: date | None = None,
     started_at: datetime,
     finished_at: datetime | None = None,
     run_date: date | None = None,
@@ -131,8 +138,12 @@ def build_daily_run_summary(
     errors: list[RunError] | None = None,
     warnings: list[str] | None = None,
 ) -> DailyRunSummary:
-    parsed_reports = parsed_reports or []
+    effective_report_date = report_date or business_date
 
+    if effective_report_date is None:
+        raise ValueError("report_date is required.")
+
+    parsed_reports = parsed_reports or []
     effective_run_date = run_date or date.today()
 
     anomalies: list[AnomalyIssue] = []
@@ -146,7 +157,7 @@ def build_daily_run_summary(
         )
 
     return DailyRunSummary(
-        business_date=business_date,
+        report_date=effective_report_date,
         run_date=effective_run_date,
         started_at=started_at,
         finished_at=finished_at,

@@ -73,13 +73,36 @@ def get_settings() -> AppSettings:
         data_dir=PROJECT_ROOT / "data",
         raw_data_dir=PROJECT_ROOT / "data" / "raw",
         tmp_download_dir=PROJECT_ROOT / "data" / "tmp",
+
         output_dir=output_dir,
         log_dir=output_dir / "logs",
         trace_dir=output_dir / "traces",
+
+        # Existing Excel settings
+        excel_workbook_root=Path(
+            os.getenv(
+                "EXCEL_WORKBOOK_ROOT",
+                str(PROJECT_ROOT / "data" / "excel_workbooks"),
+            )
+        ),
+        excel_output_dir=Path(
+            os.getenv(
+                "EXCEL_OUTPUT_DIR",
+                str(output_dir / "excel"),
+            )
+        ),
+        excel_audit_dir=Path(
+            os.getenv(
+                "EXCEL_AUDIT_DIR",
+                str(output_dir / "audit"),
+            )
+        ),
+
         headless_browser=_get_bool("HEADLESS_BROWSER", True),
         download_timeout_seconds=_get_int("DOWNLOAD_TIMEOUT_SECONDS", 60),
         max_retries=_get_int("MAX_RETRIES", 3),
 
+        # Notification settings
         notification_email_enabled=_get_bool(
             "NOTIFICATION_EMAIL_ENABLED",
             False,
@@ -97,7 +120,10 @@ def get_settings() -> AppSettings:
         notification_email_to=os.getenv("NOTIFICATION_EMAIL_TO", "").strip(),
         notification_email_cc=os.getenv("NOTIFICATION_EMAIL_CC", "").strip(),
         notification_email_bcc=os.getenv("NOTIFICATION_EMAIL_BCC", "").strip(),
-        notification_email_test_to=os.getenv("NOTIFICATION_EMAIL_TEST_TO", "").strip(),
+        notification_email_test_to=os.getenv(
+            "NOTIFICATION_EMAIL_TEST_TO",
+            "",
+        ).strip(),
 
         graph_tenant_id=os.getenv("GRAPH_TENANT_ID", "").strip(),
         graph_client_id=os.getenv("GRAPH_CLIENT_ID", "").strip(),

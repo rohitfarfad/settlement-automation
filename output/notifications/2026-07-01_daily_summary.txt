@@ -1,0 +1,115 @@
+Subject: [OK] Prestige Settlement Daily Report - Business Date 2026-07-01
+
+Prestige Settlement Daily Report
+========================================
+Business date: 2026-07-01
+Run date: 2026-07-05
+Started at: 2026-07-05 20:13:31
+Finished at: 2026-07-05 20:13:31
+
+Run summary
+----------------------------------------
+Suppliers parsed: CITGO, VALERO
+Daily totals: 29
+Mobile adjustments: 14
+Valero Pay+ adjustments: 53
+Valero monthly charges: 0
+Unclassified adjustments: 0
+Warnings: 0
+Errors: 0
+
+Fetch results
+----------------------------------------
+- No fetch results available.
+
+Data parsed for sheet entry
+----------------------------------------
+VALERO
+- Daily totals:
+  2026-06-30 | Five Corners Valero (10688) | Gross $4,176.91 | Fees $76.34 | Net $4,100.57
+  2026-06-30 | Route 44 Valero (11347) | Gross $14,038.78 | Fees $261.11 | Net $13,777.67
+  2026-06-30 | Brewster Valero (19505) | Gross $14,650.41 | Fees $283.26 | Net $14,367.15
+  2026-06-30 | Wappinger's Falls Valero (19513) | Gross $20,018.83 | Fees $346.98 | Net $19,671.85
+  2026-06-30 | Route 7 Valero (22312) | Gross $7,873.27 | Fees $151.02 | Net $7,722.25
+  2026-06-30 | Saugerties Valero (23473) | Gross $5,211.30 | Fees $107.18 | Net $5,104.12
+  2026-06-30 | Elmira Valero (23810) | Gross $10,300.66 | Fees $191.50 | Net $10,109.16
+  2026-06-30 | New Windsor Valero (24026) | Gross $9,560.61 | Fees $169.04 | Net $9,391.57
+  2026-06-30 | Carmel Valero (24640) | Gross $9,421.67 | Fees $207.31 | Net $9,214.36
+  2026-06-30 | Ulster Avenue Valero (25407) | Gross $10,034.66 | Fees $195.10 | Net $9,839.56
+  2026-06-30 | Montgomery Valero (26740) | Gross $23,408.20 | Fees $444.30 | Net $22,963.90
+  2026-06-30 | Walker Valero (30371) | Gross $8,358.26 | Fees $172.53 | Net $8,185.73
+  2026-06-30 | Cornell St Valero (30408) | Gross $4,758.77 | Fees $98.62 | Net $4,660.15
+  2026-06-30 | Valero Central Ave (30525) | Gross $8,575.06 | Fees $167.09 | Net $8,407.97
+  2026-06-30 | CHAMPLAIN VALERO (30530) | Gross $5,676.26 | Fees $123.51 | Net $5,552.75
+  2026-06-30 | Fort Ann Valero (32966) | Gross $9,590.05 | Fees $187.12 | Net $9,402.93
+  2026-06-30 | Slate Hill Valero (45371) | Gross $7,089.08 | Fees $147.77 | Net $6,941.31
+  2026-06-30 | DELMAR VALERO (53579) | Gross $15,925.87 | Fees $318.17 | Net $15,607.70
+  2026-06-30 | South Plank VALERO (72041) | Gross $16,479.73 | Fees $309.01 | Net $16,170.72
+  2026-06-30 | FISHKILL (76596) | Gross $17,861.96 | Fees $309.53 | Net $17,552.43
+  2026-06-30 | SOUTHFIELDS (76604) | Gross $14,264.39 | Fees $295.26 | Net $13,969.13
+  2026-06-30 | Willsboro Valero (83343) | Gross $8,708.20 | Fees $178.63 | Net $8,529.57
+  2026-06-30 | Prestige Valero (93815) | Gross $22,920.93 | Fees $441.92 | Net $22,479.01
+- Mobile adjustments:
+  2026-06-29 | Route 44 Valero (11347) | Gross $85.76 | Fees $1.81 | Net $83.95 | source: VPVS
+  2026-06-29 | Wappinger's Falls Valero (19513) | Gross $118.84 | Fees $0.00 | Net $118.84 | source: VPVA
+  2026-06-29 | Route 7 Valero (22312) | Gross $43.22 | Fees $0.90 | Net $42.32 | source: VPMC
+  2026-06-29 | Route 7 Valero (22312) | Gross $53.65 | Fees $1.21 | Net $52.44 | source: VPVS
+  2026-06-29 | Elmira Valero (23810) | Gross $57.59 | Fees $0.00 | Net $57.59 | source: VPVA
+  2026-06-29 | New Windsor Valero (24026) | Gross $18.82 | Fees $0.47 | Net $18.35 | source: VPMC
+  2026-06-29 | New Windsor Valero (24026) | Gross $222.82 | Fees $0.00 | Net $222.82 | source: VPVA
+  2026-06-29 | New Windsor Valero (24026) | Gross $165.27 | Fees $3.17 | Net $162.10 | source: VPVS
+  2026-06-29 | Montgomery Valero (26740) | Gross $393.09 | Fees $0.00 | Net $393.09 | source: VPVA
+  2026-06-29 | South Plank VALERO (72041) | Gross $37.55 | Fees $1.01 | Net $36.54 | source: VPDI
+  2026-06-29 | South Plank VALERO (72041) | Gross $191.78 | Fees $0.00 | Net $191.78 | source: VPVA
+  2026-06-29 | FISHKILL (76596) | Gross $625.29 | Fees $0.00 | Net $625.29 | source: VPVA
+  2026-06-29 | Prestige Valero (93815) | Gross $71.26 | Fees $0.00 | Net $71.26 | source: VPVA
+  2026-06-29 | Prestige Valero (93815) | Gross $40.00 | Fees $0.85 | Net $39.15 | source: VPVS
+- Backdated mobile adjustment summary:
+  2026-06-29 | Route 44 Valero (11347) | Gross $85.76 | Fees $1.81 | Net $83.95
+  2026-06-29 | Wappinger's Falls Valero (19513) | Gross $118.84 | Fees $0.00 | Net $118.84
+  2026-06-29 | Route 7 Valero (22312) | Gross $96.87 | Fees $2.11 | Net $94.76
+  2026-06-29 | Elmira Valero (23810) | Gross $57.59 | Fees $0.00 | Net $57.59
+  2026-06-29 | New Windsor Valero (24026) | Gross $406.91 | Fees $3.64 | Net $403.27
+  2026-06-29 | Montgomery Valero (26740) | Gross $393.09 | Fees $0.00 | Net $393.09
+  2026-06-29 | South Plank VALERO (72041) | Gross $229.33 | Fees $1.01 | Net $228.32
+  2026-06-29 | FISHKILL (76596) | Gross $625.29 | Fees $0.00 | Net $625.29
+  2026-06-29 | Prestige Valero (93815) | Gross $111.26 | Fees $0.85 | Net $110.41
+  GRAND TOTAL | Gross $2,124.94 | Fees $9.42 | Net $2,115.52
+- Valero Pay+ adjustment summary:
+  2026-06-30 | Route 44 Valero (11347) | Count 2 | Amount $3.28 | Sources VALP
+  2026-06-30 | Wappinger's Falls Valero (19513) | Count 5 | Amount $6.25 | Sources VALP
+  2026-06-30 | Elmira Valero (23810) | Count 4 | Amount $3.80 | Sources VALP, VPAY
+  2026-06-30 | New Windsor Valero (24026) | Count 6 | Amount $5.47 | Sources VALP, VPAY
+  2026-06-30 | Ulster Avenue Valero (25407) | Count 2 | Amount $2.48 | Sources VALP, VPAY
+  2026-06-30 | Montgomery Valero (26740) | Count 11 | Amount $13.51 | Sources VALP, VPAY
+  2026-06-30 | DELMAR VALERO (53579) | Count 1 | Amount $0.46 | Sources VALP
+  2026-06-30 | South Plank VALERO (72041) | Count 1 | Amount $0.78 | Sources VALP
+  2026-06-30 | FISHKILL (76596) | Count 18 | Amount $17.73 | Sources VALP, VPAY
+  2026-06-30 | SOUTHFIELDS (76604) | Count 1 | Amount $0.62 | Sources VALP
+  2026-06-30 | Prestige Valero (93815) | Count 2 | Amount $1.14 | Sources VALP
+
+CITGO
+- Daily totals:
+  2026-06-30 | HAVERSTRAW (15861002) | Gross $7,963.76 | Fees $151.27 | Net $7,812.49
+  2026-06-30 | ELLENVILLE (15861003) | Gross $6,618.77 | Fees $149.04 | Net $6,469.73
+  2026-06-30 | FREEDOM PLAINS (15861004) | Gross $13,453.48 | Fees $251.16 | Net $13,202.32
+  2026-06-30 | WESTERLO (15861005) | Gross $1,845.59 | Fees $42.78 | Net $1,802.81
+  2026-06-30 | ERIE BLVD (15861006) | Gross $6,627.76 | Fees $170.17 | Net $6,457.59
+  2026-06-30 | UPPER GLEN QUEENSBURY (15861007) | Gross $9,741.02 | Fees $209.77 | Net $9,531.25
+- Backdated mobile adjustment summary: none
+
+
+Excel write summary
+----------------------------------------
+Written cells: 0
+Skipped cells: 0
+Excel warnings: 0
+- No Excel write results available.
+
+Warnings
+----------------------------------------
+- No warnings.
+
+Errors
+----------------------------------------
+- No errors.
