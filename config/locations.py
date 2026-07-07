@@ -1,46 +1,48 @@
 CITGO_LOCATIONS = {
     #Dealers
-    "15861003": "ELLENVILLE",
-    "15861002": "HAVERSTRAW",
-    "15861004": "FREEDOM PLAINS",
+    "15861003": "ELLENVILLE CITGO",
+    "15861002": "HAVERSTRAW CITGO",
+    "15861004": "FREEDOM PLAINS CITGO",
 
 
     #WholeSellers
-    "15861005": "WESTERLO",
-    "15861006": "ERIE BLVD",
-    "15861007": "UPPER GLEN QUEENSBURY",
+    "15861005": "WESTERLO CITGO",
+    "15861007": "UPPER GLEN CITGO",
+    "15861006": "ERIE BLVD CITGO",
 }
+
 VALERO_LOCATIONS = {
     #Dealers
-    "19505": "Brewster Valero",
-    "30408": "Cornell St Valero",
-    "24640": "Carmel Valero",
-    "53579": "DELMAR VALERO",
-    "23810": "Elmira Valero",
-    "76596": "FISHKILL",
-    "26740": "Montgomery Valero",
-    "24026": "New Windsor Valero",
-    "93815": "Prestige Valero",
-    "22312": "Route 7 Valero",
-    "11347": "Route 44 Valero",
-    "72041": "South Plank VALERO",
+    "19505": "BREWSTER VALERO",
+    "30408": "CORNELL ST",
+    "24640": "CARMEL",
+    "53579": "DELMAR",
+    "23810": "ELMIRA VALERO",
+    "76596": "FISHKILL VALERO",
+    "26740": "MONTGOMERY",
+    "24026": "NEW WINDSOR",
+    "93815": "9W VALERO",
+    "22312": "ROUTE 7 - TROY VALERO",
+    "11347": "ROUTE 44",
+    "72041": "SOUTH PLANK",
     "76604": "SOUTHFIELDS",
-    "23473": "Saugerties Valero",
-    "19513": "Wappinger's Falls Valero",
-    "25407": "Ulster Avenue Valero",
+    "23473": "SAUGERTIES",
+    "19513": "WAPPINGERS",
+    "25407": "ULSTER AVE VALERO",
 
 
     #Wholesellers
     "30530": "CHAMPLAIN VALERO",
-    "30525": "Colonie Central Ave Valero",
-    "10688": "Five Corners Valero",
-    "32966": "Fort Ann Valero",
-    "45371": "Slate Hill Valero",
-    "30371": "Walker Valley Valero",
-    "83343": "Willsboro Valero",
-
-
-
+    "30525": "COLONIE VALERO",
+    "10688": "FIVE CORNERS",
+    "32966": "FORT ANN VALERO",
+    "45371": "SLATE HILL VALERO",
+    "30371": "WALKER VALLEY VALERO",
+    "83343": "WILLSBORO VALERO",
+    "28066": "ALBURGH VALERO",
+    "45264": "BERKSHIRE VALERO",
+    "10312": "HIGHGATE VALERO",
+    "46391": "MONTICELLO VALERO",
 }
 
 
@@ -64,7 +66,7 @@ VALERO_LOCATIONS = {
 
 
 SUNOCO_DEALER_LOCATIONS = {
-    "8003089201": "AVIATION PRESTIGE-474",
+    "8003089201": "AVIATION RD SUNOCO",
     "8000463802": "BALLSTON SPA SUNOCO",
     "0326461100": "CENTRAL AVE SUNOCO",
     "0585555600": "GLENMONT SUNOCO",
@@ -76,8 +78,8 @@ SUNOCO_WHOLESALER_LOCATIONS = {
     # Wholeseller
     "0260536800": "84 QUICK STOP SUNOCO",
     "0160544300": "128 WASHINGTON MART",
-    "8002101401": "ROUTE 302 SUNOCO",
-    "0894029800": "ROCK HILL SUNOCO",
+    "8002101401": "BROADWAY RT 302 SUNOCO",
+    "0894029800": "BROADWAY MART ROCK HILL",
     "8002266301": "DOLSONTOWN ROAD SUNOCO",
     "0755798600": "STEWART SUNOCO",
     "0853941300": "VAILS GATE SUNOCO",
