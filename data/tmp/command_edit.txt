@@ -71,6 +71,8 @@ python scripts/run_daily_parse_write_notify.py   --business-date 2026-07-01   --
 python scripts/run_daily.py   --suppliers valero   --report-date 2026-07-06   --notify
 
 
+python scripts\run_daily_batch.py --write-excel --excel-dry-run --notify
+
 Environment var reload
 
 set -a

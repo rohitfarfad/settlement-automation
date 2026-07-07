@@ -1,7 +1,5 @@
 [CmdletBinding()]
 param(
-    [string]$Suppliers = "all",
-    [int]$DaysBack = 1,
     [switch]$ExcelDryRun,
     [switch]$NoWriteExcel,
     [switch]$NoWriteOriginals,
@@ -11,7 +9,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 try {
-    $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+    $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
     Set-Location $ProjectRoot
 
     $LogDir = Join-Path $ProjectRoot "output\logs"
@@ -29,19 +27,18 @@ try {
     }
 
     $PythonExe = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
-    $RunDailyPy = Join-Path $ProjectRoot "scripts\run_daily.py"
+    $RunDailyBatchPy = Join-Path $ProjectRoot "scripts\run_daily_batch.py"
 
     Write-Log "WINDOWS DAILY TASK WRAPPER"
     Write-Log "================================================================================"
+    Write-Log "Started at     : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
     Write-Log "Project root   : $ProjectRoot"
     Write-Log "Python         : $PythonExe"
-    Write-Log "Run script     : $RunDailyPy"
-    Write-Log "Suppliers      : $Suppliers"
-    Write-Log "Days back      : $DaysBack"
-    Write-Log "Excel dry run  : $ExcelDryRun"
-    Write-Log "No write Excel : $NoWriteExcel"
-    Write-Log "No originals   : $NoWriteOriginals"
-    Write-Log "No notify      : $NoNotify"
+    Write-Log "Batch script   : $RunDailyBatchPy"
+    Write-Log "Excel dry run  : $($ExcelDryRun.IsPresent)"
+    Write-Log "No write Excel : $($NoWriteExcel.IsPresent)"
+    Write-Log "No originals   : $($NoWriteOriginals.IsPresent)"
+    Write-Log "No notify      : $($NoNotify.IsPresent)"
     Write-Log ""
 
     if (-not (Test-Path $PythonExe)) {
@@ -49,15 +46,13 @@ try {
         exit 2
     }
 
-    if (-not (Test-Path $RunDailyPy)) {
-        Write-Log "ERROR: run_daily.py not found at $RunDailyPy"
+    if (-not (Test-Path $RunDailyBatchPy)) {
+        Write-Log "ERROR: run_daily_batch.py not found at $RunDailyBatchPy"
         exit 2
     }
 
     $Arguments = @(
-        $RunDailyPy,
-        "--suppliers", $Suppliers,
-        "--days-back", "$DaysBack"
+        $RunDailyBatchPy
     )
 
     if (-not $NoWriteExcel) {
@@ -75,7 +70,7 @@ try {
         $Arguments += "--notify"
     }
 
-    Write-Log "Starting daily pipeline..."
+    Write-Log "Starting daily batch pipeline..."
     Write-Log "Command        : $PythonExe $($Arguments -join ' ')"
     Write-Log ""
 
