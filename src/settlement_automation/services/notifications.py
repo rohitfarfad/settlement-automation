@@ -413,9 +413,53 @@ def _format_plain_daily_totals(report: ParsedReport) -> list[str]:
             f"Fees {_format_money(row.fees)} | "
             f"Net {_format_money(row.net_amt)}"
         )
+    if _is_supplier(report, "CITGO"):
+        lines.extend(_format_plain_citgo_date_totals(report))
+    else:
+        gross, fees, net = _sum_daily_totals(report.daily_totals)
+        lines.append(
+            "  "
+            f"GRAND TOTAL | "
+            f"Gross {_format_money(gross)} | "
+            f"Fees {_format_money(fees)} | "
+            f"Net {_format_money(net)}"
+        )
+
+
 
     return lines
 
+
+def _format_plain_citgo_date_totals(report: ParsedReport) -> list[str]:
+    rows_data = getattr(report, "daily_totals", []) or []
+
+    if not rows_data:
+        return []
+
+    lines = ["- CITGO totals by date:"]
+
+    for row in _summarize_daily_totals_by_date(rows_data):
+        lines.append(
+            "  "
+            f"{row['date']} | "
+            f"Rows {row['count']} | "
+            f"Gross {_format_money(row['gross_amt'])} | "
+            f"Fees {_format_money(row['fees'])} | "
+            f"Net {_format_money(row['net_amt'])}"
+        )
+
+    gross, fees, net = _sum_daily_totals(rows_data)
+
+    lines.append(
+        "  "
+        f"GRAND TOTAL | "
+        f"Rows {len(rows_data)} | "
+        f"Gross {_format_money(gross)} | "
+        f"Fees {_format_money(fees)} | "
+        f"Net {_format_money(net)}"
+    )
+
+    return lines
 
 def _format_plain_mobile_adjustment_summary(report: ParsedReport) -> list[str]:
     rows = getattr(report, "mobile_adjustments", []) or []
@@ -479,14 +523,15 @@ def _format_plain_valero_monthly_charges(report: ParsedReport) -> list[str]:
     if not rows:
         return []
 
-    lines = ["- Valero monthly charges:"]
+    lines = ["- Valero monthly charge summary:"]
 
-    for row in rows:
+    for row in _summarize_valero_monthly_charges(rows):
         lines.append(
             "  "
-            f"{row.date} | {row.location_name} ({row.location_id}) | "
-            f"Amount {_format_money(row.amount)} | "
-            f"{row.description}"
+            f"{row['date']} | "
+            f"{row['location_name']} ({row['location_id']}) | "
+            f"Count {row['count']} | "
+            f"Amount {_format_money(row['amount'])}"
         )
 
     return lines
@@ -590,6 +635,7 @@ def _build_html_parsed_data_section(summary: DailyRunSummary) -> str:
     for report in summary.parsed_reports:
         parts.append(f"<h3>{escape(report.supplier)}</h3>")
         parts.append(_build_html_daily_totals_table(report))
+        parts.append(_build_html_citgo_date_totals_table(report))
         parts.append(_build_html_mobile_adjustment_summary_table(report))
         parts.append(_build_html_valero_pay_plus_summary_table(report))
         parts.append(_build_html_valero_monthly_charges_table(report))
@@ -690,6 +736,58 @@ def _build_html_error_section(summary: DailyRunSummary) -> str:
         ]
     )
 
+def _build_html_citgo_date_totals_table(report: ParsedReport) -> str:
+    if not _is_supplier(report, "CITGO"):
+        return ""
+
+    rows_data = getattr(report, "daily_totals", []) or []
+
+    if not rows_data:
+        return ""
+
+    summary_rows = _summarize_daily_totals_by_date(rows_data)
+
+    rows = [
+        "<tr>"
+        "<th>Date</th>"
+        "<th class='amount'>Rows</th>"
+        "<th class='amount'>Gross</th>"
+        "<th class='amount'>Fees</th>"
+        "<th class='amount'>Net</th>"
+        "</tr>"
+    ]
+
+    for row in summary_rows:
+        rows.append(
+            "<tr>"
+            f"<td class='nowrap'>{escape(str(row['date']))}</td>"
+            f"<td class='amount'>{escape(str(row['count']))}</td>"
+            f"{_amount_td(row['gross_amt'])}"
+            f"{_amount_td(row['fees'])}"
+            f"{_amount_td(row['net_amt'])}"
+            "</tr>"
+        )
+
+    gross, fees, net = _sum_daily_totals(rows_data)
+
+    rows.append(
+        "<tr class='total-row'>"
+        "<th>GRAND TOTAL</th>"
+        f"<th class='amount'>{escape(str(len(rows_data)))}</th>"
+        f"<th class='amount'>{escape(_format_money(gross))}</th>"
+        f"<th class='amount'>{escape(_format_money(fees))}</th>"
+        f"<th class='amount'>{escape(_format_money(net))}</th>"
+        "</tr>"
+    )
+
+    return "\n".join(
+        [
+            "<h4>CITGO totals by date</h4>",
+            "<table>",
+            *rows,
+            "</table>",
+        ]
+    )
 
 def _build_html_daily_totals_table(report: ParsedReport) -> str:
     if not report.daily_totals:
@@ -718,8 +816,26 @@ def _build_html_daily_totals_table(report: ParsedReport) -> str:
             "</tr>"
         )
 
-    return "\n".join(["<h4>Daily totals</h4>", "<table>", *rows, "</table>"])
+    if not _is_supplier(report, "CITGO"):
+        gross, fees, net = _sum_daily_totals(report.daily_totals)
 
+        rows.append(
+            "<tr class='total-row'>"
+            "<th colspan='3'>GRAND TOTAL</th>"
+            f"<th class='amount'>{escape(_format_money(gross))}</th>"
+            f"<th class='amount'>{escape(_format_money(fees))}</th>"
+            f"<th class='amount'>{escape(_format_money(net))}</th>"
+            "</tr>"
+        )
+
+    return "\n".join(
+        [
+            "<h4>Daily totals</h4>",
+            "<table>",
+            *rows,
+            "</table>",
+        ]
+    )
 
 def _build_html_mobile_adjustment_summary_table(report: ParsedReport) -> str:
     rows_data = getattr(report, "mobile_adjustments", []) or []
@@ -791,9 +907,10 @@ def _build_html_valero_pay_plus_summary_table(report: ParsedReport) -> str:
         "</tr>"
     ]
 
-    for row in _summarize_valero_pay_plus(rows_data):
-        sources = ", ".join(sorted(row["sources"]))
+    summarized_rows = _summarize_valero_pay_plus(rows_data)
 
+    for row in summarized_rows:
+        sources = ", ".join(sorted(row["sources"]))
         rows.append(
             "<tr>"
             f"<td class='nowrap'>{escape(str(row['date']))}</td>"
@@ -801,9 +918,24 @@ def _build_html_valero_pay_plus_summary_table(report: ParsedReport) -> str:
             f"<td class='text'>{escape(str(row['location_name']))}</td>"
             f"<td class='amount'>{escape(str(row['count']))}</td>"
             f"{_amount_td(row['amount'])}"
-            f"<td class='nowrap'>{escape(sources)}</td>"
+            f"<td class='text'>{escape(sources)}</td>"
             "</tr>"
         )
+
+    total_count = sum(row["count"] for row in summarized_rows)
+    total_amount = sum(
+        (row["amount"] for row in summarized_rows),
+        Decimal("0"),
+    )
+
+    rows.append(
+        "<tr class='total-row'>"
+        "<th colspan='3'>GRAND TOTAL</th>"
+        f"<th class='amount'>{escape(str(total_count))}</th>"
+        f"<th class='amount'>{escape(_format_money(total_amount))}</th>"
+        "<th></th>"
+        "</tr>"
+    )
 
     return "\n".join(
         [
@@ -814,6 +946,47 @@ def _build_html_valero_pay_plus_summary_table(report: ParsedReport) -> str:
         ]
     )
 
+def _is_supplier(report: ParsedReport, supplier: str) -> bool:
+    return str(getattr(report, "supplier", "")).strip().upper() == supplier.upper()
+
+
+def _sum_daily_totals(rows) -> tuple[Decimal, Decimal, Decimal]:
+    gross = Decimal("0")
+    fees = Decimal("0")
+    net = Decimal("0")
+
+    for row in rows:
+        gross += row.gross_amt or Decimal("0")
+        fees += row.fees or Decimal("0")
+        net += row.net_amt or Decimal("0")
+
+    return gross, fees, net
+
+
+def _summarize_daily_totals_by_date(rows):
+    summary = {}
+
+    for row in rows:
+        key = row.date
+
+        if key not in summary:
+            summary[key] = {
+                "date": row.date,
+                "count": 0,
+                "gross_amt": Decimal("0"),
+                "fees": Decimal("0"),
+                "net_amt": Decimal("0"),
+            }
+
+        summary[key]["count"] += 1
+        summary[key]["gross_amt"] += row.gross_amt or Decimal("0")
+        summary[key]["fees"] += row.fees or Decimal("0")
+        summary[key]["net_amt"] += row.net_amt or Decimal("0")
+
+    return sorted(
+        summary.values(),
+        key=lambda item: item["date"],
+    )
 
 def _build_html_valero_monthly_charges_table(report: ParsedReport) -> str:
     rows_data = getattr(report, "valero_monthly_charges", []) or []
@@ -826,24 +999,30 @@ def _build_html_valero_monthly_charges_table(report: ParsedReport) -> str:
         "<th>Date</th>"
         "<th>Location ID</th>"
         "<th>Location Name</th>"
+        "<th class='amount'>Count</th>"
         "<th class='amount'>Amount</th>"
-        "<th>Description</th>"
         "</tr>"
     ]
 
-    for row in rows_data:
+    for row in _summarize_valero_monthly_charges(rows_data):
         rows.append(
             "<tr>"
-            f"<td class='nowrap'>{escape(str(row.date))}</td>"
-            f"<td class='nowrap'>{escape(str(row.location_id))}</td>"
-            f"<td class='text'>{escape(str(row.location_name))}</td>"
-            f"{_amount_td(row.amount)}"
-            f"<td class='text'>{escape(str(row.description))}</td>"
+            f"<td class='nowrap'>{escape(str(row['date']))}</td>"
+            f"<td class='nowrap'>{escape(str(row['location_id']))}</td>"
+            f"<td class='text'>{escape(str(row['location_name']))}</td>"
+            f"<td class='amount'>{escape(str(row['count']))}</td>"
+            f"{_amount_td(row['amount'])}"
             "</tr>"
         )
 
-    return "\n".join(["<h4>Valero monthly charges</h4>", "<table>", *rows, "</table>"])
-
+    return "\n".join(
+        [
+            "<h4>Valero monthly charge summary</h4>",
+            "<table>",
+            *rows,
+            "</table>",
+        ]
+    )
 
 def _build_html_unclassified_adjustments_table(report: ParsedReport) -> str:
     rows_data = getattr(report, "unclassified_adjustments", []) or []
@@ -890,7 +1069,6 @@ def _html_row(label: str, value: Any, *, escape_value: bool = True) -> str:
 
 def _amount_td(value: Decimal | None) -> str:
     return f"<td class='amount'>{escape(_format_money(value))}</td>"
-
 
 def _format_money(value: Decimal | None) -> str:
     if value is None:
@@ -1059,6 +1237,30 @@ def _summarize_valero_pay_plus(rows):
         key=lambda item: (item["date"], item["location_id"]),
     )
 
+def _summarize_valero_monthly_charges(rows):
+    summary = {}
+
+    for row in rows:
+        key = (row.date, row.location_id, row.location_name)
+
+        if key not in summary:
+            summary[key] = {
+                "date": row.date,
+                "location_id": row.location_id,
+                "location_name": row.location_name,
+                "count": 0,
+                "amount": Decimal("0"),
+            }
+
+        summary[key]["count"] += 1
+
+        if row.amount is not None:
+            summary[key]["amount"] += row.amount
+
+    return sorted(
+        summary.values(),
+        key=lambda item: (item["date"], item["location_id"]),
+    )
 
 def _html_styles() -> str:
     return """

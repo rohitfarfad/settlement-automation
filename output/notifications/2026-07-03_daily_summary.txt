@@ -4,16 +4,16 @@ Prestige Settlement Daily Report
 ========================================
 Report date: 2026-07-03
 Run date: 2026-07-06
-Started at: 2026-07-06 15:43:48
-Finished at: 2026-07-06 15:44:00
+Started at: 2026-07-06 16:27:54
+Finished at: 2026-07-06 16:28:31
 
 Run summary
 ----------------------------------------
-Suppliers parsed: CITGO
-Daily totals: 6
-Backdated mobile adjustment rows: 0
-Valero Pay+ rows: 0
-Valero monthly charges: 0
+Suppliers parsed: CITGO, SUNOCO, VALERO
+Daily totals: 41
+Backdated mobile adjustment rows: 18
+Valero Pay+ rows: 34
+Valero monthly charges: 50
 Unclassified adjustments: 0
 Warnings: 0
 Errors: 0
@@ -22,6 +22,10 @@ Fetch results
 ----------------------------------------
 - citgo / dtn: success
   raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/citgo/2026/07/citgo_2026-07-03.txt
+- valero / dtn: success
+  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-03.txt
+- sunoco / sunoco: success
+  raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/sunoco/2026/07/sunoco_2026-07-03.txt
 
 Data parsed for sheet entry
 ----------------------------------------
@@ -33,6 +37,103 @@ CITGO
   2026-07-02 | WESTERLO (15861005) | Gross $1,199.45 | Fees $25.75 | Net $1,173.70
   2026-07-02 | ERIE BLVD (15861006) | Gross $8,207.34 | Fees $209.07 | Net $7,998.27
   2026-07-02 | UPPER GLEN QUEENSBURY (15861007) | Gross $10,890.26 | Fees $230.70 | Net $10,659.56
+- CITGO totals by date:
+  2026-07-02 | Rows 6 | Gross $48,482.16 | Fees $1,024.18 | Net $47,457.98
+  GRAND TOTAL | Rows 6 | Gross $48,482.16 | Fees $1,024.18 | Net $47,457.98
+
+VALERO
+- Daily totals:
+  2026-07-02 | Five Corners Valero (10688) | Gross $5,893.68 | Fees $111.87 | Net $5,781.81
+  2026-07-02 | Route 44 Valero (11347) | Gross $14,232.98 | Fees $260.14 | Net $13,972.84
+  2026-07-02 | Brewster Valero (19505) | Gross $13,050.19 | Fees $263.92 | Net $12,786.27
+  2026-07-02 | Wappinger's Falls Valero (19513) | Gross $22,049.99 | Fees $390.20 | Net $21,659.79
+  2026-07-02 | Route 7 Valero (22312) | Gross $8,148.00 | Fees $153.87 | Net $7,994.13
+  2026-07-02 | Saugerties Valero (23473) | Gross $6,225.85 | Fees $125.97 | Net $6,099.88
+  2026-07-02 | Elmira Valero (23810) | Gross $12,099.26 | Fees $220.02 | Net $11,879.24
+  2026-07-02 | New Windsor Valero (24026) | Gross $8,748.46 | Fees $146.78 | Net $8,601.68
+  2026-07-02 | Carmel Valero (24640) | Gross $8,181.60 | Fees $176.11 | Net $8,005.49
+  2026-07-02 | Ulster Avenue Valero (25407) | Gross $13,704.72 | Fees $264.53 | Net $13,440.19
+  2026-07-02 | Montgomery Valero (26740) | Gross $24,796.96 | Fees $454.26 | Net $24,342.70
+  2026-07-02 | Walker Valero (30371) | Gross $9,023.19 | Fees $182.70 | Net $8,840.49
+  2026-07-02 | Cornell St Valero (30408) | Gross $5,935.39 | Fees $118.64 | Net $5,816.75
+  2026-07-02 | Valero Central Ave (30525) | Gross $8,787.37 | Fees $170.56 | Net $8,616.81
+  2026-07-02 | CHAMPLAIN VALERO (30530) | Gross $7,669.99 | Fees $170.36 | Net $7,499.63
+  2026-07-02 | Fort Ann Valero (32966) | Gross $12,519.01 | Fees $231.20 | Net $12,287.81
+  2026-07-02 | Slate Hill Valero (45371) | Gross $9,247.91 | Fees $178.43 | Net $9,069.48
+  2026-07-02 | DELMAR VALERO (53579) | Gross $19,675.38 | Fees $382.05 | Net $19,293.33
+  2026-07-02 | South Plank VALERO (72041) | Gross $17,288.61 | Fees $324.49 | Net $16,964.12
+  2026-07-02 | FISHKILL (76596) | Gross $19,919.62 | Fees $341.63 | Net $19,577.99
+  2026-07-02 | SOUTHFIELDS (76604) | Gross $15,626.76 | Fees $328.20 | Net $15,298.56
+  2026-07-02 | Willsboro Valero (83343) | Gross $11,758.22 | Fees $226.92 | Net $11,531.30
+  2026-07-02 | Prestige Valero (93815) | Gross $23,518.19 | Fees $455.09 | Net $23,063.10
+  GRAND TOTAL | Gross $298,101.33 | Fees $5,677.94 | Net $292,423.39
+- Backdated mobile adjustment summary:
+  2026-07-01 | Five Corners Valero (10688) | Gross $50.01 | Fees $0.00 | Net $50.01
+  2026-07-01 | Route 44 Valero (11347) | Gross $47.35 | Fees $1.10 | Net $46.25
+  2026-07-01 | Wappinger's Falls Valero (19513) | Gross $293.45 | Fees $0.00 | Net $293.45
+  2026-07-01 | Route 7 Valero (22312) | Gross $111.66 | Fees $2.29 | Net $109.37
+  2026-07-01 | New Windsor Valero (24026) | Gross $298.01 | Fees $1.04 | Net $296.97
+  2026-07-01 | Ulster Avenue Valero (25407) | Gross $135.10 | Fees $0.77 | Net $134.33
+  2026-07-01 | Montgomery Valero (26740) | Gross $400.14 | Fees $0.99 | Net $399.15
+  2026-07-01 | Walker Valero (30371) | Gross $34.51 | Fees $0.00 | Net $34.51
+  2026-07-01 | South Plank VALERO (72041) | Gross $243.86 | Fees $1.18 | Net $242.68
+  2026-07-01 | FISHKILL (76596) | Gross $306.04 | Fees $1.43 | Net $304.61
+  2026-07-01 | Prestige Valero (93815) | Gross $246.35 | Fees $1.37 | Net $244.98
+  GRAND TOTAL | Gross $2,166.48 | Fees $10.17 | Net $2,156.31
+- Valero Pay+ adjustment summary:
+  2026-07-02 | Wappinger's Falls Valero (19513) | Count 6 | Amount $5.79 | Sources VALP
+  2026-07-02 | Route 7 Valero (22312) | Count 3 | Amount $3.04 | Sources VPAY
+  2026-07-02 | Elmira Valero (23810) | Count 3 | Amount $3.06 | Sources VALP, VPAY
+  2026-07-02 | New Windsor Valero (24026) | Count 3 | Amount $1.83 | Sources VALP
+  2026-07-02 | Ulster Avenue Valero (25407) | Count 1 | Amount $0.54 | Sources VPAY
+  2026-07-02 | Montgomery Valero (26740) | Count 11 | Amount $11.57 | Sources VALP
+  2026-07-02 | DELMAR VALERO (53579) | Count 1 | Amount $1.80 | Sources VALP
+  2026-07-02 | FISHKILL (76596) | Count 5 | Amount $3.70 | Sources VALP, VPAY
+  2026-07-02 | Prestige Valero (93815) | Count 1 | Amount $1.16 | Sources VALP
+- Valero monthly charge summary:
+  2026-07-02 | Highgate Valero (10312) | Count 2 | Amount $323.30
+  2026-07-02 | Five Corners Valero (10688) | Count 2 | Amount $227.06
+  2026-07-02 | Route 44 Valero (11347) | Count 1 | Amount $113.53
+  2026-07-02 | Brewster Valero (19505) | Count 2 | Amount $227.58
+  2026-07-02 | Wappinger's Falls Valero (19513) | Count 2 | Amount $227.06
+  2026-07-02 | Route 7 Valero (22312) | Count 2 | Amount $275.40
+  2026-07-02 | Saugerties Valero (23473) | Count 2 | Amount $226.80
+  2026-07-02 | Elmira Valero (23810) | Count 2 | Amount $218.40
+  2026-07-02 | New Windsor Valero (24026) | Count 2 | Amount $227.06
+  2026-07-02 | Carmel Valero (24640) | Count 2 | Amount $218.40
+  2026-07-02 | Ulster Avenue Valero (25407) | Count 2 | Amount $275.40
+  2026-07-02 | Montgomery Valero (26740) | Count 1 | Amount $113.53
+  2026-07-02 | Alburg Villiage Jolley (28066) | Count 2 | Amount $275.60
+  2026-07-02 | Walker Valero (30371) | Count 2 | Amount $218.40
+  2026-07-02 | Cornell St Valero (30408) | Count 2 | Amount $218.40
+  2026-07-02 | Valero Central Ave (30525) | Count 2 | Amount $218.40
+  2026-07-02 | CHAMPLAIN VALERO (30530) | Count 2 | Amount $226.80
+  2026-07-02 | Fort Ann Valero (32966) | Count 2 | Amount $218.40
+  2026-07-02 | Berkshire Jolley (45264) | Count 2 | Amount $275.60
+  2026-07-02 | Slate Hill Valero (45371) | Count 2 | Amount $218.40
+  2026-07-02 | Monticello Valero (46391) | Count 1 | Amount $109.20
+  2026-07-02 | DELMAR VALERO (53579) | Count 2 | Amount $226.80
+  2026-07-02 | South Plank VALERO (72041) | Count 2 | Amount $227.06
+  2026-07-02 | FISHKILL (76596) | Count 2 | Amount $227.06
+  2026-07-02 | SOUTHFIELDS (76604) | Count 1 | Amount $113.53
+  2026-07-02 | Willsboro Valero (83343) | Count 2 | Amount $275.40
+  2026-07-02 | Prestige Valero (93815) | Count 2 | Amount $227.06
+
+SUNOCO
+- Daily totals:
+  2026-07-02 | 128 WASHINGTON MART (0160544300) | Gross $5,744.49 | Fees $141.15 | Net $5,603.34
+  2026-07-02 | 84 QUICK STOP SUNOCO (0260536800) | Gross $20,745.92 | Fees $452.17 | Net $20,293.75
+  2026-07-02 | CENTRAL AVE SUNOCO (0326461100) | Gross $12,754.51 | Fees $262.83 | Net $12,491.68
+  2026-07-02 | NEW SCOTLAND SUNOCO (0434020400) | Gross $12,385.57 | Fees $272.69 | Net $12,112.88
+  2026-07-02 | GLENMONT SUNOCO (0585555600) | Gross $19,828.27 | Fees $404.56 | Net $19,423.71
+  2026-07-02 | STEWART SUNOCO (0755798600) | Gross $14,796.55 | Fees $347.37 | Net $14,449.18
+  2026-07-02 | VAILS GATE SUNOCO (0853941300) | Gross $8,271.48 | Fees $146.34 | Net $8,125.14
+  2026-07-02 | ROCK HILL SUNOCO (0894029800) | Gross $9,303.94 | Fees $200.01 | Net $9,103.93
+  2026-07-02 | BALLSTON SPA SUNOCO (8000463802) | Gross $19,645.25 | Fees $363.18 | Net $19,282.07
+  2026-07-02 | ROUTE 302 SUNOCO (8002101401) | Gross $8,601.16 | Fees $170.86 | Net $8,430.30
+  2026-07-02 | DOLSONTOWN ROAD SUNOCO (8002266301) | Gross $10,786.64 | Fees $232.91 | Net $10,553.73
+  2026-07-02 | PRESTIGE-474 (8003089201) | Gross $17,786.77 | Fees $387.17 | Net $17,399.60
+  GRAND TOTAL | Gross $160,650.55 | Fees $3,381.24 | Net $157,269.31
 
 
 Excel write summary

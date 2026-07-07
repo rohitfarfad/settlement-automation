@@ -1,11 +1,11 @@
-Subject: [ERROR] Credit Cards Daily Settlement Report - Report Date 2026-07-06
+Subject: [OK] Credit Cards Daily Settlement Report - Report Date 2026-07-06
 
 Prestige Settlement Daily Report
 ========================================
 Report date: 2026-07-06
 Run date: 2026-07-06
-Started at: 2026-07-06 14:13:20
-Finished at: 2026-07-06 14:13:56
+Started at: 2026-07-06 16:57:55
+Finished at: 2026-07-06 16:58:10
 
 Run summary
 ----------------------------------------
@@ -15,17 +15,13 @@ Backdated mobile adjustment rows: 12
 Valero Pay+ rows: 271
 Valero monthly charges: 0
 Unclassified adjustments: 0
-Warnings: 2
-Errors: 2
+Warnings: 0
+Errors: 0
 
 Fetch results
 ----------------------------------------
-- citgo / dtn: failed
-  error: No DTN rows found for supplier=citgo, business_date=2026-07-06
 - valero / dtn: success
   raw: /Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-06.txt
-- sunoco / sunoco: failed
-  error: Browser automation failed for supplier=sunoco, portal=sunoco: Sunoco JSON response is missing expected markers: ['totalSalesAmount', 'totalDealerFeeAmount', 'settlementDate', 'totalAdjustedNetAmount']
 
 Data parsed for sheet entry
 ----------------------------------------
@@ -103,6 +99,7 @@ VALERO
   2026-07-05 | SOUTHFIELDS (76604) | Gross $12,233.61 | Fees $249.37 | Net $11,984.24
   2026-07-05 | Willsboro Valero (83343) | Gross $12,639.22 | Fees $239.52 | Net $12,399.70
   2026-07-05 | Prestige Valero (93815) | Gross $15,209.95 | Fees $271.44 | Net $14,938.51
+  GRAND TOTAL | Gross $688,939.27 | Fees $12,967.80 | Net $675,971.47
 - Backdated mobile adjustment summary:
   2026-07-02 | Route 44 Valero (11347) | Gross $63.28 | Fees $0.00 | Net $63.28
   2026-07-02 | Brewster Valero (19505) | Gross $99.77 | Fees $2.44 | Net $97.33
@@ -153,17 +150,13 @@ Excel write summary
 ----------------------------------------
 Written cells: 0
 Skipped cells: 0
-Excel warnings: 2
-- VALERO 2026-07-06: written=0, skipped=0, dry_run=True, write_originals=False
-  warning: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
-  warning: Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
+Excel warnings: 0
+- No Excel write results available.
 
 Warnings
 ----------------------------------------
-- Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
-- Resolution warning before apply: Workbook not found: data/workbooks/2026 CC ALBURG VILLIAGE JOLLEY VALERO.xlsx
+- No warnings.
 
 Errors
 ----------------------------------------
-- [fetch] No DTN rows found for supplier=citgo, business_date=2026-07-06 | supplier: CITGO
-- [fetch] Browser automation failed for supplier=sunoco, portal=sunoco: Sunoco JSON response is missing expected markers: ['totalSalesAmount', 'totalDealerFeeAmount', 'settlementDate', 'totalAdjustedNetAmount'] | supplier: SUNOCO
+- No errors.

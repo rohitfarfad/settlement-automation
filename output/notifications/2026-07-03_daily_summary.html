@@ -156,19 +156,19 @@ li {
 <table class='summary-table'>
 <tr><th>Report date</th><td>2026-07-03</td></tr>
 <tr><th>Run date</th><td>2026-07-06</td></tr>
-<tr><th>Started at</th><td>2026-07-06 15:43:48</td></tr>
-<tr><th>Finished at</th><td>2026-07-06 15:44:00</td></tr>
+<tr><th>Started at</th><td>2026-07-06 16:27:54</td></tr>
+<tr><th>Finished at</th><td>2026-07-06 16:28:31</td></tr>
 <tr><th>Status</th><td><span class='notice-ok'>Success</span></td></tr>
 </table>
 </div>
 <div class='card'>
 <h2>Run summary</h2>
 <table class='summary-table'>
-<tr><th>Suppliers parsed</th><td>CITGO</td></tr>
-<tr><th>Daily totals</th><td>6</td></tr>
-<tr><th>Backdated mobile adjustment rows</th><td>0</td></tr>
-<tr><th>Valero Pay+ rows</th><td>0</td></tr>
-<tr><th>Valero monthly charges</th><td>0</td></tr>
+<tr><th>Suppliers parsed</th><td>CITGO, SUNOCO, VALERO</td></tr>
+<tr><th>Daily totals</th><td>41</td></tr>
+<tr><th>Backdated mobile adjustment rows</th><td>18</td></tr>
+<tr><th>Valero Pay+ rows</th><td>34</td></tr>
+<tr><th>Valero monthly charges</th><td>50</td></tr>
 <tr><th>Unclassified adjustments</th><td>0</td></tr>
 <tr><th>Warnings</th><td>0</td></tr>
 <tr><th>Errors</th><td>0</td></tr>
@@ -179,6 +179,8 @@ li {
 <table>
 <tr><th>Supplier</th><th>Portal</th><th>Status</th><th>Raw files</th><th>Error</th></tr>
 <tr><td class='nowrap'>citgo</td><td class='nowrap'>dtn</td><td class='nowrap'>success</td><td class='text'>/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/citgo/2026/07/citgo_2026-07-03.txt</td><td class='text'></td></tr>
+<tr><td class='nowrap'>valero</td><td class='nowrap'>dtn</td><td class='nowrap'>success</td><td class='text'>/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-03.txt</td><td class='text'></td></tr>
+<tr><td class='nowrap'>sunoco</td><td class='nowrap'>sunoco</td><td class='nowrap'>success</td><td class='text'>/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/sunoco/2026/07/sunoco_2026-07-03.txt</td><td class='text'></td></tr>
 </table>
 </div>
 <div class='card'>
@@ -193,6 +195,106 @@ li {
 <tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>15861005</td><td class='text'>WESTERLO</td><td class='amount'>$1,199.45</td><td class='amount'>$25.75</td><td class='amount'>$1,173.70</td></tr>
 <tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>15861006</td><td class='text'>ERIE BLVD</td><td class='amount'>$8,207.34</td><td class='amount'>$209.07</td><td class='amount'>$7,998.27</td></tr>
 <tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>15861007</td><td class='text'>UPPER GLEN QUEENSBURY</td><td class='amount'>$10,890.26</td><td class='amount'>$230.70</td><td class='amount'>$10,659.56</td></tr>
+</table>
+<h4>CITGO totals by date</h4>
+<table>
+<tr><th>Date</th><th class='amount'>Rows</th><th class='amount'>Gross</th><th class='amount'>Fees</th><th class='amount'>Net</th></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='amount'>6</td><td class='amount'>$48,482.16</td><td class='amount'>$1,024.18</td><td class='amount'>$47,457.98</td></tr>
+<tr class='total-row'><th>GRAND TOTAL</th><th class='amount'>6</th><th class='amount'>$48,482.16</th><th class='amount'>$1,024.18</th><th class='amount'>$47,457.98</th></tr>
+</table>
+<h3>VALERO</h3>
+<h4>Daily totals</h4>
+<table>
+<tr><th>Date</th><th>Location ID</th><th>Location Name</th><th class='amount'>Gross</th><th class='amount'>Fees</th><th class='amount'>Net</th></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>10688</td><td class='text'>Five Corners Valero</td><td class='amount'>$5,893.68</td><td class='amount'>$111.87</td><td class='amount'>$5,781.81</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>11347</td><td class='text'>Route 44 Valero</td><td class='amount'>$14,232.98</td><td class='amount'>$260.14</td><td class='amount'>$13,972.84</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>19505</td><td class='text'>Brewster Valero</td><td class='amount'>$13,050.19</td><td class='amount'>$263.92</td><td class='amount'>$12,786.27</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>19513</td><td class='text'>Wappinger&#x27;s Falls Valero</td><td class='amount'>$22,049.99</td><td class='amount'>$390.20</td><td class='amount'>$21,659.79</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>22312</td><td class='text'>Route 7 Valero</td><td class='amount'>$8,148.00</td><td class='amount'>$153.87</td><td class='amount'>$7,994.13</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>23473</td><td class='text'>Saugerties Valero</td><td class='amount'>$6,225.85</td><td class='amount'>$125.97</td><td class='amount'>$6,099.88</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>23810</td><td class='text'>Elmira Valero</td><td class='amount'>$12,099.26</td><td class='amount'>$220.02</td><td class='amount'>$11,879.24</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>24026</td><td class='text'>New Windsor Valero</td><td class='amount'>$8,748.46</td><td class='amount'>$146.78</td><td class='amount'>$8,601.68</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>24640</td><td class='text'>Carmel Valero</td><td class='amount'>$8,181.60</td><td class='amount'>$176.11</td><td class='amount'>$8,005.49</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>25407</td><td class='text'>Ulster Avenue Valero</td><td class='amount'>$13,704.72</td><td class='amount'>$264.53</td><td class='amount'>$13,440.19</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>26740</td><td class='text'>Montgomery Valero</td><td class='amount'>$24,796.96</td><td class='amount'>$454.26</td><td class='amount'>$24,342.70</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>30371</td><td class='text'>Walker Valero</td><td class='amount'>$9,023.19</td><td class='amount'>$182.70</td><td class='amount'>$8,840.49</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>30408</td><td class='text'>Cornell St Valero</td><td class='amount'>$5,935.39</td><td class='amount'>$118.64</td><td class='amount'>$5,816.75</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>30525</td><td class='text'>Valero Central Ave</td><td class='amount'>$8,787.37</td><td class='amount'>$170.56</td><td class='amount'>$8,616.81</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>30530</td><td class='text'>CHAMPLAIN VALERO</td><td class='amount'>$7,669.99</td><td class='amount'>$170.36</td><td class='amount'>$7,499.63</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>32966</td><td class='text'>Fort Ann Valero</td><td class='amount'>$12,519.01</td><td class='amount'>$231.20</td><td class='amount'>$12,287.81</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>45371</td><td class='text'>Slate Hill Valero</td><td class='amount'>$9,247.91</td><td class='amount'>$178.43</td><td class='amount'>$9,069.48</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>53579</td><td class='text'>DELMAR VALERO</td><td class='amount'>$19,675.38</td><td class='amount'>$382.05</td><td class='amount'>$19,293.33</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>72041</td><td class='text'>South Plank VALERO</td><td class='amount'>$17,288.61</td><td class='amount'>$324.49</td><td class='amount'>$16,964.12</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>76596</td><td class='text'>FISHKILL</td><td class='amount'>$19,919.62</td><td class='amount'>$341.63</td><td class='amount'>$19,577.99</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>76604</td><td class='text'>SOUTHFIELDS</td><td class='amount'>$15,626.76</td><td class='amount'>$328.20</td><td class='amount'>$15,298.56</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>83343</td><td class='text'>Willsboro Valero</td><td class='amount'>$11,758.22</td><td class='amount'>$226.92</td><td class='amount'>$11,531.30</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>93815</td><td class='text'>Prestige Valero</td><td class='amount'>$23,518.19</td><td class='amount'>$455.09</td><td class='amount'>$23,063.10</td></tr>
+<tr class='total-row'><th colspan='3'>GRAND TOTAL</th><th class='amount'>$298,101.33</th><th class='amount'>$5,677.94</th><th class='amount'>$292,423.39</th></tr>
+</table>
+<h4>Backdated mobile adjustment summary</h4>
+<table>
+<tr><th>Date</th><th>Location ID</th><th>Location Name</th><th class='amount'>Gross</th><th class='amount'>Fees</th><th class='amount'>Net</th></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>10688</td><td class='text'>Five Corners Valero</td><td class='amount'>$50.01</td><td class='amount'>$0.00</td><td class='amount'>$50.01</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>11347</td><td class='text'>Route 44 Valero</td><td class='amount'>$47.35</td><td class='amount'>$1.10</td><td class='amount'>$46.25</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>19513</td><td class='text'>Wappinger&#x27;s Falls Valero</td><td class='amount'>$293.45</td><td class='amount'>$0.00</td><td class='amount'>$293.45</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>22312</td><td class='text'>Route 7 Valero</td><td class='amount'>$111.66</td><td class='amount'>$2.29</td><td class='amount'>$109.37</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>24026</td><td class='text'>New Windsor Valero</td><td class='amount'>$298.01</td><td class='amount'>$1.04</td><td class='amount'>$296.97</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>25407</td><td class='text'>Ulster Avenue Valero</td><td class='amount'>$135.10</td><td class='amount'>$0.77</td><td class='amount'>$134.33</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>26740</td><td class='text'>Montgomery Valero</td><td class='amount'>$400.14</td><td class='amount'>$0.99</td><td class='amount'>$399.15</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>30371</td><td class='text'>Walker Valero</td><td class='amount'>$34.51</td><td class='amount'>$0.00</td><td class='amount'>$34.51</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>72041</td><td class='text'>South Plank VALERO</td><td class='amount'>$243.86</td><td class='amount'>$1.18</td><td class='amount'>$242.68</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>76596</td><td class='text'>FISHKILL</td><td class='amount'>$306.04</td><td class='amount'>$1.43</td><td class='amount'>$304.61</td></tr>
+<tr><td class='nowrap'>2026-07-01</td><td class='nowrap'>93815</td><td class='text'>Prestige Valero</td><td class='amount'>$246.35</td><td class='amount'>$1.37</td><td class='amount'>$244.98</td></tr>
+<tr class='total-row'><th colspan='3'>GRAND TOTAL</th><th class='amount'>$2,166.48</th><th class='amount'>$10.17</th><th class='amount'>$2,156.31</th></tr>
+</table>
+<h4>Valero monthly charge summary</h4>
+<table>
+<tr><th>Date</th><th>Location ID</th><th>Location Name</th><th class='amount'>Count</th><th class='amount'>Amount</th></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>10312</td><td class='text'>Highgate Valero</td><td class='amount'>2</td><td class='amount'>$323.30</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>10688</td><td class='text'>Five Corners Valero</td><td class='amount'>2</td><td class='amount'>$227.06</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>11347</td><td class='text'>Route 44 Valero</td><td class='amount'>1</td><td class='amount'>$113.53</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>19505</td><td class='text'>Brewster Valero</td><td class='amount'>2</td><td class='amount'>$227.58</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>19513</td><td class='text'>Wappinger&#x27;s Falls Valero</td><td class='amount'>2</td><td class='amount'>$227.06</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>22312</td><td class='text'>Route 7 Valero</td><td class='amount'>2</td><td class='amount'>$275.40</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>23473</td><td class='text'>Saugerties Valero</td><td class='amount'>2</td><td class='amount'>$226.80</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>23810</td><td class='text'>Elmira Valero</td><td class='amount'>2</td><td class='amount'>$218.40</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>24026</td><td class='text'>New Windsor Valero</td><td class='amount'>2</td><td class='amount'>$227.06</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>24640</td><td class='text'>Carmel Valero</td><td class='amount'>2</td><td class='amount'>$218.40</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>25407</td><td class='text'>Ulster Avenue Valero</td><td class='amount'>2</td><td class='amount'>$275.40</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>26740</td><td class='text'>Montgomery Valero</td><td class='amount'>1</td><td class='amount'>$113.53</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>28066</td><td class='text'>Alburg Villiage Jolley</td><td class='amount'>2</td><td class='amount'>$275.60</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>30371</td><td class='text'>Walker Valero</td><td class='amount'>2</td><td class='amount'>$218.40</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>30408</td><td class='text'>Cornell St Valero</td><td class='amount'>2</td><td class='amount'>$218.40</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>30525</td><td class='text'>Valero Central Ave</td><td class='amount'>2</td><td class='amount'>$218.40</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>30530</td><td class='text'>CHAMPLAIN VALERO</td><td class='amount'>2</td><td class='amount'>$226.80</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>32966</td><td class='text'>Fort Ann Valero</td><td class='amount'>2</td><td class='amount'>$218.40</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>45264</td><td class='text'>Berkshire Jolley</td><td class='amount'>2</td><td class='amount'>$275.60</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>45371</td><td class='text'>Slate Hill Valero</td><td class='amount'>2</td><td class='amount'>$218.40</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>46391</td><td class='text'>Monticello Valero</td><td class='amount'>1</td><td class='amount'>$109.20</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>53579</td><td class='text'>DELMAR VALERO</td><td class='amount'>2</td><td class='amount'>$226.80</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>72041</td><td class='text'>South Plank VALERO</td><td class='amount'>2</td><td class='amount'>$227.06</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>76596</td><td class='text'>FISHKILL</td><td class='amount'>2</td><td class='amount'>$227.06</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>76604</td><td class='text'>SOUTHFIELDS</td><td class='amount'>1</td><td class='amount'>$113.53</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>83343</td><td class='text'>Willsboro Valero</td><td class='amount'>2</td><td class='amount'>$275.40</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>93815</td><td class='text'>Prestige Valero</td><td class='amount'>2</td><td class='amount'>$227.06</td></tr>
+</table>
+<h3>SUNOCO</h3>
+<h4>Daily totals</h4>
+<table>
+<tr><th>Date</th><th>Location ID</th><th>Location Name</th><th class='amount'>Gross</th><th class='amount'>Fees</th><th class='amount'>Net</th></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0160544300</td><td class='text'>128 WASHINGTON MART</td><td class='amount'>$5,744.49</td><td class='amount'>$141.15</td><td class='amount'>$5,603.34</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0260536800</td><td class='text'>84 QUICK STOP SUNOCO</td><td class='amount'>$20,745.92</td><td class='amount'>$452.17</td><td class='amount'>$20,293.75</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0326461100</td><td class='text'>CENTRAL AVE SUNOCO</td><td class='amount'>$12,754.51</td><td class='amount'>$262.83</td><td class='amount'>$12,491.68</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0434020400</td><td class='text'>NEW SCOTLAND SUNOCO</td><td class='amount'>$12,385.57</td><td class='amount'>$272.69</td><td class='amount'>$12,112.88</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0585555600</td><td class='text'>GLENMONT SUNOCO</td><td class='amount'>$19,828.27</td><td class='amount'>$404.56</td><td class='amount'>$19,423.71</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0755798600</td><td class='text'>STEWART SUNOCO</td><td class='amount'>$14,796.55</td><td class='amount'>$347.37</td><td class='amount'>$14,449.18</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0853941300</td><td class='text'>VAILS GATE SUNOCO</td><td class='amount'>$8,271.48</td><td class='amount'>$146.34</td><td class='amount'>$8,125.14</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>0894029800</td><td class='text'>ROCK HILL SUNOCO</td><td class='amount'>$9,303.94</td><td class='amount'>$200.01</td><td class='amount'>$9,103.93</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>8000463802</td><td class='text'>BALLSTON SPA SUNOCO</td><td class='amount'>$19,645.25</td><td class='amount'>$363.18</td><td class='amount'>$19,282.07</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>8002101401</td><td class='text'>ROUTE 302 SUNOCO</td><td class='amount'>$8,601.16</td><td class='amount'>$170.86</td><td class='amount'>$8,430.30</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>8002266301</td><td class='text'>DOLSONTOWN ROAD SUNOCO</td><td class='amount'>$10,786.64</td><td class='amount'>$232.91</td><td class='amount'>$10,553.73</td></tr>
+<tr><td class='nowrap'>2026-07-02</td><td class='nowrap'>8003089201</td><td class='text'>PRESTIGE-474</td><td class='amount'>$17,786.77</td><td class='amount'>$387.17</td><td class='amount'>$17,399.60</td></tr>
+<tr class='total-row'><th colspan='3'>GRAND TOTAL</th><th class='amount'>$160,650.55</th><th class='amount'>$3,381.24</th><th class='amount'>$157,269.31</th></tr>
 </table>
 </div>
 <div class='card'>
