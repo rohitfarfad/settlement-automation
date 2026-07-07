@@ -186,55 +186,33 @@ def normalize_workbook_location_name(value: object) -> str:
     return text.strip()
 
 
-def strip_supplier_from_location_name(location_name: str, supplier: str) -> str:
-    """
-    Converts configured office location names into workbook-location names.
-
-    This should be used for workbook filenames, so it preserves apostrophes.
-    """
-    supplier = normalize_supplier(supplier)
-    text = normalize_workbook_location_name(location_name)
-
-    supplier_tokens = {
-        "CITGO": {"CITGO"},
-        "VALERO": {"VALERO"},
-        "SUNOCO": {"SUNOCO"},
-    }[supplier]
-
-    parts = [part for part in text.split() if part not in supplier_tokens]
-    return " ".join(parts).strip()
-
-
 def get_excel_location_name(
     supplier: str,
     location_id: str,
     location_name: str | None = None,
 ) -> str:
     """
-    Resolve workbook location name.
+    Resolve workbook base name using location_id.
 
-    Important:
-        The office workbook naming should come from config.locations by
-        location_id, not from the parser/report location name.
-
-    Priority:
-        1. Explicit Excel override
-        2. config.locations mapping by supplier + location_id
-        3. Parser/report location_name as final fallback only
+    IMPORTANT:
+    locations.py now contains the office/workbook name.
+    Do not strip CITGO / VALERO / SUNOCO from it.
+    Do not prefer the report location_name over locations.py.
     """
     supplier = normalize_supplier(supplier)
     location_id = str(location_id)
 
     override = LOCATION_EXCEL_NAME_OVERRIDES.get((supplier, location_id))
     if override:
-        return strip_supplier_from_location_name(override, supplier)
+        return normalize_workbook_base_name(override)
 
     known_location_name = LOCATION_DICTIONARIES.get(supplier, {}).get(location_id)
     if known_location_name:
-        return strip_supplier_from_location_name(known_location_name, supplier)
+        return normalize_workbook_base_name(known_location_name)
 
     if location_name:
-        return strip_supplier_from_location_name(location_name, supplier)
+        # Fallback only. Ideally every location_id should exist in locations.py.
+        return normalize_workbook_base_name(location_name)
 
     raise ValueError(
         f"No Excel location name mapping for supplier={supplier}, "
@@ -263,7 +241,6 @@ def get_workbook_filename(
     )
 
     return f"{year} CC {excel_location_name}{EXCEL_MAPPING.workbook_extension}"
-
 
 def get_expected_workbook_path(
     *,
@@ -310,3 +287,18 @@ def resolve_month_sheet_name(
 
     return None
 
+def normalize_workbook_base_name(value: object) -> str:
+    """
+    Workbook base names should match locations.py exactly, apart from
+    trimming/collapsing whitespace.
+
+    Example:
+        locations.py value: "HAVERSTRAW CITGO"
+        workbook file:      "2026 CC HAVERSTRAW CITGO.xlsx"
+    """
+    if value is None:
+        return ""
+
+    text = str(value).strip()
+    text = re.sub(r"\s+", " ", text)
+    return text

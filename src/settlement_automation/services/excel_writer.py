@@ -1811,6 +1811,22 @@ def build_excel_write_plan(
     return plan
 
 
+def normalize_workbook_base_name(value: object) -> str:
+    """
+    Workbook base names should match locations.py exactly, apart from
+    trimming/collapsing whitespace.
+
+    Example:
+        locations.py value: "HAVERSTRAW CITGO"
+        workbook file:      "2026 CC HAVERSTRAW CITGO.xlsx"
+    """
+    if value is None:
+        return ""
+
+    text = str(value).strip()
+    text = re.sub(r"\s+", " ", text)
+    return text
+
 def preview_excel_write_plan(plan: ExcelWritePlan) -> None:
     print("\n========== EXCEL WRITE PLAN ==========")
     print(f"report_supplier={plan.report_supplier}")
