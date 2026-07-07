@@ -1,0 +1,75 @@
+ python scripts/write_excel_probe.py   --workbook-root data/workbooks   --output-root output/excel   --write   --write-originals   --file data/raw/valero/2026/06/valero_2026-06-17.txt
+
+
+  python scripts/write_excel_range.py \
+  --supplier valero \
+  --start-date 2026-06-03 \
+  --end-date 2026-06-05 \
+  --workbook-root data/workbooks \
+  --skip-missing \
+  --continue-on-error
+
+  python scripts/write_excel_range.py \
+  --supplier valero \
+  --start-date 2026-06-03 \
+  --end-date 2026-06-05 \
+  --workbook-root data/workbooks \
+  --output-root output/excel \
+  --write \
+  --write-originals \
+  --skip-missing \
+  --continue-on-error
+
+  python scripts/write_excel_range.py   --supplier valero   --start-date 2026-06-01   --end-date 2026-07-01   --workbook-root data/workbooks   --output-root output/excel   --write   --write-originals   --skip-missing   --continue-on-error
+
+
+python scripts/create_settlement_workbooks.py   --year 2026   --supplier VALERO   --output-dir data/workbooks
+
+
+ python scripts/write_excel_range.py   --supplier valero   --start-date 2026-06-01   --end-date 2026-06-29   --workbook-root data/workbooks   --output-root output/excel   --write   --write-originals   --skip-missing   --continue-on-error
+
+ python -m settlement_automation.cli   --file data/raw/valero/2026/06/valero_2026-06-18.txt   --preview   --export-csv
+
+
+HEADLESS_BROWSER=false python scripts/probe_dtn_range_download.py   --start-date 2026-06-29   --end-date 2026-06-30   --suppliers valero
+
+
+  python scripts/write_excel_range.py   --supplier citgo   --start-date 2026-06-01   --end-date 2026-06-29   --workbook-root data/workbooks   --output-root output/excel   --write   --write-originals   --skip-missing   --continue-on-error
+
+
+
+python -m settlement_automation.cli   --file data/raw/citgo/2026/06/citgo_2026-06-24.txt
+
+6/23/2026			5.03	4.78	0.25
+
+
+
+python scripts/create_settlement_workbooks.py   --year 2026   --supplier CITGO   --output-dir data/workbooks
+
+
+
+python scripts/create_settlement_workbooks.py   --year 2026   --supplier SUNOCO   --output-dir data/workbooks
+
+
+python scripts/write_excel_range.py   --supplier sunoco   --start-date 2026-06-01   --end-date 2026-06-29   --workbook-root data/workbooks   --output-root output/excel   --write   --write-originals   --skip-missing   --continue-on-error
+
+
+HEADLESS_BROWSER=false python scripts/probe_dtn_range_download.py   --start-date 2026-06-29   --end-date 2026-07-01   --suppliers valero,citgo
+
+
+python scripts/write_excel_range.py   --supplier valero   --start-date 2026-06-01   --end-date 2026-07-01   --workbook-root data/workbooks   --output-root output/excel   --write   --write-originals   --skip-missing   --continue-on-error
+
+python scripts/send_test_notification_email.py \
+  --supplier valero \
+  --business-date 2026-07-01
+
+
+HEADLESS_BROWSER=false python scripts/fetch_only.py   --supplier citgo   --business-date 2026-07-01
+
+python scripts/run_daily_parse_write_notify.py   --business-date 2026-07-01   --suppliers valero citgo   --notify
+
+Environment var reload
+
+set -a
+source .env
+set +a
