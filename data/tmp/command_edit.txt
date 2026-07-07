@@ -78,3 +78,9 @@ Environment var reload
 set -a
 source .env
 set +a
+
+#Bash run
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_daily_task.ps1 -ExcelDryRun
+
+live run
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_daily_task.ps1
