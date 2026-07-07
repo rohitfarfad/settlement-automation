@@ -262,7 +262,7 @@ def get_workbook_filename(
         location_name=location_name,
     )
 
-    return f"{year} CC {excel_location_name} {supplier}{EXCEL_MAPPING.workbook_extension}"
+    return f"{year} CC {excel_location_name}{EXCEL_MAPPING.workbook_extension}"
 
 
 def get_expected_workbook_path(

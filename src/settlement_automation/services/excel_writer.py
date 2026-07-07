@@ -727,15 +727,39 @@ def _find_header_row_and_columns(
     return None
 
 
+# def _find_date_row(
+#     ws,
+#     *,
+#     date_column_number: int,
+#     header_row: int,
+#     target_date: date,
+# ) -> int | None:
+#     for row_idx in range(header_row + 1, ws.max_row + 1):
+#         cell_value = ws.cell(row=row_idx, column=date_column_number).value
+#         if _coerce_excel_date(cell_value) == target_date:
+#             return row_idx
+#
+#     return None
+
 def _find_date_row(
-    ws,
+    ws_values,
     *,
     date_column_number: int,
     header_row: int,
     target_date: date,
 ) -> int | None:
-    for row_idx in range(header_row + 1, ws.max_row + 1):
-        cell_value = ws.cell(row=row_idx, column=date_column_number).value
+    """
+    Find date row using a data_only worksheet.
+
+    Many office workbooks have Date cells like:
+        A4 = A3 + 1
+
+    With data_only=False, openpyxl sees the formula string.
+    With data_only=True, openpyxl sees the cached calculated date.
+    """
+    for row_idx in range(header_row + 1, ws_values.max_row + 1):
+        cell_value = ws_values.cell(row=row_idx, column=date_column_number).value
+
         if _coerce_excel_date(cell_value) == target_date:
             return row_idx
 
@@ -1954,7 +1978,11 @@ def resolve_excel_write_plan_targets(plan: ExcelWritePlan) -> ExcelPlanResolutio
             continue
 
         try:
+            # Formula workbook: used for headers, formulas, current values, and writing later.
             wb = load_workbook(workbook_path, data_only=False)
+
+            # Value workbook: used only for resolving date rows whose cells may be formulas.
+            wb_values = load_workbook(workbook_path, data_only=True)
         except Exception as exc:
             resolution.warnings.append(
                 f"Could not open workbook: {workbook_path}. Error: {exc}"
@@ -1977,6 +2005,7 @@ def resolve_excel_write_plan_targets(plan: ExcelWritePlan) -> ExcelPlanResolutio
                 continue
 
             ws = wb[sheet_name]
+            ws_values = wb_values[sheet_name]
 
             required_headers = {
                 EXCEL_MAPPING.columns.date,
@@ -2005,7 +2034,7 @@ def resolve_excel_write_plan_targets(plan: ExcelWritePlan) -> ExcelPlanResolutio
             date_column_number = header_map[normalize_excel_text(EXCEL_MAPPING.columns.date)]
 
             row_number = _find_date_row(
-                ws,
+                ws_values,
                 date_column_number=date_column_number,
                 header_row=header_row,
                 target_date=business_date,
