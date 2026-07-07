@@ -8,7 +8,6 @@ packaging==26.2
 pandas==3.0.3
 playwright==1.60.0
 pluggy==1.6.0
--e git+https://github.com/rohitfarfad/settlement-automation.git@2226f78402b567bc22a3a4122d549b66a8fccbe9#egg=prestige_settlement_automation
 pyee==13.0.1
 Pygments==2.20.0
 pytest==9.1.1
