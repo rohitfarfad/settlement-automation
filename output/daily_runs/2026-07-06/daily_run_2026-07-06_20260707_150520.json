@@ -1,12 +1,12 @@
 {
   "report_date": "2026-07-06",
   "run_date": "2026-07-07",
-  "started_at": "2026-07-07T15:19:50.435694",
-  "finished_at": "2026-07-07T15:20:13.653192",
+  "started_at": "2026-07-07T15:05:20.235784",
+  "finished_at": "2026-07-07T15:05:33.582778",
   "status": "success",
   "counts": {
-    "suppliers_parsed": 2,
-    "daily_totals": 78,
+    "suppliers_parsed": 1,
+    "daily_totals": 72,
     "mobile_adjustments": 12,
     "valero_pay_plus": 271,
     "valero_monthly_charges": 0,
@@ -26,16 +26,6 @@
         "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/valero/2026/07/valero_2026-07-06.txt"
       ],
       "error_message": null
-    },
-    {
-      "supplier_name": "citgo",
-      "portal_name": "dtn",
-      "status": "success",
-      "succeeded": true,
-      "raw_paths": [
-        "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/citgo/2026/07/citgo_2026-07-06.txt"
-      ],
-      "error_message": null
     }
   ],
   "parsed_reports": [
@@ -46,19 +36,19 @@
       "valero_pay_plus_count": 271,
       "valero_monthly_charge_count": 0,
       "unclassified_adjustment_count": 0
-    },
-    {
-      "supplier": "CITGO",
-      "daily_total_count": 6,
-      "mobile_adjustment_count": 0,
-      "valero_pay_plus_count": 0,
-      "valero_monthly_charge_count": 0,
-      "unclassified_adjustment_count": 0
     }
   ],
   "excel_results": [],
   "warnings": [],
   "anomalies": [],
   "errors": [],
-  "notification": null
+  "notification": {
+    "enabled": true,
+    "mode": "test",
+    "provider": "graph",
+    "sent": true,
+    "preview_text_path": "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/output/notifications/2026-07-06_daily_summary.txt",
+    "preview_html_path": "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/output/notifications/2026-07-06_daily_summary.html",
+    "error_message": null
+  }
 }

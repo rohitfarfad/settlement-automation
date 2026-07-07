@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import re
 from datetime import date
 
 
@@ -15,24 +18,23 @@ def format_dtn_dropdown_date(value: date) -> str:
 
     return f"{month_name} {day},{year} ({weekday})"
 
-import re
-from datetime import date
-
 
 def get_dtn_date_label_candidates(business_date: date) -> list[str]:
     """
     DTN date labels have been observed as:
+
         June 05,2026 (Fri)
 
     But earlier code may generate:
+
         June 5,2026 (Fri)
 
     Return both formats.
     """
     month = business_date.strftime("%B")
-    day_zero = business_date.strftime("%d")
+    day_zero = f"{business_date.day:02d}"
     day_plain = str(business_date.day)
-    year = business_date.strftime("%Y")
+    year = f"{business_date.year:04d}"
     weekday = business_date.strftime("%a")
 
     return [
@@ -44,12 +46,21 @@ def get_dtn_date_label_candidates(business_date: date) -> list[str]:
 def get_dtn_date_value_candidates(business_date: date) -> list[str]:
     """
     Possible option values if DTN stores machine-readable values.
-    We match these before falling back to label matching.
+
+    Important:
+    Do not use Unix-only strftime directives like %-m or %-d.
+    They fail on Windows with: ValueError: Invalid format string.
     """
+    year = f"{business_date.year:04d}"
+    month_zero = f"{business_date.month:02d}"
+    day_zero = f"{business_date.day:02d}"
+    month_plain = str(business_date.month)
+    day_plain = str(business_date.day)
+
     return [
-        business_date.strftime("%Y%m%d"),
-        business_date.strftime("%m/%d/%Y"),
-        business_date.strftime("%-m/%-d/%Y") if hasattr(business_date, "strftime") else "",
+        f"{year}{month_zero}{day_zero}",
+        f"{month_zero}/{day_zero}/{year}",
+        f"{month_plain}/{day_plain}/{year}",
         business_date.isoformat(),
     ]
 
@@ -57,6 +68,7 @@ def get_dtn_date_value_candidates(business_date: date) -> list[str]:
 def normalize_dtn_date_label(value: str) -> str:
     """
     Normalize labels so these compare equal:
+
         June 05,2026 (Fri)
         June 5,2026 (Fri)
     """
@@ -71,4 +83,5 @@ def normalize_dtn_date_label(value: str) -> str:
         return value.lower()
 
     month, day, year, weekday = match.groups()
+
     return f"{month.lower()} {int(day)},{year} ({weekday.lower()})"
