@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "prestige-settlement-automation"
 version = "0.1.0"
@@ -10,8 +14,3 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-dependencies = [
-    "playwright",
-    "python-dotenv",
-]
