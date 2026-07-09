@@ -129,6 +129,26 @@ def validate_report(report: ParsedReport) -> ValidationResult:
                 )
             )
 
+    for row in getattr(report, "sunoco_credit_card_discounts", []):
+        if row.location_name == "UNKNOWN":
+            issues.append(
+                ValidationIssue(
+                    level="WARNING",
+                    message=f"Unknown location name for SUNOCO credit card discount "
+                            f"{row.supplier} {row.location_id} {row.date}.",
+                )
+            )
+
+        if row.amount < Decimal("0.00"):
+            issues.append(
+                ValidationIssue(
+                    level="WARNING",
+                    message=f"Negative SUNOCO credit card discount for "
+                            f"{row.supplier} {row.location_id} {row.date}: "
+                            f"{row.amount}.",
+                )
+            )
+
     has_errors = any(issue.level == "ERROR" for issue in issues)
 
     return ValidationResult(

@@ -3,8 +3,11 @@ from datetime import datetime, timedelta, date
 from decimal import Decimal
 from pathlib import Path
 
-from settlement_automation.models import DailySettlementTotal, ParsedReport
-
+from settlement_automation.models import (
+    DailySettlementTotal,
+    ParsedReport,
+    SunocoCreditCardDiscount,
+)
 
 def to_decimal(value) -> Decimal:
     return Decimal(str(value or 0)).quantize(Decimal("0.01"))
@@ -24,6 +27,7 @@ def parse_sunoco_report(file_path: str) -> ParsedReport:
         raise ValueError("SUNOCO report has no records in 'value'.")
 
     daily_totals = []
+    sunoco_credit_card_discounts = []
     settlement_dates = set()
 
     for item in records:
@@ -37,6 +41,7 @@ def parse_sunoco_report(file_path: str) -> ParsedReport:
 
         settlement_date = parse_iso_date(item["settlementDate"])
         business_date = settlement_date - timedelta(days=1)
+
 
         gross_amt = to_decimal(item.get("totalSalesAmount"))
 
@@ -59,6 +64,20 @@ def parse_sunoco_report(file_path: str) -> ParsedReport:
             )
         )
 
+        discount_amount = to_decimal(item.get("adjustments"))
+
+        if discount_amount != Decimal("0.00"):
+            sunoco_credit_card_discounts.append(
+                SunocoCreditCardDiscount(
+                    supplier="SUNOCO",
+                    location_id=location_id,
+                    location_name=location_name,
+                    date=business_date,
+                    amount=discount_amount,
+                    source_field="adjustments",
+                )
+            )
+
         settlement_dates.add(settlement_date)
 
     daily_totals.sort(key=lambda row: (row.date, row.location_id))
@@ -68,4 +87,5 @@ def parse_sunoco_report(file_path: str) -> ParsedReport:
         report_date=max(settlement_dates),
         daily_totals=daily_totals,
         mobile_adjustments=[],
+        sunoco_credit_card_discounts=sunoco_credit_card_discounts,
     )

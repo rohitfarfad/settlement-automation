@@ -1,6 +1,6 @@
 from settlement_automation.models import MobileAdjustment, ValeroPayPlusAdjustment
 from settlement_automation.models import ValeroMonthlyCharge
-
+from settlement_automation.models import SunocoCreditCardDiscount
 
 from collections import defaultdict
 from decimal import Decimal
@@ -172,3 +172,37 @@ def get_mobile_adjustment_grand_total(
     net = sum((row.net_amt for row in rows), Decimal("0.00"))
 
     return gross, fees, net
+
+
+def summarize_sunoco_credit_card_discounts(
+    rows: list[SunocoCreditCardDiscount],
+) -> list[SunocoCreditCardDiscount]:
+    grouped = defaultdict(lambda: Decimal("0.00"))
+
+    for row in rows:
+        key = (row.supplier, row.location_id, row.location_name, row.date)
+        grouped[key] += row.amount
+
+    summary = []
+
+    for key, amount in grouped.items():
+        supplier, location_id, location_name, txn_date = key
+
+        summary.append(
+            SunocoCreditCardDiscount(
+                supplier=supplier,
+                location_id=location_id,
+                location_name=location_name,
+                date=txn_date,
+                amount=amount,
+                source_field="adjustments",
+            )
+        )
+
+    return sorted(summary, key=lambda row: (row.date, row.location_id))
+
+
+def get_sunoco_credit_card_discounts_grand_total(
+    rows: list[SunocoCreditCardDiscount],
+) -> Decimal:
+    return sum((row.amount for row in rows), Decimal("0.00"))

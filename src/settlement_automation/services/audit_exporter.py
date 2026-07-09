@@ -9,6 +9,7 @@ from settlement_automation.services.reconciliation import (
     summarize_mobile_adjustments,
     summarize_valero_pay_plus_adjustments,
     summarize_valero_monthly_charges,
+    summarize_sunoco_credit_card_discounts,
 )
 
 
@@ -71,6 +72,8 @@ def export_audit_files(
         "validation": output_path / f"{prefix}_validation.csv",
         "valero_monthly_charges_detail": output_path / f"{prefix}_valero_monthly_charges_detail.csv",
         "valero_monthly_charges_summary": output_path / f"{prefix}_valero_monthly_charges_summary.csv",
+        "sunoco_credit_card_discounts_detail": output_path / f"{prefix}_sunoco_credit_card_discounts_detail.csv",
+        "sunoco_credit_card_discounts_summary": output_path / f"{prefix}_sunoco_credit_card_discounts_summary.csv",
     }
 
     write_csv(
@@ -109,6 +112,19 @@ def export_audit_files(
     write_csv(
         files["valero_monthly_charges_summary"],
         objects_to_rows(summarize_valero_monthly_charges(monthly_charge_rows)),
+    )
+
+    sunoco_discount_rows = getattr(report, "sunoco_credit_card_discounts", [])
+
+    write_csv(
+        files["sunoco_credit_card_discounts_detail"],
+        objects_to_rows(sunoco_discount_rows),
+    )
+
+    write_csv(
+    files["sunoco_credit_card_discounts_summary"],
+    objects_to_rows(summarize_sunoco_credit_card_discounts(sunoco_discount_rows)),
+
     )
 
     write_csv(

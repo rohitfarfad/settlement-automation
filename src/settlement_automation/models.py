@@ -55,6 +55,15 @@ class UnclassifiedAdjustment:
     description: str
     raw_line: str
 
+@dataclass
+class SunocoCreditCardDiscount:
+    supplier: str
+    location_id: str
+    location_name: str
+    date: date
+    amount: Decimal
+    source_field: str = "adjustments"
+
 
 @dataclass
 class ParsedReport:
@@ -65,3 +74,4 @@ class ParsedReport:
     valero_pay_plus_adjustments: list[ValeroPayPlusAdjustment] = field(default_factory=list)
     valero_monthly_charges: list[ValeroMonthlyCharge] = field(default_factory=list)
     unclassified_adjustments: list[UnclassifiedAdjustment] = field(default_factory=list)
+    sunoco_credit_card_discounts: list[SunocoCreditCardDiscount] = field(default_factory=list)
