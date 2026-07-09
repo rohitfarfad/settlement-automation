@@ -50,7 +50,7 @@ class ExcelColumnHeaders:
 
     # Wholesaler Valero sheets: Pay+ is added into Gross/Net.
     # Update only this string later if the exact office header is slightly different.
-    valero_pay_plus_wholesaler: str = "VP+ Added to Gross/Net"
+    valero_pay_plus_wholesaler: str = "VALERO PAY + ADDED TO GROSS/NET"
 
     # Keep old name for backward compatibility if any code still references it.
     valero_pay_plus: str = "VALERO PAY +"
@@ -142,8 +142,10 @@ LOCATION_EXCEL_NAME_OVERRIDES: dict[tuple[str, str], str] = {}
 # WORKBOOK_FILENAME_OVERRIDES = {
 #     ("VALERO", "12345", 2026): "2026 CC 9W VALERO.xlsx",
 # }
-WORKBOOK_FILENAME_OVERRIDES: dict[tuple[str, str, int], str] = {}
-
+WORKBOOK_FILENAME_OVERRIDES: dict[tuple[str, str, int], str] = {
+    # Real file has two spaces after "CC".
+    ("SUNOCO", "8003089201", 2026): "2026 CC  AVIATION RD SUNOCO.xlsx",
+}
 
 LOCATION_DICTIONARIES: dict[str, dict[str, str]] = {
     "CITGO": CITGO_LOCATIONS,

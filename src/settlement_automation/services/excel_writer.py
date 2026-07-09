@@ -8,10 +8,10 @@ from pathlib import Path
 from shutil import copy2
 from typing import Any
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from openpyxl import load_workbook
-from openpyxl.utils import get_column_letter
+from openpyxl.utils import get_column_letter, column_index_from_string
 from openpyxl.utils.datetime import from_excel
 
 from config.excel_mapping import (
@@ -676,6 +676,142 @@ def _resolve_existing_workbook_path(expected_path: Path) -> tuple[Path | None, l
     warnings.append(f"Workbook not found: {expected_path}")
     return None, warnings
 
+_SIMPLE_DATE_FORMULA_RE = re.compile(
+    r"^\s*=\s*\$?([A-Z]+)\$?(\d+)\s*([+-])\s*(\d+)\s*$",
+    re.IGNORECASE,
+)
+
+
+def _evaluate_simple_date_formula(
+    *,
+    ws_formula,
+    ws_values,
+    row_idx: int,
+    date_column_number: int,
+    header_row: int,
+    cache: dict[int, date],
+    visiting: set[int],
+) -> date | None:
+    """
+    Evaluate simple date formulas like:
+        =A5+1
+        =A5 + 1
+        =$A$5+1
+
+    This is needed because openpyxl data_only=True depends on Excel's
+    cached formula values, and those caches may be blank after Python saves.
+    """
+    if row_idx in cache:
+        return cache[row_idx]
+
+    if row_idx in visiting:
+        return None
+
+    visiting.add(row_idx)
+
+    # First try the cached value workbook.
+    cached_value = ws_values.cell(row=row_idx, column=date_column_number).value
+    cached_date = _coerce_excel_date(cached_value)
+
+    if cached_date is not None:
+        cache[row_idx] = cached_date
+        visiting.remove(row_idx)
+        return cached_date
+
+    formula_value = ws_formula.cell(row=row_idx, column=date_column_number).value
+
+    # Sometimes the formula workbook cell is already a real date.
+    direct_date = _coerce_excel_date(formula_value)
+    if direct_date is not None:
+        cache[row_idx] = direct_date
+        visiting.remove(row_idx)
+        return direct_date
+
+    if not isinstance(formula_value, str):
+        visiting.remove(row_idx)
+        return None
+
+    match = _SIMPLE_DATE_FORMULA_RE.match(formula_value)
+    if not match:
+        visiting.remove(row_idx)
+        return None
+
+    ref_col_letters, ref_row_text, operator, offset_text = match.groups()
+    ref_col_number = column_index_from_string(ref_col_letters.upper())
+    ref_row_idx = int(ref_row_text)
+    offset_days = int(offset_text)
+
+    # Only evaluate formulas pointing at the same Date column.
+    if ref_col_number != date_column_number:
+        visiting.remove(row_idx)
+        return None
+
+    if ref_row_idx <= header_row:
+        visiting.remove(row_idx)
+        return None
+
+    ref_date = _evaluate_simple_date_formula(
+        ws_formula=ws_formula,
+        ws_values=ws_values,
+        row_idx=ref_row_idx,
+        date_column_number=date_column_number,
+        header_row=header_row,
+        cache=cache,
+        visiting=visiting,
+    )
+
+    if ref_date is None:
+        visiting.remove(row_idx)
+        return None
+
+    if operator == "+":
+        result = ref_date + timedelta(days=offset_days)
+    else:
+        result = ref_date - timedelta(days=offset_days)
+
+    cache[row_idx] = result
+    visiting.remove(row_idx)
+    return result
+
+
+def _infer_date_from_nearest_anchor(
+    *,
+    ws_formula,
+    ws_values,
+    row_idx: int,
+    date_column_number: int,
+    header_row: int,
+) -> date | None:
+    """
+    Last-resort fallback.
+
+    If a sheet has one real/cached date and then many blank/formula rows,
+    infer dates by row distance from the nearest real date anchor.
+    """
+    anchors: list[tuple[int, date]] = []
+
+    for candidate_row in range(header_row + 1, ws_formula.max_row + 1):
+        for ws in (ws_values, ws_formula):
+            candidate_value = ws.cell(
+                row=candidate_row,
+                column=date_column_number,
+            ).value
+            candidate_date = _coerce_excel_date(candidate_value)
+
+            if candidate_date is not None:
+                anchors.append((candidate_row, candidate_date))
+                break
+
+    if not anchors:
+        return None
+
+    anchor_row, anchor_date = min(
+        anchors,
+        key=lambda item: abs(item[0] - row_idx),
+    )
+
+    return anchor_date + timedelta(days=(row_idx - anchor_row))
+
 
 def _coerce_excel_date(value: object) -> date | None:
     if value is None:
@@ -703,6 +839,47 @@ def _coerce_excel_date(value: object) -> date | None:
 
     return None
 
+
+HEADER_ALIASES: dict[str, tuple[str, ...]] = {
+    normalize_excel_text("VP+"): (
+        "VP+",
+        "VP +",
+        "VALERO PAY +",
+        "VALERO PAY+",
+        "VALERO PAY PLUS",
+        "VALERO PAYPLUS",
+    ),
+    normalize_excel_text("VP+ Added to Gross/Net"): (
+        "VP+ Added to Gross/Net",
+        "VP + Added to Gross/Net",
+        "VP+ Added to Gross Net",
+        "VP + Added to Gross Net",
+        "VP+ ADDED TO GROSS/NET",
+        "VP+ ADDED TO GROSS NET",
+        "VALERO PAY + ADDED TO GROSS/NET",
+        "VALERO PAY PLUS ADDED TO GROSS NET",
+        "VALERO PAY+ ADDED TO GROSS NET",
+    ),
+}
+
+
+def _header_lookup_keys(header: str) -> list[str]:
+    normalized_header = normalize_excel_text(header)
+    aliases = HEADER_ALIASES.get(normalized_header, ())
+
+    keys = [normalized_header]
+    keys.extend(normalize_excel_text(alias) for alias in aliases)
+
+    # Preserve order while removing duplicates.
+    return list(dict.fromkeys(keys))
+
+
+def _get_header_column(header_map: dict[str, int], header: str) -> int | None:
+    for key in _header_lookup_keys(header):
+        if key in header_map:
+            return header_map[key]
+
+    return None
 
 def _find_header_row_and_columns(
     ws,
@@ -746,23 +923,51 @@ def _find_header_row_and_columns(
 def _find_date_row(
     ws_values,
     *,
+    ws_formula,
     date_column_number: int,
     header_row: int,
     target_date: date,
 ) -> int | None:
     """
-    Find date row using a data_only worksheet.
+    Find the row for target_date.
 
-    Many office workbooks have Date cells like:
-        A4 = A3 + 1
-
-    With data_only=False, openpyxl sees the formula string.
-    With data_only=True, openpyxl sees the cached calculated date.
+    Order:
+      1. Use data_only cached values.
+      2. Evaluate simple formulas like =A5+1.
+      3. Infer dates from nearest real date anchor.
     """
+    formula_cache: dict[int, date] = {}
+
     for row_idx in range(header_row + 1, ws_values.max_row + 1):
         cell_value = ws_values.cell(row=row_idx, column=date_column_number).value
 
         if _coerce_excel_date(cell_value) == target_date:
+            return row_idx
+
+    for row_idx in range(header_row + 1, ws_values.max_row + 1):
+        evaluated_date = _evaluate_simple_date_formula(
+            ws_formula=ws_formula,
+            ws_values=ws_values,
+            row_idx=row_idx,
+            date_column_number=date_column_number,
+            header_row=header_row,
+            cache=formula_cache,
+            visiting=set(),
+        )
+
+        if evaluated_date == target_date:
+            return row_idx
+
+    for row_idx in range(header_row + 1, ws_formula.max_row + 1):
+        inferred_date = _infer_date_from_nearest_anchor(
+            ws_formula=ws_formula,
+            ws_values=ws_values,
+            row_idx=row_idx,
+            date_column_number=date_column_number,
+            header_row=header_row,
+        )
+
+        if inferred_date == target_date:
             return row_idx
 
     return None
@@ -1649,15 +1854,6 @@ def apply_excel_write_plan(
             )
             apply_result.changes.extend(changes)
 
-        for group_values in monthly_charge_values_by_group.values():
-            changes = _apply_valero_monthly_charge_group(
-                wb=wb,
-                output_path=output_path,
-                group_values=group_values,
-                warnings=apply_result.warnings,
-            )
-            apply_result.changes.extend(changes)
-
         wb.save(output_path)
 
     return apply_result
@@ -2060,9 +2256,6 @@ def resolve_excel_write_plan_targets(plan: ExcelWritePlan) -> ExcelPlanResolutio
                 EXCEL_MAPPING.columns.fees,
             }
 
-            for planned_value in date_values:
-                required_headers.add(planned_value.column_header)
-
             header_result = _find_header_row_and_columns(
                 ws,
                 required_headers,
@@ -2077,10 +2270,21 @@ def resolve_excel_write_plan_targets(plan: ExcelWritePlan) -> ExcelPlanResolutio
                 continue
 
             header_row, header_map = header_result
-            date_column_number = header_map[normalize_excel_text(EXCEL_MAPPING.columns.date)]
+            date_column_number = _get_header_column(
+                header_map,
+                EXCEL_MAPPING.columns.date,
+            )
+
+            if date_column_number is None:
+                resolution.warnings.append(
+                    f"Could not find Date column after header resolution: "
+                    f"workbook={workbook_path.name}, sheet={sheet_name}"
+                )
+                continue
 
             row_number = _find_date_row(
                 ws_values,
+                ws_formula=ws,
                 date_column_number=date_column_number,
                 header_row=header_row,
                 target_date=business_date,
@@ -2093,7 +2297,18 @@ def resolve_excel_write_plan_targets(plan: ExcelWritePlan) -> ExcelPlanResolutio
                 )
                 continue
 
-            fee_column_number = header_map[normalize_excel_text(EXCEL_MAPPING.columns.fees)]
+            fee_column_number = _get_header_column(
+                header_map,
+                EXCEL_MAPPING.columns.fees,
+            )
+
+            if fee_column_number is None:
+                resolution.warnings.append(
+                    f"Could not find CC Fee column after header resolution: "
+                    f"workbook={workbook_path.name}, sheet={sheet_name}"
+                )
+                continue
+
             fee_cell = ws.cell(row=row_number, column=fee_column_number)
 
             first_value = date_values[0]
@@ -2121,16 +2336,14 @@ def resolve_excel_write_plan_targets(plan: ExcelWritePlan) -> ExcelPlanResolutio
                 )
 
             for planned_value in date_values:
-                normalized_header = normalize_excel_text(planned_value.column_header)
+                column_number = _get_header_column(header_map, planned_value.column_header)
 
-                if normalized_header not in header_map:
+                if column_number is None:
                     resolution.warnings.append(
                         f"Missing column header={planned_value.column_header} "
                         f"in workbook={workbook_path.name}, sheet={sheet_name}"
                     )
                     continue
-
-                column_number = header_map[normalized_header]
                 cell = ws.cell(row=row_number, column=column_number)
                 cell_ref = f"{get_column_letter(column_number)}{row_number}"
 
