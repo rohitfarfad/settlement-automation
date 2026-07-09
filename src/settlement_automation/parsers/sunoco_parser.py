@@ -66,17 +66,16 @@ def parse_sunoco_report(file_path: str) -> ParsedReport:
 
         discount_amount = to_decimal(item.get("adjustments"))
 
-        if discount_amount != Decimal("0.00"):
-            sunoco_credit_card_discounts.append(
-                SunocoCreditCardDiscount(
-                    supplier="SUNOCO",
-                    location_id=location_id,
-                    location_name=location_name,
-                    date=business_date,
-                    amount=discount_amount,
-                    source_field="adjustments",
-                )
+        sunoco_credit_card_discounts.append(
+            SunocoCreditCardDiscount(
+                supplier="SUNOCO",
+                location_id=location_id,
+                location_name=location_name,
+                date=business_date,
+                amount=discount_amount,
+                source_field="adjustments",
             )
+        )
 
         settlement_dates.add(settlement_date)
 

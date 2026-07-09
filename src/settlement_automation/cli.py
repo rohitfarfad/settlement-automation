@@ -26,6 +26,8 @@ from settlement_automation.services.reconciliation import (
     get_mobile_adjustment_grand_total,
     summarize_valero_pay_plus_adjustments,
     get_valero_pay_plus_grand_total, get_valero_monthly_charges_grand_total, summarize_valero_monthly_charges,
+    summarize_sunoco_credit_card_discounts,
+    get_sunoco_credit_card_discounts_grand_total,
 )
 
 from settlement_automation.services.report_processor import parse_report
@@ -202,6 +204,41 @@ def print_valero_monthly_charges_summary(rows) -> None:
         f"{money(total):>14}"
     )
 
+def print_sunoco_credit_card_discounts_summary(rows) -> None:
+    subsection("SUNOCO CREDIT CARD DISCOUNTS - SUMMARY")
+
+    if not rows:
+        print("No SUNOCO credit card discounts found.")
+        return
+
+    summary_rows = summarize_sunoco_credit_card_discounts(rows)
+
+    print(
+        f"{'Date':<12} "
+        f"{'Location ID':<14} "
+        f"{'Location Name':<28} "
+        f"{'Amount':>14}"
+    )
+    print("-" * LINE_WIDTH)
+
+    for row in summary_rows:
+        print(
+            f"{str(row.date):<12} "
+            f"{row.location_id:<14} "
+            f"{safe_text(row.location_name, 28):<28} "
+            f"{money(row.amount):>14}"
+        )
+
+    total = get_sunoco_credit_card_discounts_grand_total(rows)
+
+    print("-" * LINE_WIDTH)
+    print(
+        f"{'GRAND TOTAL':<12} "
+        f"{'':<14} "
+        f"{'':<28} "
+        f"{money(total):>14}"
+    )
+
 
 def print_exported_files(exported_files) -> None:
     subsection("EXPORTED AUDIT FILES")
@@ -269,6 +306,9 @@ def main() -> int:
     monthly_charge_rows = getattr(report, "valero_monthly_charges", [])
     #print_valero_monthly_charges(monthly_charge_rows)
     print_valero_monthly_charges_summary(monthly_charge_rows)
+    sunoco_discount_rows = getattr(report, "sunoco_credit_card_discounts", [])
+
+    print_sunoco_credit_card_discounts_summary(sunoco_discount_rows)
 
     if args.export_csv:
         exported_files = export_audit_files(
