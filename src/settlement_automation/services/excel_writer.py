@@ -559,12 +559,22 @@ def _apply_valero_pay_plus_group(
 
         return changes
 
-    gross_existing = _coerce_decimal(gross_old)
-    net_existing = _coerce_decimal(net_old)
+    gross_new = _build_additive_formula(
+        gross_old,
+        planned_amount,
+        blank_as_zero=True,
+    )
 
-    if gross_existing is None or net_existing is None:
+    net_new = _build_additive_formula(
+        net_old,
+        planned_amount,
+        blank_as_zero=True,
+    )
+
+    if gross_new is None or net_new is None:
         warning = (
-            f"Cannot apply Valero Pay+ because Gross/NET cell is not numeric: "
+            f"Cannot apply Valero Pay+ because Gross/NET cell "
+            f"cannot be converted into an additive formula: "
             f"workbook={output_path.name}, sheet={gross_resolved.sheet_name}, "
             f"date={target.business_date}, location={target.location_id}, "
             f"gross={gross_old!r}, net={net_old!r}"
@@ -572,18 +582,6 @@ def _apply_valero_pay_plus_group(
         warnings.append(warning)
         return changes
 
-    if _is_formula_value(gross_old) or _is_formula_value(net_old):
-        warning = (
-            f"Cannot apply Valero Pay+ over formula Gross/NET cells: "
-            f"workbook={output_path.name}, sheet={gross_resolved.sheet_name}, "
-            f"date={target.business_date}, location={target.location_id}, "
-            f"gross={gross_old!r}, net={net_old!r}"
-        )
-        warnings.append(warning)
-        return changes
-
-    gross_new = _to_excel_number(gross_existing + planned_amount)
-    net_new = _to_excel_number(net_existing + planned_amount)
     pay_plus_new = _to_excel_number(planned_amount)
 
     gross_cell.value = gross_new
@@ -1226,7 +1224,56 @@ def _append_valero_pay_plus_values(
         f"for location_id={row.location_id}"
     )
 
+def _formula_number(value: object) -> str:
+    decimal_value = _coerce_decimal(value)
 
+    if decimal_value is None:
+        raise ValueError(f"Cannot format non-numeric formula value: {value!r}")
+
+    text = format(decimal_value.quantize(Decimal("0.01")), "f")
+
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+
+    if text == "-0":
+        return "0"
+
+    return text
+
+
+def _build_additive_formula(
+    existing_value: object,
+    amount_to_add: object,
+    *,
+    blank_as_zero: bool = True,
+) -> str | None:
+    """
+    Build visible Excel formula for additive adjustments.
+
+    Examples:
+        existing=4587.37, amount=1.35 -> =4587.37+1.35
+        existing='=4587.37+1.35', amount=2.00 -> =4587.37+1.35+2
+    """
+    amount_token = _formula_number(amount_to_add)
+
+    if _is_formula_value(existing_value):
+        existing_body = str(existing_value).strip()[1:].strip()
+
+        if not existing_body:
+            existing_body = "0"
+
+        return f"={existing_body}+{amount_token}"
+
+    existing_decimal = _coerce_decimal(existing_value)
+
+    if existing_decimal is None:
+        if blank_as_zero and existing_value in (None, ""):
+            return f"=0+{amount_token}"
+
+        return None
+
+    existing_token = _formula_number(existing_decimal)
+    return f"={existing_token}+{amount_token}"
 
 def _to_excel_number(value: Decimal) -> float:
     return float(value.quantize(Decimal("0.01")))
@@ -1417,18 +1464,16 @@ def _apply_backdated_daily_total(
             status="skipped_already_logged",
         )
 
-    existing_value = _coerce_decimal(old_value)
+    new_value = _build_additive_formula(
+        old_value,
+        planned.value,
+        blank_as_zero=True,
+    )
 
-    if existing_value is None:
-        # If the older row is blank, use the adjustment amount as the value.
-        # This can happen if reports are processed out of chronological order.
-        new_value = _to_excel_number(planned.value)
-    else:
-        new_value = _to_excel_number(existing_value + planned.value)
-
-    if _is_formula_value(old_value):
+    if new_value is None:
         warning = (
-            f"Cannot apply backdated daily total over formula cell: "
+            f"Cannot apply backdated daily total because target cell "
+            f"cannot be converted into an additive formula: "
             f"workbook={output_path.name}, sheet={resolved.sheet_name}, "
             f"date={target.business_date}, location={target.location_id}, "
             f"cell={resolved.cell_ref}, value={old_value!r}"
@@ -1450,7 +1495,7 @@ def _apply_backdated_daily_total(
             mode=planned.mode,
             old_value=old_value,
             new_value=old_value,
-            status="skipped_formula",
+            status="skipped_non_numeric_target",
         )
 
     cell.value = new_value
@@ -1678,12 +1723,22 @@ def _apply_mobile_adjustment_group(
 
         return changes
 
-    gross_existing = _coerce_decimal(gross_old)
-    net_existing = _coerce_decimal(net_old)
+    gross_new = _build_additive_formula(
+        gross_old,
+        gross_resolved.planned_value.value,
+        blank_as_zero=True,
+    )
 
-    if gross_existing is None or net_existing is None:
+    net_new = _build_additive_formula(
+        net_old,
+        net_resolved.planned_value.value,
+        blank_as_zero=True,
+    )
+
+    if gross_new is None or net_new is None:
         warning = (
-            f"Cannot apply mobile adjustment because Gross/NET cell is not numeric: "
+            f"Cannot apply Valero mobile adjustment because Gross/NET cell "
+            f"cannot be converted into an additive formula: "
             f"workbook={output_path.name}, sheet={gross_resolved.sheet_name}, "
             f"date={target.business_date}, location={target.location_id}, "
             f"gross={gross_old!r}, net={net_old!r}"
@@ -1691,19 +1746,7 @@ def _apply_mobile_adjustment_group(
         warnings.append(warning)
         return changes
 
-    if _is_formula_value(gross_old) or _is_formula_value(net_old):
-        warning = (
-            f"Cannot apply mobile adjustment over formula Gross/NET cells: "
-            f"workbook={output_path.name}, sheet={gross_resolved.sheet_name}, "
-            f"date={target.business_date}, location={target.location_id}, "
-            f"gross={gross_old!r}, net={net_old!r}"
-        )
-        warnings.append(warning)
-        return changes
-
-    gross_new = _to_excel_number(gross_existing + planned_mobile_gross)
-    net_new = _to_excel_number(net_existing + planned_mobile_net)
-    mobile_new = _to_excel_number(planned_mobile_net)
+    mobile_new = _to_excel_number(mobile_resolved.planned_value.value)
 
     gross_cell.value = gross_new
     net_cell.value = net_new
