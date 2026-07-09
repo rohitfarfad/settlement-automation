@@ -6,8 +6,13 @@ from datetime import date
 from enum import Enum
 from pathlib import Path
 from decimal import Decimal
-from config.locations import CITGO_LOCATIONS, SUNOCO_LOCATIONS, VALERO_LOCATIONS
-
+from config.locations import (
+    CITGO_LOCATIONS,
+    SUNOCO_LOCATIONS,
+    VALERO_LOCATIONS,
+    VALERO_DEALER_LOCATIONS,
+    VALERO_WHOLESALER_LOCATIONS,
+)
 
 EXCEL_COLUMNS = {
     "date": "DATE",
@@ -39,6 +44,15 @@ class ExcelColumnHeaders:
     fees: str = "CC Fee"
     monthly_valero_charges: str = "Monthly Val chgs in Fees"
     mobile_pay: str = "MOBILE PAY ADDED TO GROSS/NET"
+
+    # Dealer Valero sheets: Pay+ is informational only.
+    valero_pay_plus_dealer: str = "VP+"
+
+    # Wholesaler Valero sheets: Pay+ is added into Gross/Net.
+    # Update only this string later if the exact office header is slightly different.
+    valero_pay_plus_wholesaler: str = "VP+ Added to Gross/Net"
+
+    # Keep old name for backward compatibility if any code still references it.
     valero_pay_plus: str = "VALERO PAY +"
 
 @dataclass(frozen=True)
@@ -136,6 +150,29 @@ LOCATION_DICTIONARIES: dict[str, dict[str, str]] = {
     "VALERO": VALERO_LOCATIONS,
     "SUNOCO": SUNOCO_LOCATIONS,
 }
+
+
+def get_valero_location_type(location_id: str) -> str:
+    location_id = str(location_id)
+
+    if location_id in VALERO_DEALER_LOCATIONS:
+        return "dealer"
+
+    if location_id in VALERO_WHOLESALER_LOCATIONS:
+        return "wholesaler"
+
+    raise ValueError(
+        f"Unknown Valero location type for location_id={location_id}. "
+        f"Add it to VALERO_DEALER_LOCATIONS or VALERO_WHOLESALER_LOCATIONS."
+    )
+
+
+def is_valero_dealer_location(location_id: str) -> bool:
+    return get_valero_location_type(location_id) == "dealer"
+
+
+def is_valero_wholesaler_location(location_id: str) -> bool:
+    return get_valero_location_type(location_id) == "wholesaler"
 
 
 def normalize_supplier(supplier: str) -> str:

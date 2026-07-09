@@ -19,8 +19,10 @@ from config.excel_mapping import (
     get_expected_workbook_path,
     normalize_supplier,
     resolve_month_sheet_name,
-    normalize_excel_text
+    normalize_excel_text,
+    get_valero_location_type,
 )
+
 from settlement_automation.services.reconciliation import (
     summarize_mobile_adjustments,
     summarize_valero_pay_plus_adjustments,
@@ -962,33 +964,61 @@ def _append_valero_pay_plus_values(
         business_date=row.date,
     )
 
-    plan.planned_values.extend(
-        [
-            ExcelPlannedValue(
-                target=target,
-                field_name="gross_amt",
-                column_header=columns.gross_amt,
-                value=row.amount,
-                source="valero_pay_plus_summary",
-                mode="add_to_base",
-            ),
-            ExcelPlannedValue(
-                target=target,
-                field_name="net_amt",
-                column_header=columns.net_amt,
-                value=row.amount,
-                source="valero_pay_plus_summary",
-                mode="add_to_base",
-            ),
+    valero_location_type = get_valero_location_type(row.location_id)
+
+    if valero_location_type == "dealer":
+        # Dealer policy:
+        #   VP+ is NOT added to Gross/Net.
+        #   VP+ is written only to the dealer VP+ column.
+        plan.planned_values.append(
             ExcelPlannedValue(
                 target=target,
                 field_name="valero_pay_plus",
-                column_header=columns.valero_pay_plus,
+                column_header=columns.valero_pay_plus_dealer,
                 value=row.amount,
-                source="valero_pay_plus_summary",
+                source="valero_pay_plus_dealer_summary",
                 mode="set",
-            ),
-        ]
+            )
+        )
+        return
+
+    if valero_location_type == "wholesaler":
+        # Wholesaler policy:
+        #   VP+ is added to Gross/Net.
+        #   VP+ is also written to the wholesaler VP+ Added to Gross/Net column.
+        plan.planned_values.extend(
+            [
+                ExcelPlannedValue(
+                    target=target,
+                    field_name="gross_amt",
+                    column_header=columns.gross_amt,
+                    value=row.amount,
+                    source="valero_pay_plus_summary",
+                    mode="add_to_base",
+                ),
+                ExcelPlannedValue(
+                    target=target,
+                    field_name="net_amt",
+                    column_header=columns.net_amt,
+                    value=row.amount,
+                    source="valero_pay_plus_summary",
+                    mode="add_to_base",
+                ),
+                ExcelPlannedValue(
+                    target=target,
+                    field_name="valero_pay_plus",
+                    column_header=columns.valero_pay_plus_wholesaler,
+                    value=row.amount,
+                    source="valero_pay_plus_summary",
+                    mode="set",
+                ),
+            ]
+        )
+        return
+
+    raise ValueError(
+        f"Unsupported Valero location type={valero_location_type!r} "
+        f"for location_id={row.location_id}"
     )
 
 
