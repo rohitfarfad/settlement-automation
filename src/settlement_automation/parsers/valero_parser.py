@@ -1,5 +1,6 @@
 import re
-from datetime import timedelta
+from dataclasses import dataclass, field
+from datetime import date, timedelta
 from pathlib import Path
 
 from config.supplier_rules import VALERO_MOBILE_CODES
@@ -24,6 +25,10 @@ SUB_DATE_RE = re.compile(
     r"([\d,]+\.\d{2}[+-])\s+"
     r"([\d,]+\.\d{2}[+-])\s+"
     r"([\d,]+\.\d{2}[+-])"
+)
+
+SUB_KIND_RE = re.compile(
+    r"^\s*SUB\s+(POS|CRIND)\s+(\d+)\s+"
 )
 
 DETAIL_RE = re.compile(
@@ -142,6 +147,194 @@ def parse_valero_charge_amount(value: str):
     """
     return abs(parse_money(value))
 
+@dataclass
+class ValeroDateBlockStats:
+    location_id: str
+    txn_date: date
+    has_final_sub: bool = False
+    final_sub_count: int = 0
+    has_sub_pos: bool = False
+    has_sub_crind: bool = False
+    detail_rows: int = 0
+    normal_detail_rows: int = 0
+    normal_card_codes: set[str] = field(default_factory=set)
+    normal_pos_card_codes: set[str] = field(default_factory=set)
+
+
+def _get_date_block_stats(
+    blocks: dict[tuple[str, date], ValeroDateBlockStats],
+    location_id: str,
+    txn_date: date,
+) -> ValeroDateBlockStats:
+    key = (location_id, txn_date)
+
+    if key not in blocks:
+        blocks[key] = ValeroDateBlockStats(
+            location_id=location_id,
+            txn_date=txn_date,
+        )
+
+    return blocks[key]
+
+
+def collect_valero_date_block_stats(
+    lines: list[str],
+    report_date,
+) -> dict[tuple[str, date], ValeroDateBlockStats]:
+    """
+    Collect per-location/per-date structure.
+
+    This lets us distinguish:
+    - full late daily settlement blocks
+    - small backdated/mobile-only blocks
+    """
+    blocks: dict[tuple[str, date], ValeroDateBlockStats] = {}
+
+    current_location_id = None
+    current_detail_date = None
+
+    for line in lines:
+        dealer = DEALER_RE.match(line)
+
+        if dealer:
+            current_location_id = dealer.group(1)
+            current_detail_date = None
+            continue
+
+        if current_location_id is None:
+            continue
+
+        detail = DETAIL_RE.match(line)
+
+        if detail:
+            mmdd, io_type, card_code, _, _, _, _, _, _ = detail.groups()
+
+            if mmdd:
+                current_detail_date = parse_valero_mmdd(mmdd, report_date)
+
+            if current_detail_date:
+                stats = _get_date_block_stats(
+                    blocks,
+                    str(current_location_id),
+                    current_detail_date,
+                )
+
+                stats.detail_rows += 1
+
+                if not is_valero_mobile_code(card_code):
+                    stats.normal_detail_rows += 1
+                    stats.normal_card_codes.add(card_code)
+
+                    if io_type == "POS":
+                        stats.normal_pos_card_codes.add(card_code)
+
+            continue
+
+        sub_kind = SUB_KIND_RE.match(line)
+
+        if sub_kind and current_detail_date:
+            kind = sub_kind.group(1)
+
+            stats = _get_date_block_stats(
+                blocks,
+                str(current_location_id),
+                current_detail_date,
+            )
+
+            if kind == "POS":
+                stats.has_sub_pos = True
+            elif kind == "CRIND":
+                stats.has_sub_crind = True
+
+            continue
+
+        sub = SUB_DATE_RE.match(line)
+
+        if sub:
+            txn_date = parse_valero_mmdd(sub.group(1), report_date)
+
+            stats = _get_date_block_stats(
+                blocks,
+                str(current_location_id),
+                txn_date,
+            )
+
+            stats.has_final_sub = True
+            stats.final_sub_count = int(sub.group(2))
+
+    return blocks
+
+
+def looks_like_late_full_daily_settlement(stats: ValeroDateBlockStats) -> bool:
+    """
+    Promote an older/non-expected date to daily_totals only when it looks like
+    a complete store settlement block.
+
+    This catches cases like Fishkill 0708 in the 07/10 report, while keeping
+    small VP/mobile-only prior-date blocks as mobile_adjustments.
+    """
+    if not stats.has_final_sub:
+        return False
+
+    # Strong full-day signal:
+    # a POS section plus multiple normal/non-VP POS card types.
+    if (
+        stats.has_sub_pos
+        and stats.normal_detail_rows >= 4
+        and len(stats.normal_pos_card_codes) >= 2
+    ):
+        return True
+
+    # Full POS + CRIND daily block, even if POS card variety is small.
+    if (
+        stats.has_sub_pos
+        and stats.has_sub_crind
+        and stats.normal_detail_rows >= 5
+        and len(stats.normal_card_codes) >= 3
+    ):
+        return True
+
+    # Some stores/days can be CRIND-heavy. Allow large CRIND-only full days,
+    # but avoid tiny CRND VP-only mobile blocks.
+    if (
+        stats.has_sub_crind
+        and stats.final_sub_count >= 20
+        and stats.normal_detail_rows >= 5
+        and len(stats.normal_card_codes) >= 3
+    ):
+        return True
+
+    return False
+
+
+def find_valero_daily_dates_by_location(
+    lines: list[str],
+    report_date,
+    expected_settlement_dates: set[date],
+) -> dict[str, set[date]]:
+    """
+    Return dates that should be parsed as DailySettlementTotal per location.
+
+    Expected report dates are always daily.
+    Older dates are daily only if the specific location/date block looks like
+    a complete settlement block.
+    """
+    blocks = collect_valero_date_block_stats(lines, report_date)
+
+    daily_dates_by_location: dict[str, set[date]] = {}
+
+    for (location_id, txn_date), stats in blocks.items():
+        if not stats.has_final_sub:
+            continue
+
+        if (
+            txn_date in expected_settlement_dates
+            or looks_like_late_full_daily_settlement(stats)
+        ):
+            daily_dates_by_location.setdefault(location_id, set()).add(txn_date)
+
+    return daily_dates_by_location
+
 def parse_unclassified_adjustment_amount(value: str):
     try:
         return parse_money(value)
@@ -160,15 +353,25 @@ def parse_valero_report(file_path: str) -> ParsedReport:
     report_date = parse_mmddyy(report_date_match.group(1))
 
     available_sub_dates = collect_valero_sub_dates(lines, report_date)
-    settlement_dates = get_valero_settlement_dates(
+
+    expected_settlement_dates = get_valero_settlement_dates(
         report_date=report_date,
         available_sub_dates=available_sub_dates,
     )
 
-    if not settlement_dates:
+    if not expected_settlement_dates:
         raise ValueError("No Valero settlement dates found")
 
-    monthly_charge_date = max(settlement_dates)
+    daily_dates_by_location = find_valero_daily_dates_by_location(
+        lines=lines,
+        report_date=report_date,
+        expected_settlement_dates=expected_settlement_dates,
+    )
+
+    if not daily_dates_by_location:
+        raise ValueError("No Valero daily settlement dates found")
+
+    monthly_charge_date = max(expected_settlement_dates)
 
     daily_totals = []
     mobile_adjustments = []
@@ -297,7 +500,12 @@ def parse_valero_report(file_path: str) -> ParsedReport:
             mmdd, _, gross, disc, fee, net = sub.groups()
             txn_date = parse_valero_mmdd(mmdd, report_date)
 
-            if txn_date in settlement_dates:
+            location_daily_dates = daily_dates_by_location.get(
+                str(current_location_id),
+                set(),
+            )
+
+            if txn_date in location_daily_dates:
                 daily_totals.append(
                     DailySettlementTotal(
                         supplier="VALERO",
@@ -320,11 +528,18 @@ def parse_valero_report(file_path: str) -> ParsedReport:
             if mmdd:
                 current_detail_date = parse_valero_mmdd(mmdd, report_date)
 
-            # Any detail row from a non-settlement date is a backdated adjustment.
-            # This intentionally includes old-date non-VP rows like POS DBT,
-            # because they are part of the backdated amount that must be added
-            # to an existing Excel row instead of overwriting it.
-            if current_detail_date and current_detail_date not in settlement_dates:
+            location_daily_dates = daily_dates_by_location.get(
+                str(current_location_id),
+                set(),
+            )
+
+            # Any detail row from a date that is not daily for this specific location
+            # remains a backdated/mobile adjustment.
+            #
+            # This keeps South Plank 0708 as mobile, but prevents Fishkill 0708 from
+            # being added to mobile because Fishkill 0708 is now classified as a full
+            # late daily settlement block.
+            if current_detail_date and current_detail_date not in location_daily_dates:
                 mobile_adjustments.append(
                     MobileAdjustment(
                         supplier="VALERO",
