@@ -5,9 +5,12 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from typing import Protocol
+import base64
 
-from settlement_automation.services.email_models import DailyEmailContent
-
+from settlement_automation.services.email_models import (
+    DailyEmailContent,
+    EmailAttachment,
+)
 @dataclass(frozen=True)
 class EmailSendResult:
     sent: bool
@@ -29,6 +32,7 @@ class EmailSender(Protocol):
         *,
         email: DailyEmailContent,
         recipients: EmailRecipients,
+        attachments: list[EmailAttachment] | None = None,
     ) -> EmailSendResult:
         ...
 
@@ -53,10 +57,11 @@ class GraphEmailSender:
         self.config = config
 
     def send(
-        self,
-        *,
-        email: DailyEmailContent,
-        recipients: EmailRecipients,
+            self,
+            *,
+            email: DailyEmailContent,
+            recipients: EmailRecipients,
+            attachments: list[EmailAttachment] | None = None,
     ) -> EmailSendResult:
         missing = self._missing_config_fields()
 
@@ -83,6 +88,7 @@ class GraphEmailSender:
                 access_token=access_token,
                 email=email,
                 recipients=recipients,
+                attachments=attachments or [],
             )
 
             return EmailSendResult(
@@ -148,11 +154,12 @@ class GraphEmailSender:
         return str(access_token)
 
     def _send_mail(
-        self,
-        *,
-        access_token: str,
-        email: DailyEmailContent,
-        recipients: EmailRecipients,
+            self,
+            *,
+            access_token: str,
+            email: DailyEmailContent,
+            recipients: EmailRecipients,
+            attachments: list[EmailAttachment],
     ) -> None:
         sender_email = urllib.parse.quote(self.config.sender_email)
         send_url = self.graph_send_url_template.format(
@@ -172,6 +179,9 @@ class GraphEmailSender:
             },
             "saveToSentItems": "true",
         }
+
+        if attachments:
+            payload["message"]["attachments"] = _build_graph_attachments(attachments)
 
         body = json.dumps(payload).encode("utf-8")
 
@@ -196,6 +206,21 @@ def _build_graph_recipients(addresses: list[str]) -> list[dict]:
             }
         }
         for address in addresses
+    ]
+
+def _build_graph_attachments(
+    attachments: list[EmailAttachment],
+) -> list[dict]:
+    return [
+        {
+            "@odata.type": "#microsoft.graph.fileAttachment",
+            "name": attachment.name,
+            "contentType": attachment.content_type,
+            "contentBytes": base64.b64encode(
+                attachment.content_bytes
+            ).decode("ascii"),
+        }
+        for attachment in attachments
     ]
 
 
