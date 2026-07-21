@@ -2,21 +2,17 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
+from xml.sax.saxutils import escape as xml_escape
 
 from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import landscape, letter
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.platypus import (
-    PageBreak,
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-)
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from settlement_automation.models import ParsedReport
 from settlement_automation.services.daily_run_summary import DailyRunSummary
@@ -25,6 +21,114 @@ from settlement_automation.services.reconciliation import (
     get_mobile_adjustment_grand_total,
     summarize_mobile_adjustments,
 )
+
+
+# US standard Letter paper, landscape for wide settlement tables.
+PDF_PAGE_SIZE = landscape(letter)
+PDF_MARGIN = 0.50 * inch
+PDF_CONTENT_WIDTH = PDF_PAGE_SIZE[0] - (2 * PDF_MARGIN)
+
+# Printer-friendly grayscale palette.
+PDF_HEADER_BG = colors.HexColor("#eeeeee")
+PDF_GRID = colors.HexColor("#bdbdbd")
+PDF_ROW_ALT = colors.HexColor("#fafafa")
+PDF_TOTAL_BG = colors.HexColor("#e0e0e0")
+PDF_TEXT = colors.HexColor("#000000")
+
+
+@lru_cache(maxsize=1)
+def _pdf_styles():
+    styles = getSampleStyleSheet()
+
+    styles.add(
+        ParagraphStyle(
+            name="ReportTitle",
+            parent=styles["Title"],
+            fontName="Helvetica-Bold",
+            fontSize=15,
+            leading=18,
+            alignment=TA_CENTER,
+            textColor=PDF_TEXT,
+            spaceAfter=8,
+        )
+    )
+
+    styles.add(
+        ParagraphStyle(
+            name="ReportMeta",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=8.5,
+            leading=11,
+            alignment=TA_LEFT,
+            textColor=PDF_TEXT,
+            spaceAfter=8,
+        )
+    )
+
+    styles.add(
+        ParagraphStyle(
+            name="SectionHeading",
+            parent=styles["Heading2"],
+            fontName="Helvetica-Bold",
+            fontSize=11,
+            leading=14,
+            alignment=TA_LEFT,
+            textColor=PDF_TEXT,
+            spaceBefore=8,
+            spaceAfter=5,
+        )
+    )
+
+    styles.add(
+        ParagraphStyle(
+            name="TableHeader",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=7.2,
+            leading=8.5,
+            alignment=TA_LEFT,
+            textColor=PDF_TEXT,
+        )
+    )
+
+    styles.add(
+        ParagraphStyle(
+            name="TableCell",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=7.1,
+            leading=8.4,
+            alignment=TA_LEFT,
+            textColor=PDF_TEXT,
+        )
+    )
+
+    styles.add(
+        ParagraphStyle(
+            name="TableCellBold",
+            parent=styles["TableCell"],
+            fontName="Helvetica-Bold",
+        )
+    )
+
+    styles.add(
+        ParagraphStyle(
+            name="TableNumber",
+            parent=styles["TableCell"],
+            alignment=TA_RIGHT,
+        )
+    )
+
+    styles.add(
+        ParagraphStyle(
+            name="TableNumberBold",
+            parent=styles["TableNumber"],
+            fontName="Helvetica-Bold",
+        )
+    )
+
+    return styles
 
 
 def build_supplier_pdf_attachments(
@@ -36,7 +140,6 @@ def build_supplier_pdf_attachments(
 
     attachments: list[EmailAttachment] = []
     paths: list[Path] = []
-
     report_date = _summary_report_date(summary)
 
     for report in summary.parsed_reports:
@@ -70,28 +173,32 @@ def write_supplier_pdf(
 ) -> None:
     doc = SimpleDocTemplate(
         str(output_path),
-        pagesize=landscape(letter),
-        leftMargin=0.35 * inch,
-        rightMargin=0.35 * inch,
-        topMargin=0.35 * inch,
-        bottomMargin=0.35 * inch,
+        pagesize=PDF_PAGE_SIZE,
+        leftMargin=PDF_MARGIN,
+        rightMargin=PDF_MARGIN,
+        topMargin=PDF_MARGIN,
+        bottomMargin=PDF_MARGIN,
     )
 
-    styles = getSampleStyleSheet()
+    styles = _pdf_styles()
     story: list[Any] = []
-
     report_date = _summary_report_date(summary)
 
-    story.append(Paragraph("Credit Cards Daily Settlement Report", styles["Title"]))
     story.append(
         Paragraph(
-            f"Supplier: {report.supplier} &nbsp;&nbsp; "
-            f"Report date: {report_date.isoformat()} &nbsp;&nbsp; "
-            f"Generated: {_format_datetime(datetime.now())}",
-            styles["Normal"],
+            "Credit Cards Daily Settlement Report",
+            styles["ReportTitle"],
         )
     )
-    story.append(Spacer(1, 12))
+    story.append(
+        Paragraph(
+            f"<b>Supplier:</b> {xml_escape(str(report.supplier))} &nbsp;&nbsp; "
+            f"<b>Report date:</b> {xml_escape(report_date.isoformat())} &nbsp;&nbsp; "
+            f"<b>Generated:</b> {xml_escape(_format_datetime(datetime.now()))}",
+            styles["ReportMeta"],
+        )
+    )
+    story.append(Spacer(1, 8))
 
     _append_daily_totals(story, styles, report)
     _append_sunoco_credit_card_discounts(story, styles, report)
@@ -107,17 +214,14 @@ def write_supplier_pdf(
 
 def _append_daily_totals(story: list[Any], styles, report: ParsedReport) -> None:
     rows_data = getattr(report, "daily_totals", []) or []
-
-    story.append(Paragraph("Daily totals", styles["Heading2"]))
+    story.append(Paragraph("Daily totals", styles["SectionHeading"]))
 
     if not rows_data:
-        story.append(Paragraph("None", styles["Normal"]))
-        story.append(Spacer(1, 10))
+        story.append(Paragraph("None", styles["ReportMeta"]))
+        story.append(Spacer(1, 8))
         return
 
-    table_rows = [
-        ["Date", "Location ID", "Location Name", "Gross", "Fees", "Net"]
-    ]
+    table_rows = [["Date", "Location ID", "Location Name", "Gross", "Fees", "Net"]]
 
     for row in rows_data:
         table_rows.append(
@@ -131,7 +235,9 @@ def _append_daily_totals(story: list[Any], styles, report: ParsedReport) -> None
             ]
         )
 
-    if not _is_supplier(report, "CITGO"):
+    has_total_row = not _is_supplier(report, "CITGO")
+
+    if has_total_row:
         gross, fees, net = _sum_daily_totals(rows_data)
         table_rows.append(
             [
@@ -144,8 +250,8 @@ def _append_daily_totals(story: list[Any], styles, report: ParsedReport) -> None
             ]
         )
 
-    story.append(_make_table(table_rows))
-    story.append(Spacer(1, 12))
+    story.append(_make_table(table_rows, has_total_row=has_total_row))
+    story.append(Spacer(1, 8))
 
 
 def _append_citgo_totals_by_date(
@@ -161,7 +267,7 @@ def _append_citgo_totals_by_date(
     if not rows_data:
         return
 
-    story.append(Paragraph("CITGO totals by date", styles["Heading2"]))
+    story.append(Paragraph("CITGO totals by date", styles["SectionHeading"]))
 
     table_rows = [["Date", "Rows", "Gross", "Fees", "Net"]]
 
@@ -177,7 +283,6 @@ def _append_citgo_totals_by_date(
         )
 
     gross, fees, net = _sum_daily_totals(rows_data)
-
     table_rows.append(
         [
             "GRAND TOTAL",
@@ -189,7 +294,7 @@ def _append_citgo_totals_by_date(
     )
 
     story.append(_make_table(table_rows))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 8))
 
 
 def _append_sunoco_credit_card_discounts(
@@ -205,16 +310,15 @@ def _append_sunoco_credit_card_discounts(
     if not rows_data:
         return
 
-    story.append(Paragraph("Sunoco credit card discount summary", styles["Heading2"]))
+    story.append(
+        Paragraph("Sunoco credit card discount summary", styles["SectionHeading"])
+    )
 
     summarized_rows = _summarize_sunoco_credit_card_discounts(rows_data)
-    table_rows = [
-        ["Date", "Location ID", "Location Name", "Count", "Amount", "Source"]
-    ]
+    table_rows = [["Date", "Location ID", "Location Name", "Count", "Amount", "Source"]]
 
     for row in summarized_rows:
         sources = ", ".join(sorted(row["sources"]))
-
         table_rows.append(
             [
                 str(row["date"]),
@@ -227,24 +331,13 @@ def _append_sunoco_credit_card_discounts(
         )
 
     total_count = sum(row["count"] for row in summarized_rows)
-    total_amount = sum(
-        (row["amount"] for row in summarized_rows),
-        Decimal("0"),
-    )
-
+    total_amount = sum((row["amount"] for row in summarized_rows), Decimal("0"))
     table_rows.append(
-        [
-            "GRAND TOTAL",
-            "",
-            "",
-            str(total_count),
-            _format_money(total_amount),
-            "",
-        ]
+        ["GRAND TOTAL", "", "", str(total_count), _format_money(total_amount), ""]
     )
 
     story.append(_make_table(table_rows))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 8))
 
 
 def _append_mobile_adjustment_summary(
@@ -257,11 +350,11 @@ def _append_mobile_adjustment_summary(
     if not rows_data:
         return
 
-    story.append(Paragraph("Backdated mobile adjustment summary", styles["Heading2"]))
+    story.append(
+        Paragraph("Backdated mobile adjustment summary", styles["SectionHeading"])
+    )
 
-    table_rows = [
-        ["Date", "Location ID", "Location Name", "Gross", "Fees", "Net"]
-    ]
+    table_rows = [["Date", "Location ID", "Location Name", "Gross", "Fees", "Net"]]
 
     for row in sorted(
         summarize_mobile_adjustments(rows_data),
@@ -279,7 +372,6 @@ def _append_mobile_adjustment_summary(
         )
 
     gross, fees, net = get_mobile_adjustment_grand_total(rows_data)
-
     table_rows.append(
         [
             "GRAND TOTAL",
@@ -292,7 +384,7 @@ def _append_mobile_adjustment_summary(
     )
 
     story.append(_make_table(table_rows))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 8))
 
 
 def _append_valero_pay_plus_summary(
@@ -305,16 +397,13 @@ def _append_valero_pay_plus_summary(
     if not rows_data:
         return
 
-    story.append(Paragraph("Valero Pay+ adjustment summary", styles["Heading2"]))
+    story.append(Paragraph("Valero Pay+ adjustment summary", styles["SectionHeading"]))
 
     summarized_rows = _summarize_valero_pay_plus(rows_data)
-    table_rows = [
-        ["Date", "Location ID", "Location Name", "Count", "Amount", "Sources"]
-    ]
+    table_rows = [["Date", "Location ID", "Location Name", "Count", "Amount", "Sources"]]
 
     for row in summarized_rows:
         sources = ", ".join(sorted(row["sources"]))
-
         table_rows.append(
             [
                 str(row["date"]),
@@ -327,24 +416,13 @@ def _append_valero_pay_plus_summary(
         )
 
     total_count = sum(row["count"] for row in summarized_rows)
-    total_amount = sum(
-        (row["amount"] for row in summarized_rows),
-        Decimal("0"),
-    )
-
+    total_amount = sum((row["amount"] for row in summarized_rows), Decimal("0"))
     table_rows.append(
-        [
-            "GRAND TOTAL",
-            "",
-            "",
-            str(total_count),
-            _format_money(total_amount),
-            "",
-        ]
+        ["GRAND TOTAL", "", "", str(total_count), _format_money(total_amount), ""]
     )
 
     story.append(_make_table(table_rows))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 8))
 
 
 def _append_valero_pay_plus_totals_by_date(
@@ -362,13 +440,12 @@ def _append_valero_pay_plus_totals_by_date(
     if len(summarized_rows) <= 1:
         return
 
-    story.append(Paragraph("Valero Pay+ totals by date", styles["Heading2"]))
+    story.append(Paragraph("Valero Pay+ totals by date", styles["SectionHeading"]))
 
     table_rows = [["Date", "Rows", "Amount", "Sources"]]
 
     for row in summarized_rows:
         sources = ", ".join(sorted(row["sources"]))
-
         table_rows.append(
             [
                 str(row["date"]),
@@ -379,22 +456,11 @@ def _append_valero_pay_plus_totals_by_date(
         )
 
     total_count = sum(row["count"] for row in summarized_rows)
-    total_amount = sum(
-        (row["amount"] for row in summarized_rows),
-        Decimal("0"),
-    )
-
-    table_rows.append(
-        [
-            "GRAND TOTAL",
-            str(total_count),
-            _format_money(total_amount),
-            "",
-        ]
-    )
+    total_amount = sum((row["amount"] for row in summarized_rows), Decimal("0"))
+    table_rows.append(["GRAND TOTAL", str(total_count), _format_money(total_amount), ""])
 
     story.append(_make_table(table_rows))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 8))
 
 
 def _append_valero_monthly_charges(
@@ -407,10 +473,9 @@ def _append_valero_monthly_charges(
     if not rows_data:
         return
 
-    story.append(Paragraph("Valero monthly charge summary", styles["Heading2"]))
+    story.append(Paragraph("Valero monthly charge summary", styles["SectionHeading"]))
 
     summarized_rows = _summarize_valero_monthly_charges(rows_data)
-
     table_rows = [["Location ID", "Location Name", "Count", "Amount"]]
 
     for row in summarized_rows:
@@ -424,22 +489,11 @@ def _append_valero_monthly_charges(
         )
 
     total_count = sum(row["count"] for row in summarized_rows)
-    total_amount = sum(
-        (row["amount"] for row in summarized_rows),
-        Decimal("0"),
-    )
-
-    table_rows.append(
-        [
-            "GRAND TOTAL",
-            "",
-            str(total_count),
-            _format_money(total_amount),
-        ]
-    )
+    total_amount = sum((row["amount"] for row in summarized_rows), Decimal("0"))
+    table_rows.append(["GRAND TOTAL", "", str(total_count), _format_money(total_amount)])
 
     story.append(_make_table(table_rows))
-    story.append(Spacer(1, 12))
+    story.append(Spacer(1, 8))
 
 
 def _append_unclassified_adjustments(
@@ -452,11 +506,9 @@ def _append_unclassified_adjustments(
     if not rows_data:
         return
 
-    story.append(Paragraph("Unclassified adjustments", styles["Heading2"]))
+    story.append(Paragraph("Unclassified adjustments", styles["SectionHeading"]))
 
-    table_rows = [
-        ["Report date", "Location ID", "Location Name", "Amount", "Description"]
-    ]
+    table_rows = [["Report date", "Location ID", "Location Name", "Amount", "Description"]]
 
     for row in rows_data:
         table_rows.append(
@@ -469,37 +521,153 @@ def _append_unclassified_adjustments(
             ]
         )
 
-    story.append(_make_table(table_rows))
-    story.append(Spacer(1, 12))
+    story.append(_make_table(table_rows, has_total_row=False))
+    story.append(Spacer(1, 8))
 
 
-def _make_table(rows: list[list[str]]) -> Table:
-    table = Table(rows, repeatRows=1)
+def _make_table(
+    rows: list[list[str]],
+    *,
+    has_total_row: bool = True,
+) -> Table:
+    if not rows:
+        rows = [[""]]
 
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eef2f7")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111827")),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cfd8e3")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 4),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#e5e7eb")),
-                ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-            ]
-        )
+    headers = [str(value) for value in rows[0]]
+    numeric_columns = _numeric_column_indexes(headers)
+    col_widths = _column_widths(headers)
+
+    table = Table(
+        _paragraph_rows(rows, numeric_columns, has_total_row=has_total_row),
+        colWidths=col_widths,
+        repeatRows=1,
+        hAlign="LEFT",
     )
 
+    style_commands = [
+        ("BACKGROUND", (0, 0), (-1, 0), PDF_HEADER_BG),
+        ("TEXTCOLOR", (0, 0), (-1, 0), PDF_TEXT),
+        ("GRID", (0, 0), (-1, -1), 0.35, PDF_GRID),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, PDF_ROW_ALT]),
+    ]
+
+    for column_index in numeric_columns:
+        style_commands.append(
+            ("ALIGN", (column_index, 0), (column_index, -1), "RIGHT")
+        )
+
+    if has_total_row and len(rows) > 1:
+        style_commands.extend(
+            [
+                ("BACKGROUND", (0, -1), (-1, -1), PDF_TOTAL_BG),
+                ("LINEABOVE", (0, -1), (-1, -1), 0.6, colors.HexColor("#9ca3af")),
+            ]
+        )
+
+    table.setStyle(TableStyle(style_commands))
     return table
 
 
+def _paragraph_rows(
+    rows: list[list[str]],
+    numeric_columns: set[int],
+    *,
+    has_total_row: bool,
+) -> list[list[Paragraph]]:
+    styles = _pdf_styles()
+    result: list[list[Paragraph]] = []
+    last_row_index = len(rows) - 1
+
+    for row_index, row in enumerate(rows):
+        output_row = []
+
+        for column_index, value in enumerate(row):
+            is_header = row_index == 0
+            is_total = has_total_row and row_index == last_row_index
+            is_numeric = column_index in numeric_columns
+
+            if is_header:
+                style = styles["TableHeader"]
+            elif is_total and is_numeric:
+                style = styles["TableNumberBold"]
+            elif is_total:
+                style = styles["TableCellBold"]
+            elif is_numeric:
+                style = styles["TableNumber"]
+            else:
+                style = styles["TableCell"]
+
+            output_row.append(
+                Paragraph(
+                    xml_escape(str(value or "")),
+                    style,
+                )
+            )
+
+        result.append(output_row)
+
+    return result
+
+
+def _numeric_column_indexes(headers: list[str]) -> set[int]:
+    numeric_names = {
+        "Rows",
+        "Count",
+        "Gross",
+        "Fees",
+        "Net",
+        "Amount",
+        "Discount Amount",
+    }
+
+    return {
+        index
+        for index, header in enumerate(headers)
+        if header.strip() in numeric_names
+    }
+
+
+def _column_widths(headers: list[str]) -> list[float]:
+    weights = []
+
+    for header in headers:
+        normalized = header.strip().lower()
+
+        if normalized in {"date", "report date"}:
+            weights.append(0.95)
+        elif normalized == "location id":
+            weights.append(0.95)
+        elif normalized == "location name":
+            weights.append(2.6)
+        elif normalized in {"gross", "net", "amount", "discount amount"}:
+            weights.append(1.05)
+        elif normalized == "fees":
+            weights.append(0.9)
+        elif normalized in {"rows", "count"}:
+            weights.append(0.65)
+        elif normalized in {"source", "sources"}:
+            weights.append(1.35)
+        elif normalized == "description":
+            weights.append(2.7)
+        else:
+            weights.append(1.0)
+
+    total_weight = sum(weights) or 1
+
+    return [PDF_CONTENT_WIDTH * (weight / total_weight) for weight in weights]
+
+
 def _summary_report_date(summary: DailyRunSummary):
-    return getattr(summary, "report_date", getattr(summary, "business_date"))
+    report_date = getattr(summary, "report_date", None)
+    if report_date is not None:
+        return report_date
+
+    return getattr(summary, "business_date")
 
 
 def _is_supplier(report: ParsedReport, supplier: str) -> bool:
@@ -657,7 +825,6 @@ def _summarize_sunoco_credit_card_discounts(rows):
             summary[key]["amount"] += row.amount
 
         source_field = getattr(row, "source_field", None)
-
         if source_field:
             summary[key]["sources"].add(str(source_field))
 

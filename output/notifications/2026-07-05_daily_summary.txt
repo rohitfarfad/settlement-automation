@@ -3,14 +3,14 @@ Subject: [OK] Credit Cards Daily Settlement Report - Report Date 2026-07-05
 Prestige Settlement Daily Report
 ========================================
 Report date: 2026-07-05
-Run date: 2026-07-09
-Started at: 2026-07-09 16:37:03
-Finished at: 2026-07-09 16:37:03
+Run date: 2026-07-21
+Started at: 2026-07-21 01:02:51
+Finished at: 2026-07-21 01:02:51
 
 Run summary
 ----------------------------------------
-Suppliers parsed: SUNOCO
-Daily totals: 12
+Suppliers parsed: CITGO
+Daily totals: 13
 Backdated mobile adjustment rows: 0
 Valero Pay+ rows: 0
 Valero monthly charges: 0
@@ -24,35 +24,26 @@ Fetch results
 
 Data parsed for sheet entry
 ----------------------------------------
-SUNOCO
+CITGO
 - Daily totals:
-  2026-07-04 | 128 WASHINGTON MART (0160544300) | Gross $3,963.86 | Fees $98.10 | Net $3,865.76
-  2026-07-04 | 84 QUICK STOP SUNOCO (0260536800) | Gross $14,951.45 | Fees $311.66 | Net $14,639.79
-  2026-07-04 | CENTRAL AVE SUNOCO (0326461100) | Gross $9,068.36 | Fees $191.02 | Net $8,877.34
-  2026-07-04 | NEW SCOTLAND SUNOCO (0434020400) | Gross $11,611.06 | Fees $250.98 | Net $11,360.08
-  2026-07-04 | GLENMONT SUNOCO (0585555600) | Gross $14,890.19 | Fees $320.10 | Net $14,570.09
-  2026-07-04 | STEWART SUNOCO (0755798600) | Gross $8,373.20 | Fees $178.84 | Net $8,194.36
-  2026-07-04 | VAILS GATE SUNOCO (0853941300) | Gross $4,728.91 | Fees $93.89 | Net $4,635.02
-  2026-07-04 | ROCK HILL SUNOCO (0894029800) | Gross $5,052.64 | Fees $105.46 | Net $4,947.18
-  2026-07-04 | BALLSTON SPA SUNOCO (8000463802) | Gross $9,792.59 | Fees $181.66 | Net $9,610.93
-  2026-07-04 | ROUTE 302 SUNOCO (8002101401) | Gross $6,045.10 | Fees $124.73 | Net $5,920.37
-  2026-07-04 | DOLSONTOWN ROAD SUNOCO (8002266301) | Gross $9,629.41 | Fees $193.34 | Net $9,436.07
-  2026-07-04 | PRESTIGE-474 (8003089201) | Gross $14,238.45 | Fees $308.23 | Net $13,930.22
-  GRAND TOTAL | Gross $112,345.22 | Fees $2,358.01 | Net $109,987.21
-- Sunoco credit card discount summary:
-  2026-07-04 | 128 WASHINGTON MART (0160544300) | Count 1 | Amount $0.00 | Sources adjustments
-  2026-07-04 | 84 QUICK STOP SUNOCO (0260536800) | Count 1 | Amount $1.16 | Sources adjustments
-  2026-07-04 | CENTRAL AVE SUNOCO (0326461100) | Count 1 | Amount $0.86 | Sources adjustments
-  2026-07-04 | NEW SCOTLAND SUNOCO (0434020400) | Count 1 | Amount $0.80 | Sources adjustments
-  2026-07-04 | GLENMONT SUNOCO (0585555600) | Count 1 | Amount $1.16 | Sources adjustments
-  2026-07-04 | STEWART SUNOCO (0755798600) | Count 1 | Amount $1.23 | Sources adjustments
-  2026-07-04 | VAILS GATE SUNOCO (0853941300) | Count 1 | Amount $0.62 | Sources adjustments
-  2026-07-04 | ROCK HILL SUNOCO (0894029800) | Count 1 | Amount $0.00 | Sources adjustments
-  2026-07-04 | BALLSTON SPA SUNOCO (8000463802) | Count 1 | Amount $3.67 | Sources adjustments
-  2026-07-04 | ROUTE 302 SUNOCO (8002101401) | Count 1 | Amount $0.00 | Sources adjustments
-  2026-07-04 | DOLSONTOWN ROAD SUNOCO (8002266301) | Count 1 | Amount $1.68 | Sources adjustments
-  2026-07-04 | PRESTIGE-474 (8003089201) | Count 1 | Amount $0.00 | Sources adjustments
-  GRAND TOTAL | Count 12 | Amount $11.18
+  2026-07-02 | UPPER GLEN CITGO (15861007) | Gross $72.21 | Fees $0.50 | Net $71.71
+  2026-07-03 | HAVERSTRAW CITGO (15861002) | Gross $7,848.75 | Fees $151.37 | Net $7,697.38
+  2026-07-03 | ELLENVILLE CITGO (15861003) | Gross $7,202.31 | Fees $162.88 | Net $7,039.43
+  2026-07-03 | FREEDOM PLAINS CITGO (15861004) | Gross $10,033.18 | Fees $186.41 | Net $9,846.77
+  2026-07-03 | WESTERLO CITGO (15861005) | Gross $2,000.16 | Fees $42.51 | Net $1,957.65
+  2026-07-03 | ERIE BLVD CITGO (15861006) | Gross $6,006.06 | Fees $159.79 | Net $5,846.27
+  2026-07-03 | UPPER GLEN CITGO (15861007) | Gross $13,396.72 | Fees $292.89 | Net $13,103.83
+  2026-07-04 | HAVERSTRAW CITGO (15861002) | Gross $6,512.27 | Fees $120.65 | Net $6,391.62
+  2026-07-04 | ELLENVILLE CITGO (15861003) | Gross $6,292.15 | Fees $140.82 | Net $6,151.33
+  2026-07-04 | FREEDOM PLAINS CITGO (15861004) | Gross $8,348.19 | Fees $159.41 | Net $8,188.78
+  2026-07-04 | WESTERLO CITGO (15861005) | Gross $1,736.69 | Fees $33.49 | Net $1,703.20
+  2026-07-04 | ERIE BLVD CITGO (15861006) | Gross $6,435.00 | Fees $169.43 | Net $6,265.57
+  2026-07-04 | UPPER GLEN CITGO (15861007) | Gross $8,683.32 | Fees $179.36 | Net $8,503.96
+- CITGO totals by date:
+  2026-07-02 | Rows 1 | Gross $72.21 | Fees $0.50 | Net $71.71
+  2026-07-03 | Rows 6 | Gross $46,487.18 | Fees $995.85 | Net $45,491.33
+  2026-07-04 | Rows 6 | Gross $38,007.62 | Fees $803.16 | Net $37,204.46
+  GRAND TOTAL | Rows 13 | Gross $84,567.01 | Fees $1,799.51 | Net $82,767.50
 
 
 Excel write summary
