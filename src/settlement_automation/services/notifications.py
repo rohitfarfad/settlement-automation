@@ -1353,10 +1353,18 @@ def handle_daily_notification(
 
     preview_text_path = None
     preview_html_path = None
+    pdf_attachments = []
+    pdf_attachment_paths = []
 
     if config.should_write_preview:
         preview_text_path, preview_html_path = write_daily_email_preview(
             email=email,
+            summary=summary,
+            output_dir=config.output_dir,
+        )
+
+    if config.should_write_preview or config.should_send:
+        pdf_attachments, pdf_attachment_paths = build_supplier_pdf_attachments(
             summary=summary,
             output_dir=config.output_dir,
         )
@@ -1379,12 +1387,14 @@ def handle_daily_notification(
                 sent=False,
                 preview_text_path=preview_text_path,
                 preview_html_path=preview_html_path,
+                pdf_attachment_paths=pdf_attachment_paths,
                 error_message="SMTP sender is not implemented yet.",
             )
 
         send_result = sender.send(
             email=email,
             recipients=build_email_recipients(config),
+            attachments=pdf_attachments,
         )
 
         return NotificationResult(
@@ -1394,6 +1404,7 @@ def handle_daily_notification(
             sent=send_result.sent,
             preview_text_path=preview_text_path,
             preview_html_path=preview_html_path,
+            pdf_attachment_paths=pdf_attachment_paths,
             error_message=send_result.error_message,
         )
 
@@ -1403,6 +1414,7 @@ def handle_daily_notification(
         provider=config.provider,
         sent=False,
         preview_text_path=preview_text_path,
+        pdf_attachment_paths=pdf_attachment_paths,
         preview_html_path=preview_html_path,
     )
 
