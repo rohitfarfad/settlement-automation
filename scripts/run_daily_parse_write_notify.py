@@ -103,7 +103,10 @@ def main() -> None:
 
         if notification.error_message:
             print(f"Error                : {notification.error_message}")
-
+        if notification.pdf_attachment_paths:
+            print("PDF attachments      :")
+            for path in notification.pdf_attachment_paths:
+                print(f"  {path}")
 
 if __name__ == "__main__":
     main()
