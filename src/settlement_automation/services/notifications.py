@@ -20,7 +20,9 @@ from settlement_automation.services.reconciliation import (
     get_mobile_adjustment_grand_total,
     summarize_mobile_adjustments,
 )
-
+from settlement_automation.services.notification_pdfs import (
+    build_supplier_pdf_attachments,
+)
 
 NotificationMode = Literal["off", "dry_run", "test", "live"]
 NotificationProvider = Literal["graph", "smtp"]
@@ -64,6 +66,7 @@ class NotificationResult:
     sent: bool
     preview_text_path: Path | None = None
     preview_html_path: Path | None = None
+    pdf_attachment_paths: list[Path] | None = None
     error_message: str | None = None
 
 
