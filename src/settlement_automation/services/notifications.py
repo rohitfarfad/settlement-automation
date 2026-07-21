@@ -290,6 +290,7 @@ def _build_plain_parsed_data_section(summary: DailyRunSummary) -> list[str]:
         lines.extend(_format_plain_sunoco_credit_card_discounts(report))
         lines.extend(_format_plain_mobile_adjustment_summary(report))
         lines.extend(_format_plain_valero_pay_plus_summary(report))
+        lines.extend(_format_plain_valero_pay_plus_date_totals(report))
         lines.extend(_format_plain_valero_monthly_charges(report))
         lines.extend(_format_plain_unclassified_adjustments(report))
         lines.append("")
@@ -532,6 +533,100 @@ def _format_plain_mobile_adjustment_summary(report: ParsedReport) -> list[str]:
 
     return lines
 
+def _format_plain_valero_pay_plus_date_totals(report: ParsedReport) -> list[str]:
+    rows = getattr(report, "valero_pay_plus_adjustments", []) or []
+
+    if not rows:
+        return []
+
+    summarized_rows = _summarize_valero_pay_plus_by_date(rows)
+
+    if len(summarized_rows) <= 1:
+        return []
+
+    lines = ["- Valero Pay+ totals by date:"]
+
+    for row in summarized_rows:
+        sources = ", ".join(sorted(row["sources"]))
+
+        lines.append(
+            "  "
+            f"{row['date']} | "
+            f"Rows {row['count']} | "
+            f"Amount {_format_money(row['amount'])} | "
+            f"Sources {sources}"
+        )
+
+    total_count = sum(row["count"] for row in summarized_rows)
+    total_amount = sum(
+        (row["amount"] for row in summarized_rows),
+        Decimal("0"),
+    )
+
+    lines.append(
+        "  "
+        f"GRAND TOTAL | "
+        f"Rows {total_count} | "
+        f"Amount {_format_money(total_amount)}"
+    )
+
+    return lines
+
+def _build_html_valero_pay_plus_date_totals_table(report: ParsedReport) -> str:
+    rows_data = getattr(report, "valero_pay_plus_adjustments", []) or []
+
+    if not rows_data:
+        return ""
+
+    summarized_rows = _summarize_valero_pay_plus_by_date(rows_data)
+
+    if len(summarized_rows) <= 1:
+        return ""
+
+    rows = [
+        "<tr>"
+        "<th>Date</th>"
+        "<th class='amount'>Rows</th>"
+        "<th class='amount'>Amount</th>"
+        "<th>Sources</th>"
+        "</tr>"
+    ]
+
+    for row in summarized_rows:
+        sources = ", ".join(sorted(row["sources"]))
+
+        rows.append(
+            "<tr>"
+            f"<td class='nowrap'>{escape(str(row['date']))}</td>"
+            f"<td class='amount'>{escape(str(row['count']))}</td>"
+            f"{_amount_td(row['amount'])}"
+            f"<td class='text'>{escape(sources)}</td>"
+            "</tr>"
+        )
+
+    total_count = sum(row["count"] for row in summarized_rows)
+    total_amount = sum(
+        (row["amount"] for row in summarized_rows),
+        Decimal("0"),
+    )
+
+    rows.append(
+        "<tr class='total-row'>"
+        "<th>GRAND TOTAL</th>"
+        f"<th class='amount'>{escape(str(total_count))}</th>"
+        f"<th class='amount'>{escape(_format_money(total_amount))}</th>"
+        "<th></th>"
+        "</tr>"
+    )
+
+    return "\n".join(
+        [
+            "<h4>Valero Pay+ totals by date</h4>",
+            "<table>",
+            *rows,
+            "</table>",
+        ]
+    )
 
 def _format_plain_valero_pay_plus_summary(report: ParsedReport) -> list[str]:
     rows = getattr(report, "valero_pay_plus_adjustments", []) or []
@@ -678,6 +773,7 @@ def _build_html_parsed_data_section(summary: DailyRunSummary) -> str:
         parts.append(_build_html_citgo_date_totals_table(report))
         parts.append(_build_html_mobile_adjustment_summary_table(report))
         parts.append(_build_html_valero_pay_plus_summary_table(report))
+        parts.append(_build_html_valero_pay_plus_date_totals_table(report))
         parts.append(_build_html_valero_monthly_charges_table(report))
         parts.append(_build_html_unclassified_adjustments_table(report))
 
@@ -1336,6 +1432,33 @@ def _summarize_sunoco_credit_card_discounts(rows):
     return sorted(
         summary.values(),
         key=lambda item: (item["date"], item["location_id"]),
+    )
+
+def _summarize_valero_pay_plus_by_date(rows):
+    summary = {}
+
+    for row in rows:
+        key = row.date
+
+        if key not in summary:
+            summary[key] = {
+                "date": row.date,
+                "count": 0,
+                "amount": Decimal("0"),
+                "sources": set(),
+            }
+
+        summary[key]["count"] += 1
+
+        if row.amount is not None:
+            summary[key]["amount"] += row.amount
+
+        if row.source_code:
+            summary[key]["sources"].add(str(row.source_code))
+
+    return sorted(
+        summary.values(),
+        key=lambda item: item["date"],
     )
 
 def _summarize_valero_pay_plus(rows):

@@ -1,0 +1,172 @@
+@echo off
+setlocal enabledelayedexpansion
+
+title Prestige Manual Settlement Fix
+
+set "PROJECT_ROOT=C:\CC Automation\settlement-automation"
+set "PYTHON_EXE=%PROJECT_ROOT%\.venv\Scripts\python.exe"
+set "RUN_DAILY_SCRIPT=%PROJECT_ROOT%\scripts\run_daily.py"
+set "WRITE_ONLY_SCRIPT=%PROJECT_ROOT%\scripts\run_daily_parse_write_notify.py"
+set "LOG_DIR=%PROJECT_ROOT%\output\logs"
+
+echo.
+echo ============================================================
+echo PRESTIGE MANUAL SETTLEMENT FIX
+echo ============================================================
+echo.
+echo This will run two fixes:
+echo.
+echo 1. Rerun ONLY today's Valero report:
+echo    fetch, parse, write to Excel, and send notification.
+echo.
+echo 2. Re-write yesterday's reports for ALL suppliers:
+echo    parse already-downloaded files, write to Excel, and send notification.
+echo.
+echo Please close Excel completely before continuing.
+echo.
+pause
+
+if not exist "%PROJECT_ROOT%" (
+    echo.
+    echo FAILED: Project folder not found:
+    echo %PROJECT_ROOT%
+    echo.
+    pause
+    exit /b 1
+)
+
+if not exist "%PYTHON_EXE%" (
+    echo.
+    echo FAILED: Python not found:
+    echo %PYTHON_EXE%
+    echo.
+    pause
+    exit /b 1
+)
+
+if not exist "%RUN_DAILY_SCRIPT%" (
+    echo.
+    echo FAILED: run_daily.py not found:
+    echo %RUN_DAILY_SCRIPT%
+    echo.
+    pause
+    exit /b 1
+)
+
+if not exist "%WRITE_ONLY_SCRIPT%" (
+    echo.
+    echo FAILED: run_daily_parse_write_notify.py not found:
+    echo %WRITE_ONLY_SCRIPT%
+    echo.
+    pause
+    exit /b 1
+)
+
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
+
+cd /d "%PROJECT_ROOT%"
+
+for /f %%D in ('"%PYTHON_EXE%" -c "from datetime import date,timedelta; print((date.today()-timedelta(days=1)).isoformat())"') do set "YESTERDAY=%%D"
+
+set "TIMESTAMP=%DATE%_%TIME%"
+set "TIMESTAMP=%TIMESTAMP:/=-%"
+set "TIMESTAMP=%TIMESTAMP::=-%"
+set "TIMESTAMP=%TIMESTAMP:.=-%"
+set "TIMESTAMP=%TIMESTAMP: =_%"
+
+set "LOG_FILE=%LOG_DIR%\manual_settlement_fix_%TIMESTAMP%.log"
+set "LATEST_LOG_FILE=%LOG_DIR%\manual_settlement_fix_latest.log"
+
+echo.
+echo Starting manual settlement fix...
+echo Yesterday's date is: %YESTERDAY%
+echo Log file: %LOG_FILE%
+echo.
+
+echo ============================================================ > "%LOG_FILE%"
+echo PRESTIGE MANUAL SETTLEMENT FIX >> "%LOG_FILE%"
+echo Started: %DATE% %TIME% >> "%LOG_FILE%"
+echo Yesterday: %YESTERDAY% >> "%LOG_FILE%"
+echo ============================================================ >> "%LOG_FILE%"
+echo. >> "%LOG_FILE%"
+
+echo.
+echo ============================================================
+echo STEP 1: Rerun Valero for today's report
+echo ============================================================
+echo.
+
+echo ============================================================ >> "%LOG_FILE%"
+echo STEP 1: Rerun Valero for today's report >> "%LOG_FILE%"
+echo Command: "%PYTHON_EXE%" "%RUN_DAILY_SCRIPT%" --suppliers valero --days-back 0 --write-excel --write-originals --notify >> "%LOG_FILE%"
+echo ============================================================ >> "%LOG_FILE%"
+
+"%PYTHON_EXE%" "%RUN_DAILY_SCRIPT%" --suppliers valero --days-back 0 --write-excel --write-originals --notify >> "%LOG_FILE%" 2>&1
+
+set "VALERO_EXIT_CODE=%ERRORLEVEL%"
+
+if not "%VALERO_EXIT_CODE%"=="0" (
+    echo.
+    echo VALERO TODAY RERUN FAILED.
+    echo Please send Rohit this log file:
+    echo %LOG_FILE%
+    echo.
+    copy /Y "%LOG_FILE%" "%LATEST_LOG_FILE%" >nul
+    pause
+    exit /b %VALERO_EXIT_CODE%
+)
+
+echo.
+echo Valero today rerun completed successfully.
+echo.
+
+echo. >> "%LOG_FILE%"
+echo STEP 1 COMPLETE: Valero today rerun completed successfully. >> "%LOG_FILE%"
+echo. >> "%LOG_FILE%"
+
+echo.
+echo ============================================================
+echo STEP 2: Re-write yesterday's reports for all suppliers
+echo ============================================================
+echo.
+
+echo ============================================================ >> "%LOG_FILE%"
+echo STEP 2: Re-write yesterday's reports for all suppliers >> "%LOG_FILE%"
+echo Command: "%PYTHON_EXE%" "%WRITE_ONLY_SCRIPT%" --report-date %YESTERDAY% --suppliers citgo valero sunoco --write-excel --write-originals --notify >> "%LOG_FILE%"
+echo ============================================================ >> "%LOG_FILE%"
+
+"%PYTHON_EXE%" "%WRITE_ONLY_SCRIPT%" --report-date %YESTERDAY% --suppliers citgo valero sunoco --write-excel --write-originals --notify >> "%LOG_FILE%" 2>&1
+
+set "YESTERDAY_EXIT_CODE=%ERRORLEVEL%"
+
+if not "%YESTERDAY_EXIT_CODE%"=="0" (
+    echo.
+    echo YESTERDAY WRITE FIX FAILED.
+    echo Please send Rohit this log file:
+    echo %LOG_FILE%
+    echo.
+    copy /Y "%LOG_FILE%" "%LATEST_LOG_FILE%" >nul
+    pause
+    exit /b %YESTERDAY_EXIT_CODE%
+)
+
+echo. >> "%LOG_FILE%"
+echo STEP 2 COMPLETE: Yesterday write fix completed successfully. >> "%LOG_FILE%"
+echo. >> "%LOG_FILE%"
+
+copy /Y "%LOG_FILE%" "%LATEST_LOG_FILE%" >nul
+
+echo.
+echo ============================================================
+echo MANUAL SETTLEMENT FIX COMPLETED SUCCESSFULLY
+echo ============================================================
+echo.
+echo Please tell Rohit:
+echo MANUAL SETTLEMENT FIX COMPLETED SUCCESSFULLY
+echo.
+echo Log file:
+echo %LOG_FILE%
+echo.
+pause
+
+exit /b 0
