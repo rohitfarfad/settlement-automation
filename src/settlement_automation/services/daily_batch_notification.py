@@ -18,6 +18,9 @@ from settlement_automation.services.notifications import (
     build_email_recipients,
     load_notification_config,
 )
+from settlement_automation.services.notification_pdfs import (
+    build_supplier_pdf_attachments,
+)
 
 
 @dataclass(frozen=True)
@@ -47,6 +50,18 @@ def handle_daily_batch_notification(
         task_date=task_date,
         runs=runs,
     )
+
+    pdf_attachments = []
+    pdf_attachment_paths = []
+
+    if config.should_write_preview or config.should_send:
+        for run in runs:
+            run_attachments, run_paths = build_supplier_pdf_attachments(
+                summary=run.result.summary,
+                output_dir=config.output_dir,
+            )
+            pdf_attachments.extend(run_attachments)
+            pdf_attachment_paths.extend(run_paths)
 
     preview_text_path = None
     preview_html_path = None
@@ -82,6 +97,7 @@ def handle_daily_batch_notification(
         send_result = sender.send(
             email=email,
             recipients=build_email_recipients(config),
+            attachments=pdf_attachments,
         )
 
         return NotificationResult(

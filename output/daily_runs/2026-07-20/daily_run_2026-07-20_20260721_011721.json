@@ -1,0 +1,118 @@
+{
+  "report_date": "2026-07-20",
+  "run_date": "2026-07-21",
+  "started_at": "2026-07-21T01:17:21.150765",
+  "finished_at": "2026-07-21T01:17:49.676345",
+  "status": "warning",
+  "counts": {
+    "suppliers_parsed": 2,
+    "daily_totals": 22,
+    "mobile_adjustments": 0,
+    "valero_pay_plus": 0,
+    "valero_monthly_charges": 0,
+    "unclassified_adjustments": 0,
+    "warnings": 18,
+    "errors": 0,
+    "excel_written": 0,
+    "excel_skipped": 0
+  },
+  "fetch_results": [
+    {
+      "supplier_name": "citgo",
+      "portal_name": "dtn",
+      "status": "success",
+      "succeeded": true,
+      "raw_paths": [
+        "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/citgo/2026/07/citgo_2026-07-20.txt"
+      ],
+      "error_message": null
+    },
+    {
+      "supplier_name": "sunoco",
+      "portal_name": "sunoco",
+      "status": "success",
+      "succeeded": true,
+      "raw_paths": [
+        "/Users/rohitfarfad/PycharmProjects/prestige-settlement-automation/data/raw/sunoco/2026/07/sunoco_2026-07-20.txt"
+      ],
+      "error_message": null
+    }
+  ],
+  "parsed_reports": [
+    {
+      "supplier": "CITGO",
+      "daily_total_count": 9,
+      "mobile_adjustment_count": 0,
+      "valero_pay_plus_count": 0,
+      "valero_monthly_charge_count": 0,
+      "unclassified_adjustment_count": 0
+    },
+    {
+      "supplier": "SUNOCO",
+      "daily_total_count": 13,
+      "mobile_adjustment_count": 0,
+      "valero_pay_plus_count": 0,
+      "valero_monthly_charge_count": 0,
+      "unclassified_adjustment_count": 0
+    }
+  ],
+  "excel_results": [
+    {
+      "written_count": 0,
+      "skipped_count": 0,
+      "dry_run": true,
+      "write_originals": false,
+      "warnings": [
+        "Workbook not found: data/workbooks/2026 CC UPPER GLEN CITGO.xlsx",
+        "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC UPPER GLEN CITGO.xlsx"
+      ]
+    },
+    {
+      "written_count": 0,
+      "skipped_count": 0,
+      "dry_run": true,
+      "write_originals": false,
+      "warnings": [
+        "Workbook not found: data/workbooks/2026 CC CENTRAL AVE.xlsx",
+        "Workbook not found: data/workbooks/2026 CC NEW SCOTLAND.xlsx",
+        "Workbook not found: data/workbooks/2026 CC GLENMONT.xlsx",
+        "Workbook not found: data/workbooks/2026 CC BROADWAY MART ROCK HILL.xlsx",
+        "Workbook not found: data/workbooks/2026 CC MARLBORO SUNOCO.xlsx",
+        "Workbook not found: data/workbooks/2026 CC BROADWAY RT 302 SUNOCO.xlsx",
+        "Workbook fuzzy match used: expected=2026 CC DOLSONTOWN RD SUNOCO.xlsx, matched=2026 CC DOLSONTOWN ROAD SUNOCO.xlsx, score=0.966. Consider adding an override in config/excel_mapping.py.",
+        "Workbook not found: data/workbooks/2026 CC  AVIATION RD SUNOCO.xlsx",
+        "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC CENTRAL AVE.xlsx",
+        "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC NEW SCOTLAND.xlsx",
+        "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC GLENMONT.xlsx",
+        "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BROADWAY MART ROCK HILL.xlsx",
+        "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC MARLBORO SUNOCO.xlsx",
+        "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BROADWAY RT 302 SUNOCO.xlsx",
+        "Resolution warning before apply: Workbook fuzzy match used: expected=2026 CC DOLSONTOWN RD SUNOCO.xlsx, matched=2026 CC DOLSONTOWN ROAD SUNOCO.xlsx, score=0.966. Consider adding an override in config/excel_mapping.py.",
+        "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC  AVIATION RD SUNOCO.xlsx"
+      ]
+    }
+  ],
+  "warnings": [
+    "Workbook not found: data/workbooks/2026 CC UPPER GLEN CITGO.xlsx",
+    "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC UPPER GLEN CITGO.xlsx",
+    "Workbook not found: data/workbooks/2026 CC CENTRAL AVE.xlsx",
+    "Workbook not found: data/workbooks/2026 CC NEW SCOTLAND.xlsx",
+    "Workbook not found: data/workbooks/2026 CC GLENMONT.xlsx",
+    "Workbook not found: data/workbooks/2026 CC BROADWAY MART ROCK HILL.xlsx",
+    "Workbook not found: data/workbooks/2026 CC MARLBORO SUNOCO.xlsx",
+    "Workbook not found: data/workbooks/2026 CC BROADWAY RT 302 SUNOCO.xlsx",
+    "Workbook fuzzy match used: expected=2026 CC DOLSONTOWN RD SUNOCO.xlsx, matched=2026 CC DOLSONTOWN ROAD SUNOCO.xlsx, score=0.966. Consider adding an override in config/excel_mapping.py.",
+    "Workbook not found: data/workbooks/2026 CC  AVIATION RD SUNOCO.xlsx",
+    "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC CENTRAL AVE.xlsx",
+    "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC NEW SCOTLAND.xlsx",
+    "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC GLENMONT.xlsx",
+    "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BROADWAY MART ROCK HILL.xlsx",
+    "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC MARLBORO SUNOCO.xlsx",
+    "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC BROADWAY RT 302 SUNOCO.xlsx",
+    "Resolution warning before apply: Workbook fuzzy match used: expected=2026 CC DOLSONTOWN RD SUNOCO.xlsx, matched=2026 CC DOLSONTOWN ROAD SUNOCO.xlsx, score=0.966. Consider adding an override in config/excel_mapping.py.",
+    "Resolution warning before apply: Workbook not found: data/workbooks/2026 CC  AVIATION RD SUNOCO.xlsx"
+  ],
+  "anomalies": [],
+  "errors": [],
+  "notification": null
+}
