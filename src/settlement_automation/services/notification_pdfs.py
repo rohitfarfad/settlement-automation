@@ -677,8 +677,6 @@ def _paragraph_rows(
         result.append(output_row)
 
     return result
-
-
 def _total_row_indexes(
     rows: list[list[str]],
     *,
@@ -706,6 +704,24 @@ def _is_total_row(row: list[str]) -> bool:
     label = str(row[0] or "").strip().upper()
 
     return label == "GRAND TOTAL" or label.startswith("TOTAL ")
+
+def _numeric_column_indexes(headers: list[str]) -> set[int]:
+    numeric_names = {
+        "Rows",
+        "Count",
+        "Gross",
+        "Fees",
+        "Net",
+        "Amount",
+        "Discount Amount",
+    }
+
+    return {
+        index
+        for index, header in enumerate(headers)
+        if header.strip() in numeric_names
+    }
+
 
 
 def _column_widths(headers: list[str]) -> list[float]:
