@@ -223,7 +223,33 @@ def _append_daily_totals(story: list[Any], styles, report: ParsedReport) -> None
 
     table_rows = [["Date", "Location ID", "Location Name", "Gross", "Fees", "Net"]]
 
-    for row in rows_data:
+    is_valero = _is_supplier(report, "VALERO")
+    is_citgo = _is_supplier(report, "CITGO")
+
+    rows_to_render = rows_data
+
+    if is_valero:
+        rows_to_render = sorted(
+            rows_data,
+            key=lambda row: (
+                row.date,
+                str(row.location_id),
+                str(row.location_name),
+            ),
+        )
+
+    current_date = None
+    current_date_rows = []
+
+    for row in rows_to_render:
+        if is_valero and current_date is not None and row.date != current_date:
+            _append_daily_total_date_subtotal_row(
+                table_rows=table_rows,
+                total_date=current_date,
+                rows=current_date_rows,
+            )
+            current_date_rows = []
+
         table_rows.append(
             [
                 str(row.date),
@@ -235,7 +261,18 @@ def _append_daily_totals(story: list[Any], styles, report: ParsedReport) -> None
             ]
         )
 
-    has_total_row = not _is_supplier(report, "CITGO")
+        if is_valero:
+            current_date = row.date
+            current_date_rows.append(row)
+
+    if is_valero and current_date_rows:
+        _append_daily_total_date_subtotal_row(
+            table_rows=table_rows,
+            total_date=current_date,
+            rows=current_date_rows,
+        )
+
+    has_total_row = not is_citgo
 
     if has_total_row:
         gross, fees, net = _sum_daily_totals(rows_data)
@@ -253,6 +290,24 @@ def _append_daily_totals(story: list[Any], styles, report: ParsedReport) -> None
     story.append(_make_table(table_rows, has_total_row=has_total_row))
     story.append(Spacer(1, 8))
 
+def _append_daily_total_date_subtotal_row(
+    *,
+    table_rows: list[list[str]],
+    total_date,
+    rows,
+) -> None:
+    gross, fees, net = _sum_daily_totals(rows)
+
+    table_rows.append(
+        [
+            f"TOTAL {total_date}",
+            "",
+            "",
+            _format_money(gross),
+            _format_money(fees),
+            _format_money(net),
+        ]
+    )
 
 def _append_citgo_totals_by_date(
     story: list[Any],
@@ -536,9 +591,14 @@ def _make_table(
     headers = [str(value) for value in rows[0]]
     numeric_columns = _numeric_column_indexes(headers)
     col_widths = _column_widths(headers)
+    total_row_indexes = _total_row_indexes(rows, has_total_row=has_total_row)
 
     table = Table(
-        _paragraph_rows(rows, numeric_columns, has_total_row=has_total_row),
+        _paragraph_rows(
+            rows,
+            numeric_columns,
+            total_row_indexes=total_row_indexes,
+        ),
         colWidths=col_widths,
         repeatRows=1,
         hAlign="LEFT",
@@ -561,11 +621,17 @@ def _make_table(
             ("ALIGN", (column_index, 0), (column_index, -1), "RIGHT")
         )
 
-    if has_total_row and len(rows) > 1:
+    for row_index in sorted(total_row_indexes):
         style_commands.extend(
             [
-                ("BACKGROUND", (0, -1), (-1, -1), PDF_TOTAL_BG),
-                ("LINEABOVE", (0, -1), (-1, -1), 0.6, colors.HexColor("#9ca3af")),
+                ("BACKGROUND", (0, row_index), (-1, row_index), PDF_TOTAL_BG),
+                (
+                    "LINEABOVE",
+                    (0, row_index),
+                    (-1, row_index),
+                    0.6,
+                    colors.HexColor("#9ca3af"),
+                ),
             ]
         )
 
@@ -577,18 +643,17 @@ def _paragraph_rows(
     rows: list[list[str]],
     numeric_columns: set[int],
     *,
-    has_total_row: bool,
+    total_row_indexes: set[int],
 ) -> list[list[Paragraph]]:
     styles = _pdf_styles()
     result: list[list[Paragraph]] = []
-    last_row_index = len(rows) - 1
 
     for row_index, row in enumerate(rows):
         output_row = []
 
         for column_index, value in enumerate(row):
             is_header = row_index == 0
-            is_total = has_total_row and row_index == last_row_index
+            is_total = row_index in total_row_indexes
             is_numeric = column_index in numeric_columns
 
             if is_header:
@@ -614,22 +679,33 @@ def _paragraph_rows(
     return result
 
 
-def _numeric_column_indexes(headers: list[str]) -> set[int]:
-    numeric_names = {
-        "Rows",
-        "Count",
-        "Gross",
-        "Fees",
-        "Net",
-        "Amount",
-        "Discount Amount",
+def _total_row_indexes(
+    rows: list[list[str]],
+    *,
+    has_total_row: bool,
+) -> set[int]:
+    if not has_total_row or len(rows) <= 1:
+        return set()
+
+    indexes = {
+        row_index
+        for row_index, row in enumerate(rows[1:], start=1)
+        if _is_total_row(row)
     }
 
-    return {
-        index
-        for index, header in enumerate(headers)
-        if header.strip() in numeric_names
-    }
+    if not indexes:
+        indexes.add(len(rows) - 1)
+
+    return indexes
+
+
+def _is_total_row(row: list[str]) -> bool:
+    if not row:
+        return False
+
+    label = str(row[0] or "").strip().upper()
+
+    return label == "GRAND TOTAL" or label.startswith("TOTAL ")
 
 
 def _column_widths(headers: list[str]) -> list[float]:
