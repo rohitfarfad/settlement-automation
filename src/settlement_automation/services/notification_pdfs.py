@@ -9,7 +9,7 @@ from xml.sax.saxutils import escape as xml_escape
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-from reportlab.lib.pagesizes import landscape, letter
+from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
@@ -23,9 +23,9 @@ from settlement_automation.services.reconciliation import (
 )
 
 
-# US standard Letter paper, landscape for wide settlement tables.
-PDF_PAGE_SIZE = landscape(letter)
-PDF_MARGIN = 0.50 * inch
+# US standard Letter paper, portrait, printer-friendly.
+PDF_PAGE_SIZE = letter
+PDF_MARGIN = 0.35 * inch
 PDF_CONTENT_WIDTH = PDF_PAGE_SIZE[0] - (2 * PDF_MARGIN)
 
 # Printer-friendly grayscale palette.
@@ -85,8 +85,8 @@ def _pdf_styles():
             name="TableHeader",
             parent=styles["Normal"],
             fontName="Helvetica-Bold",
-            fontSize=7.2,
-            leading=8.5,
+            fontSize=6.7,
+            leading=8.0,
             alignment=TA_LEFT,
             textColor=PDF_TEXT,
         )
@@ -97,8 +97,8 @@ def _pdf_styles():
             name="TableCell",
             parent=styles["Normal"],
             fontName="Helvetica",
-            fontSize=7.1,
-            leading=8.4,
+            fontSize=6.6,
+            leading=7.9,
             alignment=TA_LEFT,
             textColor=PDF_TEXT,
         )
@@ -620,13 +620,14 @@ def _make_table(
     rows: list[list[str]],
     *,
     has_total_row: bool = True,
+    content_width: float = PDF_CONTENT_WIDTH,
 ) -> Table:
     if not rows:
         rows = [[""]]
 
     headers = [str(value) for value in rows[0]]
     numeric_columns = _numeric_column_indexes(headers)
-    col_widths = _column_widths(headers)
+    col_widths = _column_widths(headers, content_width=content_width)
     total_row_indexes = _total_row_indexes(rows, has_total_row=has_total_row)
 
     table = Table(
@@ -765,34 +766,43 @@ def _numeric_column_indexes(headers: list[str]) -> set[int]:
 
 
 
-def _column_widths(headers: list[str]) -> list[float]:
+def _column_widths(
+    headers: list[str],
+    *,
+    content_width: float = PDF_CONTENT_WIDTH,
+) -> list[float]:
     weights = []
 
     for header in headers:
-        normalized = header.strip().lower()
+        normalized = str(header).strip().lower()
 
         if normalized in {"date", "report date"}:
-            weights.append(0.95)
+            weights.append(0.85)
         elif normalized == "location id":
-            weights.append(0.95)
+            weights.append(0.85)
         elif normalized == "location name":
-            weights.append(2.6)
+            weights.append(2.35)
         elif normalized in {"gross", "net", "amount", "discount amount"}:
             weights.append(1.05)
         elif normalized == "fees":
-            weights.append(0.9)
+            weights.append(0.85)
         elif normalized in {"rows", "count"}:
-            weights.append(0.65)
+            weights.append(0.55)
         elif normalized in {"source", "sources"}:
-            weights.append(1.35)
+            weights.append(1.0)
         elif normalized == "description":
-            weights.append(2.7)
+            weights.append(2.25)
+        elif normalized == "metric":
+            weights.append(2.4)
         else:
             weights.append(1.0)
 
     total_weight = sum(weights) or 1
 
-    return [PDF_CONTENT_WIDTH * (weight / total_weight) for weight in weights]
+    return [
+        content_width * (weight / total_weight)
+        for weight in weights
+    ]
 
 
 def _summary_report_date(summary: DailyRunSummary):
