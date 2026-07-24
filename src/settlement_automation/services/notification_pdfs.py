@@ -207,6 +207,7 @@ def write_supplier_pdf(
     _append_valero_pay_plus_summary(story, styles, report)
     _append_valero_pay_plus_totals_by_date(story, styles, report)
     _append_valero_monthly_charges(story, styles, report)
+    _append_report_transaction_totals(story, styles, report)
     _append_unclassified_adjustments(story, styles, report)
 
     doc.build(story)
@@ -551,6 +552,41 @@ def _append_valero_monthly_charges(
     story.append(Spacer(1, 8))
 
 
+def _append_report_transaction_totals(
+    story: list[Any],
+    styles,
+    report: ParsedReport,
+) -> None:
+    totals = _calculate_report_transaction_totals(report)
+
+    story.append(
+        Paragraph(
+            "Report transaction totals",
+            styles["SectionHeading"],
+        )
+    )
+
+    table_rows = [
+        ["Metric", "Amount"],
+        ["Card gross", _format_money(totals["card_gross"])],
+        ["Mobile pay gross", _format_money(totals["mobile_gross"])],
+        [
+            "Total Gross (cards + mobile pay)",
+            _format_money(totals["total_gross"]),
+        ],
+        ["Card net", _format_money(totals["card_net"])],
+        ["Mobile pay net", _format_money(totals["mobile_net"])],
+        ["VP+", _format_money(totals["vp_plus_net"])],
+        [
+            "Total Net (cards + mobile pay + VP+)",
+            _format_money(totals["total_net"]),
+        ],
+    ]
+
+    story.append(_make_table(table_rows))
+    story.append(Spacer(1, 8))
+
+
 def _append_unclassified_adjustments(
     story: list[Any],
     styles,
@@ -703,7 +739,12 @@ def _is_total_row(row: list[str]) -> bool:
 
     label = str(row[0] or "").strip().upper()
 
-    return label == "GRAND TOTAL" or label.startswith("TOTAL ")
+    return (
+        label == "GRAND TOTAL"
+        or label.startswith("TOTAL ")
+        or label.startswith("TOTAL GROSS")
+        or label.startswith("TOTAL NET")
+    )
 
 def _numeric_column_indexes(headers: list[str]) -> set[int]:
     numeric_names = {
@@ -796,6 +837,37 @@ def _sum_daily_totals(rows) -> tuple[Decimal, Decimal, Decimal]:
         net += row.net_amt or Decimal("0")
 
     return gross, fees, net
+
+
+def _calculate_report_transaction_totals(report: ParsedReport) -> dict[str, Decimal]:
+    card_gross, card_fees, card_net = _sum_daily_totals(
+        getattr(report, "daily_totals", []) or []
+    )
+
+    mobile_gross, mobile_fees, mobile_net = get_mobile_adjustment_grand_total(
+        getattr(report, "mobile_adjustments", []) or []
+    )
+
+    vp_plus_net = sum(
+        (
+            row.amount
+            for row in getattr(report, "valero_pay_plus_adjustments", []) or []
+            if row.amount is not None
+        ),
+        Decimal("0"),
+    )
+
+    return {
+        "card_gross": card_gross,
+        "card_fees": card_fees,
+        "card_net": card_net,
+        "mobile_gross": mobile_gross,
+        "mobile_fees": mobile_fees,
+        "mobile_net": mobile_net,
+        "vp_plus_net": vp_plus_net,
+        "total_gross": card_gross + mobile_gross,
+        "total_net": card_net + mobile_net + vp_plus_net,
+    }
 
 
 def _summarize_daily_totals_by_date(rows):

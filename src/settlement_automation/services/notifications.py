@@ -295,6 +295,7 @@ def _build_plain_parsed_data_section(summary: DailyRunSummary) -> list[str]:
         lines.extend(_format_plain_valero_pay_plus_summary(report))
         lines.extend(_format_plain_valero_pay_plus_date_totals(report))
         lines.extend(_format_plain_valero_monthly_charges(report))
+        lines.extend(_format_plain_report_transaction_totals(report))
         lines.extend(_format_plain_unclassified_adjustments(report))
         lines.append("")
 
@@ -674,6 +675,33 @@ def _format_plain_valero_monthly_charges(report: ParsedReport) -> list[str]:
     return lines
 
 
+def _format_plain_report_transaction_totals(report: ParsedReport) -> list[str]:
+    totals = _calculate_report_transaction_totals(report)
+
+    return [
+        "- Report transaction totals:",
+        (
+            "  "
+            f"Total Gross (cards + mobile pay): "
+            f"{_format_money(totals['total_gross'])}"
+        ),
+        (
+            "  "
+            f"Total Net (cards + mobile pay + VP+): "
+            f"{_format_money(totals['total_net'])}"
+        ),
+        (
+            "  "
+            f"Breakdown | "
+            f"Card Gross {_format_money(totals['card_gross'])} | "
+            f"Mobile Gross {_format_money(totals['mobile_gross'])} | "
+            f"Card Net {_format_money(totals['card_net'])} | "
+            f"Mobile Net {_format_money(totals['mobile_net'])} | "
+            f"VP+ {_format_money(totals['vp_plus_net'])}"
+        ),
+    ]
+
+
 def _format_plain_unclassified_adjustments(report: ParsedReport) -> list[str]:
     rows = getattr(report, "unclassified_adjustments", []) or []
 
@@ -778,6 +806,7 @@ def _build_html_parsed_data_section(summary: DailyRunSummary) -> str:
         parts.append(_build_html_valero_pay_plus_summary_table(report))
         parts.append(_build_html_valero_pay_plus_date_totals_table(report))
         parts.append(_build_html_valero_monthly_charges_table(report))
+        parts.append(_build_html_report_transaction_totals_table(report))
         parts.append(_build_html_unclassified_adjustments_table(report))
 
     parts.append("</div>")
@@ -1162,6 +1191,37 @@ def _sum_daily_totals(rows) -> tuple[Decimal, Decimal, Decimal]:
     return gross, fees, net
 
 
+def _calculate_report_transaction_totals(report: ParsedReport) -> dict[str, Decimal]:
+    card_gross, card_fees, card_net = _sum_daily_totals(
+        getattr(report, "daily_totals", []) or []
+    )
+
+    mobile_gross, mobile_fees, mobile_net = get_mobile_adjustment_grand_total(
+        getattr(report, "mobile_adjustments", []) or []
+    )
+
+    vp_plus_net = sum(
+        (
+            row.amount
+            for row in getattr(report, "valero_pay_plus_adjustments", []) or []
+            if row.amount is not None
+        ),
+        Decimal("0"),
+    )
+
+    return {
+        "card_gross": card_gross,
+        "card_fees": card_fees,
+        "card_net": card_net,
+        "mobile_gross": mobile_gross,
+        "mobile_fees": mobile_fees,
+        "mobile_net": mobile_net,
+        "vp_plus_net": vp_plus_net,
+        "total_gross": card_gross + mobile_gross,
+        "total_net": card_net + mobile_net + vp_plus_net,
+    }
+
+
 def _summarize_daily_totals_by_date(rows):
     summary = {}
 
@@ -1222,6 +1282,55 @@ def _build_html_valero_monthly_charges_table(report: ParsedReport) -> str:
             "</table>",
         ]
     )
+
+
+def _build_html_report_transaction_totals_table(report: ParsedReport) -> str:
+    totals = _calculate_report_transaction_totals(report)
+
+    rows = [
+        "<tr>"
+        "<th>Metric</th>"
+        "<th class='amount'>Amount</th>"
+        "</tr>",
+        "<tr>"
+        "<td class='text'>Card gross</td>"
+        f"{_amount_td(totals['card_gross'])}"
+        "</tr>",
+        "<tr>"
+        "<td class='text'>Mobile pay gross</td>"
+        f"{_amount_td(totals['mobile_gross'])}"
+        "</tr>",
+        "<tr class='total-row'>"
+        "<th>Total Gross (cards + mobile pay)</th>"
+        f"<th class='amount'>{escape(_format_money(totals['total_gross']))}</th>"
+        "</tr>",
+        "<tr>"
+        "<td class='text'>Card net</td>"
+        f"{_amount_td(totals['card_net'])}"
+        "</tr>",
+        "<tr>"
+        "<td class='text'>Mobile pay net</td>"
+        f"{_amount_td(totals['mobile_net'])}"
+        "</tr>",
+        "<tr>"
+        "<td class='text'>VP+</td>"
+        f"{_amount_td(totals['vp_plus_net'])}"
+        "</tr>",
+        "<tr class='total-row'>"
+        "<th>Total Net (cards + mobile pay + VP+)</th>"
+        f"<th class='amount'>{escape(_format_money(totals['total_net']))}</th>"
+        "</tr>",
+    ]
+
+    return "\n".join(
+        [
+            "<h4>Report transaction totals</h4>",
+            "<table>",
+            *rows,
+            "</table>",
+        ]
+    )
+
 
 def _build_html_unclassified_adjustments_table(report: ParsedReport) -> str:
     rows_data = getattr(report, "unclassified_adjustments", []) or []
