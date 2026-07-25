@@ -16,4 +16,4 @@ def load_local_env(project_root: Path) -> None:
     env_path = project_root / ".env"
 
     if env_path.exists():
-        load_dotenv(env_path)
+        load_dotenv(env_path, override=True)
