@@ -126,8 +126,14 @@ def main() -> int:
 
     try:
         load_local_env(PROJECT_ROOT)
-
         settings = get_settings()
+
+        print(f"Excel workbook root : {settings.excel_workbook_root}")
+        print(
+            "Excel root exists   : "
+            f"{settings.excel_workbook_root.exists()}"
+        )
+
         lock_path = settings.output_dir / "locks" / "daily_pipeline.lock"
 
         citgo_sunoco_report_date = resolve_date(
