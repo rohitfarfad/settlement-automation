@@ -50,6 +50,21 @@ MONTHLY_CHARGE_RE = re.compile(
     re.IGNORECASE,
 )
 
+CHARGEBACKS_SECTION_RE = re.compile(r"^\s*CHARGEBACKS\s*$", re.IGNORECASE)
+CHARGEBACK_RE = re.compile(
+    r"^\s*(\d{5})\s+\d{6}\s+\S+\s+\S+\s+"
+    r"[\d,]+\.\d{2}[+-]\s+([\d,]+\.\d{2}[+-])\s*$"
+)
+TOTAL_CHARGEBACKS_RE = re.compile(
+    r"^\s*TOTAL\s+CHARGEBACKS\s+([\d,]+\.\d{2}[+-])\s*$",
+    re.IGNORECASE,
+)
+COMMITMENT_FEE_RE = re.compile(
+    r"^\s*(\d{5})\s+(Commitment\s+to\s+Excellence\s+Shop"
+    r"(?:\s+Period\s+\d+)?)\s+([\d,]+\.\d{2}[+-])\s*$",
+    re.IGNORECASE,
+)
+
 ADJUSTMENTS_SECTION_RE = re.compile(r"^\s*ADJUSTMENTS\s*$", re.IGNORECASE)
 
 TOTAL_ADJUSTMENTS_RE = re.compile(
@@ -378,6 +393,10 @@ def parse_valero_report(file_path: str) -> ParsedReport:
     valero_pay_plus_adjustments = []
     valero_monthly_charges = []
     unclassified_adjustments = []
+    settlement_adjustments = []
+    in_chargebacks_section = False
+    chargeback_total = 0
+    chargeback_reason_pending = False
 
     current_location_id = None
     current_location_name = None
@@ -386,6 +405,38 @@ def parse_valero_report(file_path: str) -> ParsedReport:
     locations_by_id = {}
     in_adjustments_section = False
     for line in lines:
+        if CHARGEBACKS_SECTION_RE.match(line):
+            if not in_chargebacks_section:
+                chargeback_total = 0
+                chargeback_reason_pending = False
+            in_chargebacks_section = True
+            continue
+
+        if in_chargebacks_section:
+            if re.match(r"^\s*DEALER\s+DESCRIPTION\b", line, re.IGNORECASE):
+                continue
+            total = TOTAL_CHARGEBACKS_RE.match(line)
+            if total:
+                if chargeback_total != parse_money(total.group(1)):
+                    raise ValueError("Valero chargeback rows do not match TOTAL CHARGEBACKS")
+                in_chargebacks_section = False
+                continue
+
+            chargeback = CHARGEBACK_RE.match(line)
+            if chargeback:
+                location_id, amount_text = chargeback.groups()
+                amount = parse_money(amount_text)
+                settlement_adjustments.append((location_id, amount, "Chargeback"))
+                chargeback_total += amount
+                chargeback_reason_pending = True
+            elif re.match(r"^\s*(?:\d{5}\b|TOTAL\s+CHARGEBACKS\b|ADJUSTMENTS\s*$)", line):
+                raise ValueError("Unrecognized or incomplete Valero chargeback section")
+            elif chargeback_reason_pending and re.fullmatch(r"\s*[A-Z][A-Z /()-]+\s*", line):
+                location_id, amount, description = settlement_adjustments[-1]
+                settlement_adjustments[-1] = (location_id, amount, f"{description}: {line.strip()}")
+                chargeback_reason_pending = False
+            continue
+
         if ADJUSTMENTS_SECTION_RE.match(line):
             in_adjustments_section = True
             continue
@@ -396,6 +447,12 @@ def parse_valero_report(file_path: str) -> ParsedReport:
                 continue
 
             if not line.strip() or ADJUSTMENT_HEADER_RE.match(line):
+                continue
+
+            commitment_fee = COMMITMENT_FEE_RE.match(line)
+            if commitment_fee:
+                location_id, description, amount = commitment_fee.groups()
+                settlement_adjustments.append((location_id, parse_money(amount), description))
                 continue
 
             payplus = PAYPLUS_RE.match(line)
@@ -552,6 +609,24 @@ def parse_valero_report(file_path: str) -> ParsedReport:
                         source_code=card_code,
                     )
                 )
+
+    if in_chargebacks_section:
+        raise ValueError("Valero chargeback section missing TOTAL CHARGEBACKS")
+
+    # These settlement deductions affect both gross and net, not card fees.
+    # Post on the current settlement day, not the chargeback's original sale date.
+    for location_id, amount, description in settlement_adjustments:
+        matches = [row for row in daily_totals
+                   if row.location_id == location_id and row.date == monthly_charge_date]
+        if len(matches) != 1:
+            raise ValueError(
+                f"Valero {description}: expected one daily row for "
+                f"{location_id} on {monthly_charge_date}"
+            )
+        row = matches[0]
+        row.gross_amt += amount
+        row.net_amt += amount
+        row.adjustment_notes.append(f"{description}: {amount:+.2f} applied to gross and net")
 
     daily_totals.sort(key=lambda row: (row.date, row.location_id))
     mobile_adjustments.sort(

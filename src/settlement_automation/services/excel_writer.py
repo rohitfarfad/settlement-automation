@@ -11,6 +11,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from openpyxl import load_workbook
+from openpyxl.comments import Comment
 from openpyxl.utils import get_column_letter, column_index_from_string
 from openpyxl.utils.datetime import from_excel
 
@@ -68,6 +69,7 @@ class ExcelPlannedValue:
     value: Decimal
     source: str
     mode: str
+    note: str | None = None
 
 
 @dataclass
@@ -1102,6 +1104,7 @@ def _append_daily_total_values(
                 value=row.gross_amt,
                 source=source,
                 mode=mode,
+                note="\n".join(row.adjustment_notes) or None,
             ),
             ExcelPlannedValue(
                 target=target,
@@ -1110,6 +1113,7 @@ def _append_daily_total_values(
                 value=row.net_amt,
                 source=source,
                 mode=mode,
+                note="\n".join(row.adjustment_notes) or None,
             ),
         ]
     )
@@ -1584,6 +1588,11 @@ def _apply_set_value(
 
     new_value = _to_excel_number(planned.value)
     cell.value = new_value
+    if planned.note:
+        if cell.comment is None:
+            cell.comment = Comment(planned.note, "Settlement automation")
+        elif planned.note not in cell.comment.text:
+            cell.comment.text += "\n\n" + planned.note
 
     return ExcelAppliedChange(
         supplier=target.supplier,

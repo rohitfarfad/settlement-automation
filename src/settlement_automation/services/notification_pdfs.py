@@ -289,6 +289,12 @@ def _append_daily_totals(story: list[Any], styles, report: ParsedReport) -> None
         )
 
     story.append(_make_table(table_rows, has_total_row=has_total_row))
+    for row in rows_data:
+        for note in row.adjustment_notes:
+            story.append(Paragraph(
+                xml_escape(f"{row.date} | {row.location_name} ({row.location_id}): {note}"),
+                styles["ReportMeta"],
+            ))
     story.append(Spacer(1, 8))
 
 def _append_daily_total_date_subtotal_row(

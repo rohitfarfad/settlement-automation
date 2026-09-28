@@ -12,6 +12,7 @@ class DailySettlementTotal:
     gross_amt: Decimal
     fees: Decimal
     net_amt: Decimal
+    adjustment_notes: list[str] = field(default_factory=list)
 
 
 @dataclass

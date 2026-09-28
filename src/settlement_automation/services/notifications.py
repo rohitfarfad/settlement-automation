@@ -419,6 +419,8 @@ def _format_plain_daily_totals(report: ParsedReport) -> list[str]:
             f"Fees {_format_money(row.fees)} | "
             f"Net {_format_money(row.net_amt)}"
         )
+        for note in row.adjustment_notes:
+            lines.append(f"    {note}")
     if _is_supplier(report, "CITGO"):
         lines.extend(_format_plain_citgo_date_totals(report))
     else:
@@ -983,6 +985,9 @@ def _build_html_daily_totals_table(report: ParsedReport) -> str:
             f"{_amount_td(row.net_amt)}"
             "</tr>"
         )
+
+        for note in row.adjustment_notes:
+            rows.append(f"<tr><td colspan='6' class='text'>{escape(note)}</td></tr>")
 
     if not _is_supplier(report, "CITGO"):
         gross, fees, net = _sum_daily_totals(report.daily_totals)
