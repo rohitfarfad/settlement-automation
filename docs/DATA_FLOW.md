@@ -61,7 +61,7 @@ Sources in `connectors/`, `parsers/`, `ingestion/`, `services/`, and `models.py`
 
 - CITGO adds every matching detail row into its location/date bucket; repeated input details are not deduplicated.
 - VALERO normalizes `fees = -(DISC + FEE)` and retains report gross/net. Non-daily detail rows enter mobile adjustments regardless of card code. Pay+ keeps its signed amount. Monthly billing uses `abs(amount)` and the maximum expected settlement date.
-- SUNOCO uses `fees = -totalDealerFeeAmount`, `net = totalSalesAmount - fees`; `totalAdjustedNetAmount` is not used to compute or cross-check that net. `adjustments` becomes a separate discount, including zero values.
+- SUNOCO separates signed discount `totalFiveCentRollback` from aggregate `adjustments`. Daily gross is `totalSalesAmount + adjustments - totalFiveCentRollback`, so all non-discount adjustments affect gross/net. Fees remain `-totalDealerFeeAmount`; net is gross minus fees. The parser requires the adjustment/discount/control fields and checks daily net plus discount against `totalAdjustedNetAmount` at cent precision.
 - Reconciliation summaries group by `(supplier, location_id, location_name, date)`, sum `Decimal` amounts and sort by date/location. Mobile and Pay+ summary `source_code` becomes `TOTAL`. Different names for the same location/date can therefore remain separate groups.
 - Excel numbers are quantized to cents then converted to float; additive adjustments are visible formulas. There is no general formula calculation engine.
 

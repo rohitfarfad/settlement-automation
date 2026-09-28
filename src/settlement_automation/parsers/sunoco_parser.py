@@ -43,7 +43,15 @@ def parse_sunoco_report(file_path: str) -> ParsedReport:
         business_date = settlement_date - timedelta(days=1)
 
 
-        gross_amt = to_decimal(item.get("totalSalesAmount"))
+        # Adjustments includes the card discount AND signed non-discount
+        # items (for example gift-card activations and chargebacks).
+        for field in ("adjustments", "totalFiveCentRollback", "totalAdjustedNetAmount"):
+            if item.get(field) is None or item[field] == "":
+                raise ValueError(f"SUNOCO {location_id} missing {field}")
+
+        discount_amount = to_decimal(item["totalFiveCentRollback"])
+        non_discount_adjustments = to_decimal(item["adjustments"]) - discount_amount
+        gross_amt = to_decimal(item.get("totalSalesAmount")) + non_discount_adjustments
 
         # SUNOCO dealer fee comes as negative in JSON, ex. -221.05.
         # Normalized it as positive so validation stays consistent
@@ -51,6 +59,12 @@ def parse_sunoco_report(file_path: str) -> ParsedReport:
         fees = -dealer_fee
 
         net_amt = gross_amt - fees
+
+        if net_amt + discount_amount != to_decimal(item["totalAdjustedNetAmount"]):
+            raise ValueError(
+                f"SUNOCO {location_id} {business_date}: daily net plus card "
+                "discount does not match totalAdjustedNetAmount"
+            )
 
         daily_totals.append(
             DailySettlementTotal(
@@ -64,8 +78,6 @@ def parse_sunoco_report(file_path: str) -> ParsedReport:
             )
         )
 
-        discount_amount = to_decimal(item.get("adjustments"))
-
         sunoco_credit_card_discounts.append(
             SunocoCreditCardDiscount(
                 supplier="SUNOCO",
@@ -73,7 +85,7 @@ def parse_sunoco_report(file_path: str) -> ParsedReport:
                 location_name=location_name,
                 date=business_date,
                 amount=discount_amount,
-                source_field="adjustments",
+                source_field="totalFiveCentRollback",
             )
         )
 

@@ -178,10 +178,12 @@ def summarize_sunoco_credit_card_discounts(
     rows: list[SunocoCreditCardDiscount],
 ) -> list[SunocoCreditCardDiscount]:
     grouped = defaultdict(lambda: Decimal("0.00"))
+    sources = defaultdict(set)
 
     for row in rows:
         key = (row.supplier, row.location_id, row.location_name, row.date)
         grouped[key] += row.amount
+        sources[key].add(row.source_field)
 
     summary = []
 
@@ -195,7 +197,7 @@ def summarize_sunoco_credit_card_discounts(
                 location_name=location_name,
                 date=txn_date,
                 amount=amount,
-                source_field="adjustments",
+                source_field=", ".join(sorted(sources[key])),
             )
         )
 
