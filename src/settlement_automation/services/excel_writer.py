@@ -251,6 +251,8 @@ def _append_valero_monthly_charge_values(
     row: ValeroMonthlyCharge,
 ) -> None:
     columns = EXCEL_MAPPING.columns
+    is_wholesaler = get_valero_location_type(row.location_id) == "wholesaler"
+    amount = -row.amount if is_wholesaler else row.amount
 
     target = _build_target_without_opening_workbook(
         workbook_root=workbook_root,
@@ -266,17 +268,18 @@ def _append_valero_monthly_charge_values(
                 target=target,
                 field_name="monthly_valero_charges",
                 column_header=columns.monthly_valero_charges,
-                value=row.amount,
+                value=amount,
                 source="valero_monthly_charge_summary",
                 mode="set",
             ),
             ExcelPlannedValue(
                 target=target,
-                field_name="fees",
-                column_header=columns.fees,
-                value=row.amount,
+                field_name="net_amt" if is_wholesaler else "fees",
+                column_header=columns.net_amt if is_wholesaler else columns.fees,
+                value=amount,
                 source="valero_monthly_charge_summary",
-                mode="add_monthly_charge_to_fee_formula",
+                mode=("add_monthly_charge_to_net_formula" if is_wholesaler
+                      else "add_monthly_charge_to_fee_formula"),
             ),
         ]
     )
@@ -296,9 +299,9 @@ def _apply_valero_monthly_charge_group(
     }
 
     monthly_resolved = by_field.get("monthly_valero_charges")
-    fee_resolved = by_field.get("fees")
+    adjustment_resolved = by_field.get("net_amt") or by_field.get("fees")
 
-    if monthly_resolved is None or fee_resolved is None:
+    if monthly_resolved is None or adjustment_resolved is None:
         warning = (
             f"Incomplete monthly charge group in workbook={output_path.name}: "
             f"fields={sorted(by_field)}"
@@ -309,10 +312,21 @@ def _apply_valero_monthly_charge_group(
     ws = wb[monthly_resolved.sheet_name]
 
     monthly_cell = ws[monthly_resolved.cell_ref]
-    fee_cell = ws[fee_resolved.cell_ref]
+    adjustment_cell = ws[adjustment_resolved.cell_ref]
 
     monthly_old = monthly_cell.value
-    fee_old = fee_cell.value
+    adjustment_old = adjustment_cell.value
+
+    is_wholesaler = adjustment_resolved.planned_value.field_name == "net_amt"
+    if (is_wholesaler and not _is_formula_value(adjustment_old)
+            and adjustment_old not in (None, "")
+            and _coerce_decimal(adjustment_old) is None):
+        warnings.append(
+            f"Cannot apply monthly charge to non-numeric NET cell: "
+            f"workbook={output_path.name}, sheet={adjustment_resolved.sheet_name}, "
+            f"cell={adjustment_resolved.cell_ref}"
+        )
+        return changes
 
     planned_amount = monthly_resolved.planned_value.value
     monthly_new = _to_excel_number(planned_amount)
@@ -346,15 +360,15 @@ def _apply_valero_monthly_charge_group(
         )
     )
 
-    fee_planned = fee_resolved.planned_value
+    adjustment_planned = adjustment_resolved.planned_value
 
-    if _is_formula_value(fee_old):
-        if _formula_references_cell(fee_old, monthly_resolved.cell_ref):
-            fee_new = fee_old
+    if _is_formula_value(adjustment_old):
+        if _formula_references_cell(adjustment_old, monthly_resolved.cell_ref):
+            adjustment_new = adjustment_old
             status = "skipped_formula_already_references_monthly_charge"
         else:
-            fee_new = _append_cell_to_formula(str(fee_old), monthly_resolved.cell_ref)
-            fee_cell.value = fee_new
+            adjustment_new = _append_cell_to_formula(str(adjustment_old), monthly_resolved.cell_ref)
+            adjustment_cell.value = adjustment_new
             status = "written"
 
         changes.append(
@@ -363,30 +377,37 @@ def _apply_valero_monthly_charge_group(
                 location_id=target.location_id,
                 location_name=target.location_name,
                 business_date=target.business_date,
-                workbook_path=fee_resolved.workbook_path,
+                workbook_path=adjustment_resolved.workbook_path,
                 output_path=output_path,
-                sheet_name=fee_resolved.sheet_name,
-                cell_ref=fee_resolved.cell_ref,
-                field_name=fee_planned.field_name,
-                column_header=fee_planned.column_header,
-                source=fee_planned.source,
-                mode=fee_planned.mode,
-                old_value=fee_old,
-                new_value=fee_new,
+                sheet_name=adjustment_resolved.sheet_name,
+                cell_ref=adjustment_resolved.cell_ref,
+                field_name=adjustment_planned.field_name,
+                column_header=adjustment_planned.column_header,
+                source=adjustment_planned.source,
+                mode=adjustment_planned.mode,
+                old_value=adjustment_old,
+                new_value=adjustment_new,
                 status=status,
             )
         )
 
         return changes
 
-    existing_fee = _coerce_decimal(fee_old)
+    existing_adjustment = _coerce_decimal(adjustment_old)
 
-    if existing_fee is None:
+    if is_wholesaler:
+        # Link NET to the negative monthly cell. Reruns preserve this reference,
+        # and corrected billings update NET without another deduction.
+        base = _formula_number(existing_adjustment or Decimal("0.00"))
+        adjustment_new = _append_cell_to_formula(f"={base}", monthly_resolved.cell_ref)
+        adjustment_cell.value = adjustment_new
+        status = "written"
+    elif existing_adjustment is None:
         warning = (
             f"Cannot add monthly charge to non-numeric/non-formula CC Fee cell: "
-            f"workbook={output_path.name}, sheet={fee_resolved.sheet_name}, "
+            f"workbook={output_path.name}, sheet={adjustment_resolved.sheet_name}, "
             f"date={target.business_date}, location={target.location_id}, "
-            f"cell={fee_resolved.cell_ref}, value={fee_old!r}"
+            f"cell={adjustment_resolved.cell_ref}, value={adjustment_old!r}"
         )
         warnings.append(warning)
 
@@ -396,31 +417,30 @@ def _apply_valero_monthly_charge_group(
                 location_id=target.location_id,
                 location_name=target.location_name,
                 business_date=target.business_date,
-                workbook_path=fee_resolved.workbook_path,
+                workbook_path=adjustment_resolved.workbook_path,
                 output_path=output_path,
-                sheet_name=fee_resolved.sheet_name,
-                cell_ref=fee_resolved.cell_ref,
-                field_name=fee_planned.field_name,
-                column_header=fee_planned.column_header,
-                source=fee_planned.source,
-                mode=fee_planned.mode,
-                old_value=fee_old,
-                new_value=fee_old,
+                sheet_name=adjustment_resolved.sheet_name,
+                cell_ref=adjustment_resolved.cell_ref,
+                field_name=adjustment_planned.field_name,
+                column_header=adjustment_planned.column_header,
+                source=adjustment_planned.source,
+                mode=adjustment_planned.mode,
+                old_value=adjustment_old,
+                new_value=adjustment_old,
                 status="skipped_non_numeric_fee",
             )
         )
 
         return changes
 
-    # Numeric fallback:
-    # If monthly column already had this exact amount, assume previous run already
-    # added it to CC Fee. Do not double-add.
-    if monthly_already_set:
-        fee_new = fee_old
+    elif monthly_already_set:
+        # Dealer numeric fallback: the matching marker means CC Fee already
+        # includes the charge. Wholesaler NET uses a cell reference instead.
+        adjustment_new = adjustment_old
         status = "skipped_already_applied"
     else:
-        fee_new = _to_excel_number(existing_fee + planned_amount)
-        fee_cell.value = fee_new
+        adjustment_new = _to_excel_number(existing_adjustment + planned_amount)
+        adjustment_cell.value = adjustment_new
         status = "written"
 
     changes.append(
@@ -429,16 +449,16 @@ def _apply_valero_monthly_charge_group(
             location_id=target.location_id,
             location_name=target.location_name,
             business_date=target.business_date,
-            workbook_path=fee_resolved.workbook_path,
+            workbook_path=adjustment_resolved.workbook_path,
             output_path=output_path,
-            sheet_name=fee_resolved.sheet_name,
-            cell_ref=fee_resolved.cell_ref,
-            field_name=fee_planned.field_name,
-            column_header=fee_planned.column_header,
-            source=fee_planned.source,
-            mode=fee_planned.mode,
-            old_value=fee_old,
-            new_value=fee_new,
+            sheet_name=adjustment_resolved.sheet_name,
+            cell_ref=adjustment_resolved.cell_ref,
+            field_name=adjustment_planned.field_name,
+            column_header=adjustment_planned.column_header,
+            source=adjustment_planned.source,
+            mode=adjustment_planned.mode,
+            old_value=adjustment_old,
+            new_value=adjustment_new,
             status=status,
         )
     )
@@ -1000,7 +1020,10 @@ def _formula_references_cell(formula: object, cell_ref: str) -> bool:
     normalized_formula = str(formula).upper().replace(" ", "")
 
     return any(
-        variant in normalized_formula
+        re.search(
+            rf"(?<![A-Z0-9_$]){re.escape(variant)}(?![A-Z0-9_])",
+            normalized_formula,
+        ) is not None
         for variant in _cell_ref_variants(cell_ref)
     )
 

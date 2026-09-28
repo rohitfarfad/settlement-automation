@@ -41,7 +41,7 @@ Models are dataclasses, not Pydantic schemas. Construction itself does not valid
 | `DailySettlementTotal`, `models.py` | Supplier/location/name/date plus `Decimal` gross, fees, net | Validator, Excel, CSV, email/PDF; expected `gross - fees = net` within 0.01 |
 | `MobileAdjustment`, `models.py` | Same monetary triple, optional `source_code` | VALERO aggregation and additive Excel operations; same net invariant |
 | `ValeroPayPlusAdjustment`, `models.py` | Date, signed amount, optional source card code | Summaries, supplier-type-specific Excel handling; negative amounts warn |
-| `ValeroMonthlyCharge`, `models.py` | Positive absolute amount, assigned date, description | Monthly summary, informational cell and fee-formula adjustment |
+| `ValeroMonthlyCharge`, `models.py` | Positive absolute amount, assigned date, description | Monthly summary; dealer positive monthly cell/fee adjustment or wholesaler negative monthly cell/net adjustment |
 | `UnclassifiedAdjustment`, `models.py` | Optional location/name/amount, report date, description, raw line | Anomaly/email/PDF review; no Excel write or dedicated audit CSV |
 | `SunocoCreditCardDiscount`, `models.py` | Date, signed amount, `source_field='adjustments'` | Validation warning, CSV/email/PDF summaries; not an Excel planned value |
 | `ParsedReport`, `models.py` | Supplier/report date; required daily/mobile lists; other adjustment lists default empty | Main common boundary from each parser to downstream consumers |
