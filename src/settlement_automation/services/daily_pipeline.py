@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
+import traceback
 
 from config.settings import get_settings
 from settlement_automation.models import ParsedReport
@@ -26,6 +27,7 @@ from settlement_automation.ingestion.fetch_reports import (
 )
 from settlement_automation.ingestion.supplier_selection import group_suppliers_by_portal
 from settlement_automation.services.report_processor import parse_report
+from settlement_automation.services.diagnostics import write_exception_diagnostic
 from settlement_automation.services.validation import validate_report
 
 
@@ -206,17 +208,37 @@ def write_report_to_excel_if_requested(
 ):
     settings = get_settings()
 
-    # Adjust this import/function name to your current excel_writer public API.
-    # The function should return ExcelWriteResult.
     from settlement_automation.services.excel_writer import write_parsed_report_to_excel
 
-    return write_parsed_report_to_excel(
-        report=report,
-        workbook_root=settings.excel_workbook_root,
-        output_root=settings.excel_output_dir,
-        dry_run=dry_run,
-        write_originals=write_originals,
-    )
+    try:
+        return write_parsed_report_to_excel(
+            report=report,
+            workbook_root=settings.excel_workbook_root,
+            output_root=settings.excel_output_dir,
+            dry_run=dry_run,
+            write_originals=write_originals,
+        )
+    except Exception as exc:
+        print(f"Excel writing failed for {report.supplier}:\n{traceback.format_exc()}")
+        try:
+            diagnostic_path = write_exception_diagnostic(
+                account=get_supplier_account(report.supplier.lower()),
+                business_date=report.report_date,
+                step_name="excel_write",
+                exc=exc,
+                settings=settings,
+                extra={
+                    "workbook_root": str(settings.excel_workbook_root),
+                    "output_root": str(settings.excel_output_dir),
+                    "dry_run": dry_run,
+                    "write_originals": write_originals,
+                },
+            )
+            print(f"Excel diagnostic: {diagnostic_path}")
+        except Exception as diagnostic_exc:
+            # Preserve the original Excel failure if diagnostics cannot be saved.
+            print(f"Could not save Excel diagnostic: {diagnostic_exc}")
+        raise
 
 def fetch_reports_for_daily_run(
     *,
@@ -363,7 +385,7 @@ def run_daily_parse_write_notify(
                         supplier=supplier_result.parsed_report.supplier,
                         message=(
                             "Excel writing failed for "
-                            f"{supplier_result.parsed_report.supplier}."
+                            f"{supplier_result.parsed_report.supplier}: {exc}"
                         ),
                         exception_type=type(exc).__name__,
                     )
@@ -510,7 +532,7 @@ def run_daily_fetch_parse_write_notify(
                             supplier=supplier_result.parsed_report.supplier,
                             message=(
                                 "Excel writing failed for "
-                                f"{supplier_result.parsed_report.supplier}."
+                                f"{supplier_result.parsed_report.supplier}: {exc}"
                             ),
                             exception_type=type(exc).__name__,
                         )
