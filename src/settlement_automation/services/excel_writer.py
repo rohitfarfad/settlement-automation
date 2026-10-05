@@ -2033,9 +2033,35 @@ def build_excel_write_plan(
         report_date=report.report_date,
     )
 
+    unconfigured_locations: set[str] = set()
+    if supplier == "VALERO":
+        checked_locations: set[str] = set()
+        for rows in (
+            report.daily_totals,
+            report.mobile_adjustments,
+            report.valero_pay_plus_adjustments,
+            report.valero_monthly_charges,
+        ):
+            for row in rows:
+                location_id = str(row.location_id)
+                if location_id in checked_locations:
+                    continue
+                checked_locations.add(location_id)
+                try:
+                    get_valero_location_type(location_id)
+                except ValueError as exc:
+                    unconfigured_locations.add(location_id)
+                    plan.warnings.append(
+                        f"Skipped all Excel writes for VALERO location "
+                        f"{location_id} ({row.location_name}): {exc} "
+                        "Report data is retained; other locations will continue."
+                    )
+
     primary_daily_dates = _get_primary_daily_total_dates(report)
 
     for row in report.daily_totals:
+        if str(row.location_id) in unconfigured_locations:
+            continue
         if row.date in primary_daily_dates:
             _append_daily_total_values(
                 plan=plan,
@@ -2057,6 +2083,8 @@ def build_excel_write_plan(
         mobile_summary_rows = summarize_mobile_adjustments(report.mobile_adjustments)
 
         for row in mobile_summary_rows:
+            if str(row.location_id) in unconfigured_locations:
+                continue
             _append_valero_mobile_summary_values(
                 plan=plan,
                 workbook_root=workbook_root,
@@ -2069,6 +2097,8 @@ def build_excel_write_plan(
         )
 
         for row in valero_pay_plus_summary_rows:
+            if str(row.location_id) in unconfigured_locations:
+                continue
             _append_valero_pay_plus_values(
                 plan=plan,
                 workbook_root=workbook_root,
@@ -2081,6 +2111,8 @@ def build_excel_write_plan(
         )
 
         for row in monthly_charge_summary_rows:
+            if str(row.location_id) in unconfigured_locations:
+                continue
             _append_valero_monthly_charge_values(
                 plan=plan,
                 workbook_root=workbook_root,
