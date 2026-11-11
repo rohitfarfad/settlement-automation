@@ -71,6 +71,7 @@ def _pdf_styles():
         ParagraphStyle(
             name="SectionHeading",
             parent=styles["Heading2"],
+            keepWithNext=True,
             fontName="Helvetica-Bold",
             fontSize=11,
             leading=14,
@@ -293,6 +294,9 @@ def _append_daily_totals(story: list[Any], styles, report: ParsedReport) -> None
     story.append(_make_table(table_rows, has_total_row=has_total_row))
     for row in rows_data:
         for note in row.adjustment_notes:
+            if (_is_supplier(report, "VALERO") and report.valero_chargebacks
+                    and note.startswith("Chargeback:")):
+                continue
             story.append(Paragraph(
                 xml_escape(f"{row.date} | {row.location_name} ({row.location_id}): {note}"),
                 styles["ReportMeta"],

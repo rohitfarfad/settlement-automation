@@ -106,6 +106,8 @@ Lists sort by date/location and applicable source/description. Monthly/Pay+ name
 
 Chargebacks are also retained as structured `ValeroChargeback` records in `ParsedReport.valero_chargebacks`, with settlement date, location, signed amount and description. Daily and scheduled-batch email content and supplier PDFs show a separate Valero chargebacks section with individual rows, count and signed total, only when records exist. This section states that the amounts are already included in daily gross/net; it does not change transaction totals or Excel plans. Commitment fees remain separate from chargeback records, and existing daily adjustment notes are preserved.
 
+When the dedicated chargeback section is present, duplicate chargeback notes are omitted from the daily-total presentation in plain-text/HTML emails and PDFs. The underlying adjustment notes and Excel comments remain intact; other adjustment explanations and legacy notes without a structured chargeback section remain visible. PDF section headings stay with the following content.
+
 **Downstream:** aggregate mobile triples before adding to prior workbook rows; aggregate Pay+ before dealer/wholesaler-specific writing; aggregate monthly charges before fee modification. All VALERO daily dates, including late full settlements, use normal SET planning. See [EXCEL_WRITER](EXCEL_WRITER.md).
 
 ### Existing VALERO tests

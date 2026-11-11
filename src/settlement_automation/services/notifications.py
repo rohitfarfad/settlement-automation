@@ -421,6 +421,9 @@ def _format_plain_daily_totals(report: ParsedReport) -> list[str]:
             f"Net {_format_money(row.net_amt)}"
         )
         for note in row.adjustment_notes:
+            if (_is_supplier(report, "VALERO") and report.valero_chargebacks
+                    and note.startswith("Chargeback:")):
+                continue
             lines.append(f"    {note}")
     if _is_supplier(report, "CITGO"):
         lines.extend(_format_plain_citgo_date_totals(report))
@@ -1010,6 +1013,9 @@ def _build_html_daily_totals_table(report: ParsedReport) -> str:
         )
 
         for note in row.adjustment_notes:
+            if (_is_supplier(report, "VALERO") and report.valero_chargebacks
+                    and note.startswith("Chargeback:")):
+                continue
             rows.append(f"<tr><td colspan='6' class='text'>{escape(note)}</td></tr>")
 
     if not _is_supplier(report, "CITGO"):
