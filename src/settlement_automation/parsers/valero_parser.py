@@ -51,8 +51,9 @@ MONTHLY_CHARGE_RE = re.compile(
 )
 
 CHARGEBACKS_SECTION_RE = re.compile(r"^\s*CHARGEBACKS\s*$", re.IGNORECASE)
+# DTN can omit the reference field between the masked card and the amounts.
 CHARGEBACK_RE = re.compile(
-    r"^\s*(\d{5})\s+\d{6}\s+\S+\s+\S+\s+"
+    r"^\s*(\d{5})\s+\d{6}\s+\S+\s+(?:\S+\s+)?"
     r"[\d,]+\.\d{2}[+-]\s+([\d,]+\.\d{2}[+-])\s*$"
 )
 TOTAL_CHARGEBACKS_RE = re.compile(

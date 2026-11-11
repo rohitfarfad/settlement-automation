@@ -158,11 +158,24 @@ def parse_and_validate_supplier_report(
         parsed_report = parse_report(report_path)
         result.parsed_report = parsed_report
     except Exception as exc:
+        print(f"Parsing failed for {supplier.upper()}:\n{traceback.format_exc()}")
+        try:
+            diagnostic_path = write_exception_diagnostic(
+                account=get_supplier_account(supplier),
+                business_date=report_date,
+                step_name="parse",
+                exc=exc,
+                extra={"report_path": str(report_path)},
+                settings=get_settings(),
+            )
+            print(f"Parse diagnostic: {diagnostic_path}")
+        except Exception as diagnostic_exc:
+            print(f"Could not save parse diagnostic: {diagnostic_exc}")
         result.errors.append(
             RunError(
                 stage="parse",
                 supplier=supplier.upper(),
-                message=f"Failed to parse report: {report_path}",
+                message=f"Failed to parse report: {report_path}: {exc}",
                 exception_type=type(exc).__name__,
             )
         )

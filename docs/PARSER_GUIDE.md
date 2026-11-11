@@ -102,6 +102,8 @@ An `ADJUSTMENTS` line enters section mode; `TOTAL ADJUSTMENTS` exits it. Blank l
 
 Lists sort by date/location and applicable source/description. Monthly/Pay+ names can be `UNKNOWN` if the dealer block has not appeared earlier. Unclassified rows become `UNCLASSIFIED_ADJUSTMENT` anomalies in summary construction, not blocking validation errors or Excel writes.
 
+`CHARGEBACKS` rows accept an optional reference field between the masked card and the two signed amounts. The final amount is applied to both gross and net on the current settlement date; fees are unchanged. Each row is retained, even when transaction details repeat with different reasons, and the signed sum must match `TOTAL CHARGEBACKS`. A malformed/incomplete section or missing/ambiguous current daily row remains a blocking parse error. Daily pipeline parse errors include the exception message in run JSON/email, print the traceback and save an `output/diagnostics/{supplier}/{requested-report-date}/*_parse.json` diagnostic. A diagnostic-save failure does not replace the original parse error.
+
 **Downstream:** aggregate mobile triples before adding to prior workbook rows; aggregate Pay+ before dealer/wholesaler-specific writing; aggregate monthly charges before fee modification. All VALERO daily dates, including late full settlements, use normal SET planning. See [EXCEL_WRITER](EXCEL_WRITER.md).
 
 ### Existing VALERO tests
