@@ -13,6 +13,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import KeepTogether
 
 from settlement_automation.models import ParsedReport
 from settlement_automation.services.daily_run_summary import DailyRunSummary
@@ -201,6 +202,7 @@ def write_supplier_pdf(
     story.append(Spacer(1, 8))
 
     _append_daily_totals(story, styles, report)
+    _append_valero_chargebacks(story, styles, report)
     _append_sunoco_credit_card_discounts(story, styles, report)
     _append_citgo_totals_by_date(story, styles, report)
     _append_mobile_adjustment_summary(story, styles, report)
@@ -296,6 +298,32 @@ def _append_daily_totals(story: list[Any], styles, report: ParsedReport) -> None
                 styles["ReportMeta"],
             ))
     story.append(Spacer(1, 8))
+
+def _append_valero_chargebacks(story: list[Any], styles, report: ParsedReport) -> None:
+    if not _is_supplier(report, "VALERO") or not report.valero_chargebacks:
+        return
+
+    rows = [["Date", "Location ID", "Location Name", "Description", "Amount"]]
+    for row in report.valero_chargebacks:
+        rows.append([
+            str(row.date), row.location_id, row.location_name,
+            row.description, _format_money(row.amount),
+        ])
+    total = sum((row.amount for row in report.valero_chargebacks), Decimal("0"))
+    rows.append([
+        "GRAND TOTAL", "", "", f"Count {len(report.valero_chargebacks)}",
+        _format_money(total),
+    ])
+    story.append(KeepTogether([
+        Paragraph("Valero chargebacks", styles["SectionHeading"]),
+        Paragraph(
+            "Already included in daily gross and net; shown for reference.",
+            styles["ReportMeta"],
+        ),
+        _make_table(rows),
+        Spacer(1, 8),
+    ]))
+
 
 def _append_daily_total_date_subtotal_row(
     *,

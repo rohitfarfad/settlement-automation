@@ -290,6 +290,7 @@ def _build_plain_parsed_data_section(summary: DailyRunSummary) -> list[str]:
     for report in summary.parsed_reports:
         lines.append(f"{report.supplier}")
         lines.extend(_format_plain_daily_totals(report))
+        lines.extend(_format_plain_valero_chargebacks(report))
         lines.extend(_format_plain_sunoco_credit_card_discounts(report))
         lines.extend(_format_plain_mobile_adjustment_summary(report))
         lines.extend(_format_plain_valero_pay_plus_summary(report))
@@ -436,6 +437,27 @@ def _format_plain_daily_totals(report: ParsedReport) -> list[str]:
 
 
     return lines
+
+def _format_plain_valero_chargebacks(report: ParsedReport) -> list[str]:
+    if not _is_supplier(report, "VALERO") or not report.valero_chargebacks:
+        return []
+
+    lines = [
+        "- Valero chargebacks:",
+        "  Already included in daily gross and net; shown for reference.",
+    ]
+    for row in report.valero_chargebacks:
+        lines.append(
+            f"  {row.date} | {row.location_name} ({row.location_id}) | "
+            f"{row.description} | Amount {_format_money(row.amount)}"
+        )
+    total = sum((row.amount for row in report.valero_chargebacks), Decimal("0"))
+    lines.append(
+        f"  GRAND TOTAL | Count {len(report.valero_chargebacks)} | "
+        f"Amount {_format_money(total)}"
+    )
+    return lines
+
 
 def _format_plain_sunoco_credit_card_discounts(report: ParsedReport) -> list[str]:
     if not _is_supplier(report, "SUNOCO"):
@@ -802,6 +824,7 @@ def _build_html_parsed_data_section(summary: DailyRunSummary) -> str:
     for report in summary.parsed_reports:
         parts.append(f"<h3>{escape(report.supplier)}</h3>")
         parts.append(_build_html_daily_totals_table(report))
+        parts.append(_build_html_valero_chargebacks_table(report))
         parts.append(_build_html_sunoco_credit_card_discount_table(report))
         parts.append(_build_html_citgo_date_totals_table(report))
         parts.append(_build_html_mobile_adjustment_summary_table(report))
@@ -1009,6 +1032,36 @@ def _build_html_daily_totals_table(report: ParsedReport) -> str:
             "</table>",
         ]
     )
+
+def _build_html_valero_chargebacks_table(report: ParsedReport) -> str:
+    if not _is_supplier(report, "VALERO") or not report.valero_chargebacks:
+        return ""
+
+    rows = [
+        "<tr><th>Date</th><th>Location ID</th><th>Location Name</th>"
+        "<th>Description</th><th class='amount'>Amount</th></tr>"
+    ]
+    for row in report.valero_chargebacks:
+        rows.append(
+            "<tr>"
+            f"<td class='nowrap'>{escape(str(row.date))}</td>"
+            f"<td>{escape(row.location_id)}</td>"
+            f"<td class='text'>{escape(row.location_name)}</td>"
+            f"<td class='text'>{escape(row.description)}</td>"
+            f"{_amount_td(row.amount)}</tr>"
+        )
+    total = sum((row.amount for row in report.valero_chargebacks), Decimal("0"))
+    rows.append(
+        "<tr class='total-row'>"
+        f"<th colspan='4'>GRAND TOTAL | Count {len(report.valero_chargebacks)}</th>"
+        f"<th class='amount'>{escape(_format_money(total))}</th></tr>"
+    )
+    return "\n".join([
+        "<h4>Valero chargebacks</h4>",
+        "<p>Already included in daily gross and net; shown for reference.</p>",
+        "<table>", *rows, "</table>",
+    ])
+
 
 def _build_html_sunoco_credit_card_discount_table(report: ParsedReport) -> str:
     if not _is_supplier(report, "SUNOCO"):

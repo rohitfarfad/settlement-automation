@@ -47,6 +47,16 @@ class ValeroMonthlyCharge:
     description: str
 
 @dataclass(frozen=True)
+class ValeroChargeback:
+    supplier: str
+    location_id: str
+    location_name: str
+    date: date
+    amount: Decimal
+    description: str
+
+
+@dataclass(frozen=True)
 class UnclassifiedAdjustment:
     supplier: str
     location_id: str | None
@@ -76,3 +86,4 @@ class ParsedReport:
     valero_monthly_charges: list[ValeroMonthlyCharge] = field(default_factory=list)
     unclassified_adjustments: list[UnclassifiedAdjustment] = field(default_factory=list)
     sunoco_credit_card_discounts: list[SunocoCreditCardDiscount] = field(default_factory=list)
+    valero_chargebacks: list[ValeroChargeback] = field(default_factory=list)

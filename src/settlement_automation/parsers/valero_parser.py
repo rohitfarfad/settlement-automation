@@ -11,6 +11,7 @@ from settlement_automation.models import (
     UnclassifiedAdjustment,
     ValeroPayPlusAdjustment,
     ValeroMonthlyCharge,
+    ValeroChargeback,
 )
 from settlement_automation.utils.dates import parse_mmdd, parse_mmddyy
 from settlement_automation.utils.money import parse_money
@@ -393,6 +394,7 @@ def parse_valero_report(file_path: str) -> ParsedReport:
     mobile_adjustments = []
     valero_pay_plus_adjustments = []
     valero_monthly_charges = []
+    valero_chargebacks = []
     unclassified_adjustments = []
     settlement_adjustments = []
     in_chargebacks_section = False
@@ -427,14 +429,14 @@ def parse_valero_report(file_path: str) -> ParsedReport:
             if chargeback:
                 location_id, amount_text = chargeback.groups()
                 amount = parse_money(amount_text)
-                settlement_adjustments.append((location_id, amount, "Chargeback"))
+                settlement_adjustments.append((location_id, amount, "Chargeback", True))
                 chargeback_total += amount
                 chargeback_reason_pending = True
             elif re.match(r"^\s*(?:\d{5}\b|TOTAL\s+CHARGEBACKS\b|ADJUSTMENTS\s*$)", line):
                 raise ValueError("Unrecognized or incomplete Valero chargeback section")
             elif chargeback_reason_pending and re.fullmatch(r"\s*[A-Z][A-Z /()-]+\s*", line):
-                location_id, amount, description = settlement_adjustments[-1]
-                settlement_adjustments[-1] = (location_id, amount, f"{description}: {line.strip()}")
+                location_id, amount, description, is_chargeback = settlement_adjustments[-1]
+                settlement_adjustments[-1] = (location_id, amount, f"{description}: {line.strip()}", is_chargeback)
                 chargeback_reason_pending = False
             continue
 
@@ -453,7 +455,7 @@ def parse_valero_report(file_path: str) -> ParsedReport:
             commitment_fee = COMMITMENT_FEE_RE.match(line)
             if commitment_fee:
                 location_id, description, amount = commitment_fee.groups()
-                settlement_adjustments.append((location_id, parse_money(amount), description))
+                settlement_adjustments.append((location_id, parse_money(amount), description, False))
                 continue
 
             payplus = PAYPLUS_RE.match(line)
@@ -616,7 +618,7 @@ def parse_valero_report(file_path: str) -> ParsedReport:
 
     # These settlement deductions affect both gross and net, not card fees.
     # Post on the current settlement day, not the chargeback's original sale date.
-    for location_id, amount, description in settlement_adjustments:
+    for location_id, amount, description, is_chargeback in settlement_adjustments:
         matches = [row for row in daily_totals
                    if row.location_id == location_id and row.date == monthly_charge_date]
         if len(matches) != 1:
@@ -628,6 +630,15 @@ def parse_valero_report(file_path: str) -> ParsedReport:
         row.gross_amt += amount
         row.net_amt += amount
         row.adjustment_notes.append(f"{description}: {amount:+.2f} applied to gross and net")
+        if is_chargeback:
+            valero_chargebacks.append(ValeroChargeback(
+                supplier="VALERO",
+                location_id=location_id,
+                location_name=row.location_name,
+                date=row.date,
+                amount=amount,
+                description=description,
+            ))
 
     daily_totals.sort(key=lambda row: (row.date, row.location_id))
     mobile_adjustments.sort(
@@ -657,4 +668,5 @@ def parse_valero_report(file_path: str) -> ParsedReport:
         valero_pay_plus_adjustments=valero_pay_plus_adjustments,
         valero_monthly_charges=valero_monthly_charges,
         unclassified_adjustments=unclassified_adjustments,
+        valero_chargebacks=valero_chargebacks,
     )

@@ -104,6 +104,8 @@ Lists sort by date/location and applicable source/description. Monthly/Pay+ name
 
 `CHARGEBACKS` rows accept an optional reference field between the masked card and the two signed amounts. The final amount is applied to both gross and net on the current settlement date; fees are unchanged. Each row is retained, even when transaction details repeat with different reasons, and the signed sum must match `TOTAL CHARGEBACKS`. A malformed/incomplete section or missing/ambiguous current daily row remains a blocking parse error. Daily pipeline parse errors include the exception message in run JSON/email, print the traceback and save an `output/diagnostics/{supplier}/{requested-report-date}/*_parse.json` diagnostic. A diagnostic-save failure does not replace the original parse error.
 
+Chargebacks are also retained as structured `ValeroChargeback` records in `ParsedReport.valero_chargebacks`, with settlement date, location, signed amount and description. Daily and scheduled-batch email content and supplier PDFs show a separate Valero chargebacks section with individual rows, count and signed total, only when records exist. This section states that the amounts are already included in daily gross/net; it does not change transaction totals or Excel plans. Commitment fees remain separate from chargeback records, and existing daily adjustment notes are preserved.
+
 **Downstream:** aggregate mobile triples before adding to prior workbook rows; aggregate Pay+ before dealer/wholesaler-specific writing; aggregate monthly charges before fee modification. All VALERO daily dates, including late full settlements, use normal SET planning. See [EXCEL_WRITER](EXCEL_WRITER.md).
 
 ### Existing VALERO tests
